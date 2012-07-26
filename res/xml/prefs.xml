@@ -1,0 +1,8 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android" >
+    <EditTextPreference android:summary="URL where Fever is installed, e.g. http://example.com/fever" android:key="prefServerUrl" android:title="URL of Fever server"/>
+    <EditTextPreference android:summary="Login for Fever, e.g. user@example.com" android:key="prefUsername" android:title="E-mail address for Fever"/>
+    <EditTextPreference android:summary="Password to log into Fever" android:key="prefPassword" android:title="Fever password" android:selectable="false"/>
+    
+
+</PreferenceScreen>
