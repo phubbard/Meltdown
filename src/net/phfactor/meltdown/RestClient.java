@@ -43,6 +43,7 @@ public class RestClient
 	private Context ctx;
 	private String auth_token;
 	private String base_url;
+	protected RestCallback callback;
 	
 	public String last_result;
 	
@@ -114,6 +115,11 @@ public class RestClient
 		return prefs.getString(P_PASS, null);
 	}
 	
+	protected String getAPIUrl()
+	{
+		return getURL() + "/?api";
+	}
+		
 	private void doSetup()
 	{
 		base_url = getAPIUrl();
@@ -141,11 +147,7 @@ public class RestClient
 		return md5(pre);
 	}
 	
-	protected String getAPIUrl()
-	{
-		return getURL() + "/?api";
-	}
-	
+	// This took forever to get working. Change with great caution if at all.
 	protected HttpPost addAuth(HttpPost post_request) throws UnsupportedEncodingException
 	{
 		post_request.setHeader("Content-Type", "application/x-www-form-urlencoded");
@@ -155,47 +157,41 @@ public class RestClient
 		return post_request;
 	}
 	
-	//! @see http://stackoverflow.com/questions/8119225/httppost-from-android-to-asp-net-page
-	protected Boolean tryLogin()
+	public Boolean checkAuth(String payload)
 	{
 		JSONObject jsonObj;
 		
-		String req_url = base_url;
-		String result = grabURL(req_url);
-		
-		Log.i(TAG, "result: " + result);
-		
 		try 
 		{
-			jsonObj = new JSONObject(result);
-			
+			jsonObj = new JSONObject(payload);
+
 			if (jsonObj.getInt("auth") == 1)
 				return true;
-			
+
 		} catch (JSONException e) 
 		{
-			Log.e(TAG, result);
-			// TODO Auto-generated catch block
 			e.printStackTrace();
 		}	
 		return false;
 	}
 
-	// Async http code from Greg's InBoxActivity.java in the Smile project - nice work.
-	public String grabURL(String url) 
+	public void tryLogin(RestCallback cb_hook)
 	{
+		grabURL(getAPIUrl(), cb_hook);
+	}
+	
+	// Async http code from Greg's InBoxActivity.java in the Smile project - nice work.
+	public void grabURL(String url, RestCallback cb_hook) 
+	{
+		callback = cb_hook;
 		GrabURL gurl = new GrabURL();
 		gurl.execute(url);
-		
-		// FIXME duh
-		last_result = gurl.content;
-		return gurl.content;
 	}
 	
 	private class GrabURL extends AsyncTask<String, Void, Void> 
 	{
 		private HttpClient client;	
-		public String content;
+		private String content;
 		private String Error = null;
 		private ProgressDialog Dialog = new ProgressDialog(ctx);
 		
@@ -262,7 +258,7 @@ public class RestClient
 			if (Error != null) 
 				Toast.makeText(ctx, Error, Toast.LENGTH_LONG).show();
 			else
-				Toast.makeText(ctx, content, Toast.LENGTH_LONG).show();
+				callback.handleData(content);
 		}  
 	}		
 }

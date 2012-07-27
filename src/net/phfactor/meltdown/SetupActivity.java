@@ -32,6 +32,21 @@ public class SetupActivity extends Activity implements OnClickListener
 		}
 	}
 
+	private class SetupDH extends RestCallback 
+	{
+		@Override
+		public void handleData(String payload)
+		{
+			if (rc.checkAuth(payload))
+			{
+				Toast.makeText(SetupActivity.this, "Logged in OK!", Toast.LENGTH_SHORT).show();
+				SetupActivity.this.finish();
+			}
+			else
+				Toast.makeText(SetupActivity.this, "Login error, please correct data", Toast.LENGTH_LONG).show();
+		}
+	}
+	
 	@Override
 	public void onClick(View v) 
 	{
@@ -45,15 +60,9 @@ public class SetupActivity extends Activity implements OnClickListener
 		password = tv.getText().toString();
 		
 		rc.setConfig(url, email, password);
+
+		SetupDH dh = new SetupDH();
 		
-		if (rc.tryLogin())
-		{
-			Toast.makeText(this, "Logged in OK!", Toast.LENGTH_SHORT).show();
-			this.finish();
-		}
-		else
-		{
-			Toast.makeText(this, "Error on login, please check values", Toast.LENGTH_SHORT).show();
-		}
+		rc.tryLogin(dh);
 	}
 }
