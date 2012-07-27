@@ -180,7 +180,14 @@ public class RestClient
 		grabURL(getAPIUrl(), cb_hook);
 	}
 	
-	// Async http code from Greg's InBoxActivity.java in the Smile project - nice work.
+	public void fetchGroups(RestCallback cb_hook)
+	{
+		String url = String.format(getAPIUrl() + "&groups");
+		grabURL(url, cb_hook);
+	}
+	
+	// Async http code from Greg's InBoxActivity.java in the Smile project - nice work. Extended
+	// a bit for a callback interface to return data.
 	public void grabURL(String url, RestCallback cb_hook) 
 	{
 		callback = cb_hook;
