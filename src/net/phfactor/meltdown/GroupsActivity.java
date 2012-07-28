@@ -37,7 +37,7 @@ public class GroupsActivity extends ListActivity
 			Toast.makeText(this, "Please configure a server", Toast.LENGTH_SHORT).show();
 		}
 
-		setContentView(R.layout.activity_groups);
+		setContentView(R.layout.list);
 		rc.fetchGroups(new getGroupsCB());
 	}
 
