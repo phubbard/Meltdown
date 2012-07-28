@@ -208,7 +208,7 @@ public class RestClient
 			content = "";
 			
 			Dialog.setIndeterminate(true);
-			Dialog.setMessage("Testing login...");
+			Dialog.setMessage("Fetching data...");
 			Dialog.show();
 		}
 
