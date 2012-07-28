@@ -37,6 +37,7 @@ public class RestClient
 	private static final String P_URL = "serverUrl";
 	private static final String P_EMAIL = "email";
 	private static final String P_PASS = "pass";
+	private static final String P_LAST_FETCH = "last_ts";
 	private final SharedPreferences prefs;
 	private SharedPreferences.Editor editor;
 	
@@ -120,12 +121,23 @@ public class RestClient
 		return getURL() + "/?api";
 	}
 		
+	private void updateTimestamp()
+	{
+		editor = prefs.edit();
+		editor.putLong(P_LAST_FETCH, System.currentTimeMillis() / 1000L);
+		editor.commit();
+	}
+	
+	public long getLastFetchTime()
+	{
+		return prefs.getLong(P_LAST_FETCH, 0L);
+	}
+	
 	private void doSetup()
 	{
 		base_url = getAPIUrl();
 		auth_token = makeAuthToken();
 		
-		Log.i(TAG, "URL : " + base_url + " token: " + auth_token);
 		last_result = "";
 	}
 	
@@ -184,6 +196,7 @@ public class RestClient
 	{
 		String url = String.format(getAPIUrl() + "&groups");
 		grabURL(url, cb_hook);
+		updateTimestamp();
 	}
 	
 	// Async http code from Greg's InBoxActivity.java in the Smile project - nice work. Extended
