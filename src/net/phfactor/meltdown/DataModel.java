@@ -1,6 +1,5 @@
 package net.phfactor.meltdown;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 
@@ -12,23 +11,29 @@ public class DataModel
 	
 	public enum dataType {GROUPS, FEEDS, ITEMS};
 	
-	private ArrayList<HashMap<String, String>> groups_list;
-	private ArrayList<HashMap<String, String>> feeds_list;
-	private ArrayList<HashMap<String, String>> items_list;
-	private HashMap<Integer, List<Integer>> groups_to_feeds;
+	// Map group name to array of numeric feed ids
+	private HashMap<String, List<Integer>> gf_map;
+	
+	// Map feed ids to item ids
+	private HashMap<Integer, List<Integer>> fi_map;
 	
 	public DataModel()
 	{
+		gf_map = new HashMap<String, List<Integer>>();
+		fi_map = new HashMap<Integer, List<Integer>>();
+		
 		Log.d(TAG, "Constructed");
 	};
 	
-	public void storeGroupsPull(ArrayList<HashMap<String, String>> grp_data, HashMap<Integer, List<Integer>> gf_map)
+	public void storeGroupsPull(HashMap<String, List<Integer>> ngf_map)
 	{
-		Log.d(TAG, "Old group list had " + groups_list.size() + ", new has " + grp_data.size());
-		groups_list = grp_data;		
-		
-		Log.d(TAG, "Old grp->feed map had" + groups_to_feeds.size() + ", new has " + gf_map.size());
-		groups_to_feeds = gf_map;
+		Log.d(TAG, "Old group list had " + gf_map.size() + ", new has " + ngf_map.size());
+		gf_map = ngf_map;
 	}
 	
+	public void storeFeedsPull(HashMap<Integer, List<Integer>> nfi_map)
+	{
+		Log.d(TAG, "Old fi_map had " + fi_map.size() + ", new has " + nfi_map.size());
+		fi_map = nfi_map;
+	}
 }

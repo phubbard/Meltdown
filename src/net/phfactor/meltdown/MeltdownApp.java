@@ -45,19 +45,21 @@ public class MeltdownApp extends Application
 		
 		ArrayList<HashMap<String, String>> myList = new ArrayList<HashMap<String, String>>();
 		HashMap<Integer, List<Integer>> gf_map = new HashMap<Integer, List<Integer>>();
-		// groups array first
 		try 
 		{
 			JSONObject jsonPayload = new JSONObject(payload);
+			
+			// groups array first
 			group_list = jsonPayload.getJSONArray("groups");
 
 			// For JSONArray to ListView I cribbed from
 			// http://p-xr.com/android-tutorial-how-to-parse-read-json-data-into-a-android-listview/
 			for (int idx = 0; idx < group_list.length(); idx++)
 			{
-					HashMap<String, String> map = new HashMap<String, String>();
+					HashMap<String, Integer> map = new HashMap<String, Integer>();
 					
-					map.put("id", group_list.getJSONObject(idx).getString("id"));
+					map.put("title", value)
+					map.put("id", group_list.getJSONObject(idx).get("id"));
 					map.put("title", group_list.getJSONObject(idx).getString("title"));
 					Log.d(TAG, map.toString());
 	
