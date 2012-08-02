@@ -35,16 +35,31 @@ public class MeltdownApp extends Application
 		return rc;
 	}
 	
+	// Parse array of string-encoded ints into List<Integer>
+	// Library function for this somewhere? JSON breaks a lot of Java-isms.
+	private List<Integer> gsToListInt(JSONArray id_array) throws JSONException
+	{
+		List<Integer> rc = new ArrayList<Integer>();
+		
+		for (int idx = 0; idx < id_array.length(); idx++)
+		{
+			rc.add(Integer.valueOf(id_array.getInt(idx)));
+		}
+		
+		return rc;
+	}
+	// For JSONArray to ListView I cribbed from
+	// http://p-xr.com/android-tutorial-how-to-parse-read-json-data-into-a-android-listview/
+	
 	/*!
 	 *  Take the data returned from a groups fetch, parse and save into data model.
 	 */
 	public void saveGroupsData(String payload)
 	{
-		JSONArray group_list;
-		JSONArray fg_list;
+		JSONArray group_list;		
+		HashMap<String, List<Integer>> gf_map = new HashMap<String, List<Integer>>();
+		HashMap<String, Integer> gi_map = new HashMap<String, Integer>();
 		
-		ArrayList<HashMap<String, String>> myList = new ArrayList<HashMap<String, String>>();
-		HashMap<Integer, List<Integer>> gf_map = new HashMap<Integer, List<Integer>>();
 		try 
 		{
 			JSONObject jsonPayload = new JSONObject(payload);
@@ -52,27 +67,14 @@ public class MeltdownApp extends Application
 			// groups array first
 			group_list = jsonPayload.getJSONArray("groups");
 
-			// For JSONArray to ListView I cribbed from
-			// http://p-xr.com/android-tutorial-how-to-parse-read-json-data-into-a-android-listview/
 			for (int idx = 0; idx < group_list.length(); idx++)
 			{
-					HashMap<String, Integer> map = new HashMap<String, Integer>();
-					
-					map.put("title", value)
-					map.put("id", group_list.getJSONObject(idx).get("id"));
-					map.put("title", group_list.getJSONObject(idx).getString("title"));
-					Log.d(TAG, map.toString());
-	
-					myList.add(map);
-			}
-	
-			// Now feeds_groups - map group ID onto list of feed IDs
-			fg_list = jsonPayload.getJSONArray("feeds_groups");
-			for (int idx = 0; idx < fg_list.length(); idx++)
-			{
-				int key = fg_list.getJSONObject(idx).getInt("id");
-				JSONArray json_array = fg_list.getJSONObject(idx).getJSONArray("feed_ids");
-				gf_map.put(key, jaToLI(json_array));
+				String group_name = group_list.getJSONObject(idx).getString("title");
+				int group_id = Integer.valueOf(group_list.getJSONObject(idx).getInt("id"));				
+				List<Integer> id_list = gsToListInt(group_list.getJSONObject(idx).getJSONArray("feed_ids"));
+				
+				gf_map.put(group_name, id_list);
+				gi_map.put(group_name, group_id);
 			}
 		} catch (JSONException e) 
 		{
@@ -80,7 +82,7 @@ public class MeltdownApp extends Application
 			return;
 		}
 		
-		data.storeGroupsPull(myList, gf_map);		
+		data.storeGroupsPull(gf_map, gi_map);		
 	}
 
 	public void saveFeedsData(String payload)
