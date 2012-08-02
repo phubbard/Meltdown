@@ -22,12 +22,15 @@ import android.widget.Toast;
 
 public class GroupsActivity extends ListActivity 
 {
+	private MeltdownApp app;
+	
 	@Override
 	public void onCreate(Bundle savedInstanceState) 
 	{
 		super.onCreate(savedInstanceState);
 
 		RestClient rc = new RestClient(this);
+		app = new MeltdownApp();
 
 		// TODO run setup if login errors out?
 		// Check for login, run prefs
@@ -38,7 +41,8 @@ public class GroupsActivity extends ListActivity
 		}
 
 		setContentView(R.layout.list);
-		rc.fetchGroups(new getGroupsCB());
+		app.getGroups();
+		app.getFeeds();
 	}
 
 	@Override

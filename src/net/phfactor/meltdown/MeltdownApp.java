@@ -21,11 +21,12 @@ public class MeltdownApp extends Application
 	private RestClient xcvr;
 
 
-	public MeltdownApp()
+	public MeltdownApp(Context ctx)
 	{
 		groups = new ArrayList<RssGroup>();
 		feeds = new ArrayList<RssFeed>();
 		last_refresh_time = 0L;
+		xcvr = new RestClient(ctx);
 	}
 
 	// Parse array of string-encoded ints into List<Integer>
@@ -42,10 +43,44 @@ public class MeltdownApp extends Application
 	// For JSONArray to ListView I cribbed from
 	// http://p-xr.com/android-tutorial-how-to-parse-read-json-data-into-a-android-listview/
 	
+	public void getGroups()
+	{
+		class GGcb extends RestCallback
+		{
+			@Override
+			public void handleData(String payload)
+			{
+				saveGroupsData(payload);
+			}
+		}
+		
+		GGcb callback = new GGcb();
+		xcvr.fetchGroups(callback);
+	}
+	
+	public void getFeeds()
+	{
+		class GFcb extends RestCallback
+		{
+			@Override
+			public void handleData(String payload)
+			{
+				saveFeedsData(payload);
+			}
+		}
+		
+		GFcb callback = new GFcb();
+		xcvr.fetchFeeds(callback);
+	}
+	
+	/* ***********************************
+	 * REST callback methods
+	 */
+	
 	/*!
 	 *  Take the data returned from a groups fetch, parse and save into data model.
 	 */
-	public void saveGroupsData(String payload)
+	private void saveGroupsData(String payload)
 	{
 		JSONArray jgroups;		
 
@@ -62,7 +97,7 @@ public class MeltdownApp extends Application
 		}
 	}
 
-	public void saveFeedsData(String payload)
+	private void saveFeedsData(String payload)
 	{
 		JSONArray jfeeds;
 		
@@ -80,7 +115,7 @@ public class MeltdownApp extends Application
 		}
 	}
 
-	public void saveItemsData(String payload)
+	private void saveItemsData(String payload)
 	{
 		// TODO
 	}

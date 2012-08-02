@@ -28,6 +28,11 @@ import android.widget.Toast;
  * @author Paul Hubbard
  * @brief REST/HTTP code for Meltdown
  * @see http://feedafever.com/api
+ * 
+ * TODO Add gzip support http://stackoverflow.com/questions/1573391/android-http-communication-should-use-accept-encoding-gzip
+ * TODO Add progress indicator http://stackoverflow.com/questions/3028306/download-a-file-with-android-and-showing-the-progress-in-a-progressdialog/3028660#3028660
+ * Note its getEntity that does the actual fetch, interesting. http://stackoverflow.com/questions/6751241/httpentity-getcontent-progress-indicator
+ * 
  */
 
 public class RestClient 
@@ -197,6 +202,12 @@ public class RestClient
 		String url = String.format(getAPIUrl() + "&groups");
 		grabURL(url, cb_hook);
 		updateTimestamp();
+	}
+	
+	public void fetchFeeds(RestCallback cb_hook)
+	{
+		String url = String.format(getAPIUrl() + "&feeds");
+		grabURL(url, cb_hook);
 	}
 	
 	// Async http code from Greg's InBoxActivity.java in the Smile project - nice work. Extended
