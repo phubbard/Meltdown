@@ -30,7 +30,7 @@ public class GroupsActivity extends ListActivity
 		super.onCreate(savedInstanceState);
 
 		RestClient rc = new RestClient(this);
-		app = new MeltdownApp();
+		app = new MeltdownApp(this);
 
 		// TODO run setup if login errors out?
 		// Check for login, run prefs
@@ -41,6 +41,7 @@ public class GroupsActivity extends ListActivity
 		}
 
 		setContentView(R.layout.list);
+		
 		app.getGroups();
 		app.getFeeds();
 	}

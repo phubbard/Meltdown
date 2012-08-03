@@ -24,17 +24,19 @@ public class RssFeed
 	{
 		try
 		{
+			//Log.d(TAG, feed.toString());
+			
 			this.site_url = feed.getString("site_url");
 			this.url = feed.getString("url");
 			this.title = feed.getString("title");
 			this.id = feed.getInt("id");
 			this.favicon_id = feed.getInt("favicon_id");
-			this.is_spark = feed.getBoolean("is_spark");
+			this.is_spark = (feed.getInt("is_spark") == 0);
 			this.last_updated_on_time = feed.getLong("last_updated_on_time");			
 			
 		}catch (JSONException je)
 		{
-			Log.e(TAG, "Unable to parse JSON feed!");			
+			Log.e(TAG, "Unable to parse JSON feed!", je);			
 		}
 	}
 }

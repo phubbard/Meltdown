@@ -8,6 +8,7 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import android.app.Application;
+import android.content.Context;
 import android.util.Log;
 
 public class MeltdownApp extends Application 
@@ -17,6 +18,9 @@ public class MeltdownApp extends Application
 	private List<RssGroup> groups;
 	private List<RssFeed> feeds;
 	private long last_refresh_time;
+	
+	private long gp_tzero;
+	private long fp_tzero;
 	
 	private RestClient xcvr;
 
@@ -55,6 +59,7 @@ public class MeltdownApp extends Application
 		}
 		
 		GGcb callback = new GGcb();
+		gp_tzero = System.currentTimeMillis();
 		xcvr.fetchGroups(callback);
 	}
 	
@@ -70,6 +75,7 @@ public class MeltdownApp extends Application
 		}
 		
 		GFcb callback = new GFcb();
+		fp_tzero = System.currentTimeMillis();
 		xcvr.fetchFeeds(callback);
 	}
 	
@@ -95,6 +101,10 @@ public class MeltdownApp extends Application
 		{
 			e.printStackTrace();
 		}
+		
+		Long ftime = System.currentTimeMillis() - gp_tzero;
+		Log.i(TAG, ftime + " msec to pull group feeds");
+		Log.i(TAG, groups.size() + " groups found");
 	}
 
 	private void saveFeedsData(String payload)
@@ -113,6 +123,9 @@ public class MeltdownApp extends Application
 		{
 			e.printStackTrace();
 		}
+		Long ftime = System.currentTimeMillis() - fp_tzero;
+		Log.d(TAG, ftime + " msec to pull feeds");
+		Log.d(TAG, feeds.size() + " feeds found");
 	}
 
 	private void saveItemsData(String payload)
