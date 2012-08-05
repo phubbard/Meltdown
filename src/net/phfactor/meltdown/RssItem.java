@@ -1,5 +1,7 @@
 package net.phfactor.meltdown;
 
+import java.util.HashMap;
+
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -41,5 +43,20 @@ public class RssItem
 		{
 			Log.e(TAG, "Error parsing feed item", je);
 		}
+	}
+	
+	public HashMap<String, String> getHashMap()
+	{
+		HashMap<String, String> rc = new HashMap<String, String>();
+		rc.put("is_read", is_read.toString());
+		rc.put("title", title);
+		rc.put("url", url);
+		rc.put("html", html);
+		rc.put("id", Integer.toString(id));
+		rc.put("created_on_time", Long.toString(created_on_time));
+		rc.put("feed_id", Integer.toString(feed_id));
+		rc.put("is_saved", is_saved.toString());
+		rc.put("author", author);
+		return rc;
 	}
 }

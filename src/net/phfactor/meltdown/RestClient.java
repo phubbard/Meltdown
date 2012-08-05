@@ -55,6 +55,7 @@ public class RestClient
 		
 		doSetup();
 	}
+	
 
 	// *****************************************************************************
 	//! @see http://stackoverflow.com/questions/8700744/md5-with-android-and-php

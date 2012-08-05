@@ -59,6 +59,35 @@ public class MeltdownApp extends Application
 		return al;
 	}
 	
+	private RssGroup findGroupById(int grp_id)
+	{
+		// TODO 
+		return groups.get(0);
+	}
+	
+	// Same thing, for feeds that match a group ID
+	public ArrayList<HashMap<String, String>> getALItems(int group_id)
+	{
+		ArrayList<HashMap<String, String>> al = new ArrayList<HashMap<String, String>>();
+		RssGroup my_grp = findGroupById(group_id);
+		
+		for (int cur_feed_idx = 0; cur_feed_idx < my_grp.feed_ids.size(); cur_feed_idx++)
+		{
+			// We now have a list of feeds for this group, iterate over the feeds. Inner join?
+			for (int idx = 0; idx < items.size(); idx++)
+			{
+				if (items.get(idx).feed_id == cur_feed_idx)
+				{
+					// Item matches current feed and group - save it off
+					HashMap<String, String> item = items.get(idx).getHashMap();
+					al.add(item);
+				}
+			}
+		}
+		Log.d(TAG, al.size() + " items for group " + my_grp.title);
+		return al;
+	}
+	
 	/* The feeds_groups data is a bit different. Separate json array, and the 
 	 * encoding differs. The arrays are CSV instead of JSON, so we have to create 
 	 * a specialized parser for them.
