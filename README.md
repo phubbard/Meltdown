@@ -5,10 +5,9 @@ Meltdown (provisional name) is an open-source Android client for [Fever RSS](htt
 Please [email me](mailto:phubbard@gmail.com) if you want to hack on it; I could really use some help as my time is limited.
 
 ## Current status
-
-* Setup screen works - gather server info, save to private preferences, test login
-* Groups screen fetches and displays a list of groups
-* As per the 4.0 APIs, fetching is done with an AsyncTask and interface callbacks. 
+* Setup screen re-borked; need to change to AsyncTask
+* Pull, parse and save of group and feed data is working correctly. All in-memory and super fast.
+* Redid the http code after re-reading [the Android docs](http://developer.android.com/guide/components/processes-and-threads.html) again.
 * I've decided to use in-memory lists for display in the first pass, and go to SQLite/CursorAdapter once it all works. KISS principle.
 
 ### Background information

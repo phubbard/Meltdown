@@ -29,8 +29,11 @@ public class MeltdownApp extends Application
 		xcvr = new RestClient(ctx);
 	}
 
-	// Parse array of string-encoded ints into List<Integer>
-	// Library function for this somewhere? JSON breaks a lot of Java-isms.
+	/* The feeds_groups data is a bit different. Separate json array, and the 
+	 * encoding differs. The arrays are CSV instead of JSON, so we have to create 
+	 * a specialized parser for them.
+	 * TODO Feedback to developer on this API
+	 */
 	public List<Integer> gsToListInt(String id_str) throws JSONException
 	{
 		List<Integer> rc = new ArrayList<Integer>();
@@ -42,15 +45,6 @@ public class MeltdownApp extends Application
 		return rc;
 	}
 
-	/* ***********************************
-	 * REST callback methods
-	 */
-	
-	/* The feeds_groups data is a bit different. Separate json array, and the 
-	 * encoding differs. The arrays are CSV instead of JSON, so we have to create 
-	 * a specialized parser for them.
-	 * TODO Feedback to developer on this API
-	 */
 	private void saveFeedsGroupsData(JSONObject payload) throws JSONException
 	{
 		JSONArray fg_arry = payload.getJSONArray("feeds_groups");
@@ -65,6 +59,10 @@ public class MeltdownApp extends Application
 			}
 		}
 	}
+	
+	/* ***********************************
+	 * REST callback methods
+	 */
 	
 	/*!
 	 *  Take the data returned from a groups fetch, parse and save into data model.
