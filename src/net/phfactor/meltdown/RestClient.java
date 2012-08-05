@@ -16,12 +16,9 @@ import org.apache.http.impl.client.DefaultHttpClient;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.SharedPreferences;
-import android.os.AsyncTask;
 import android.util.Log;
-import android.widget.Toast;
 
 /*!
  * @file RestClient.java
@@ -48,8 +45,6 @@ public class RestClient
 	
 	private Context ctx;
 	private String auth_token;
-	private String base_url;
-	protected RestCallback callback;
 	
 	public String last_result;
 	
@@ -140,9 +135,7 @@ public class RestClient
 	
 	private void doSetup()
 	{
-		base_url = getAPIUrl();
-		auth_token = makeAuthToken();
-		
+		auth_token = makeAuthToken();		
 		last_result = "";
 	}
 	
@@ -174,8 +167,9 @@ public class RestClient
 		return post_request;
 	}
 	
-	public Boolean checkAuth(String payload)
+	public Boolean checkAuth()
 	{
+		String payload = syncGetUrl(getAPIUrl());
 		JSONObject jsonObj;
 		
 		try 
@@ -192,104 +186,66 @@ public class RestClient
 		return false;
 	}
 
-	public void tryLogin(RestCallback cb_hook)
+	public Boolean tryLogin()
 	{
-		grabURL(getAPIUrl(), cb_hook);
+		return checkAuth();
 	}
 	
-	public void fetchGroups(RestCallback cb_hook)
+	public String fetchGroups()
 	{
 		String url = String.format(getAPIUrl() + "&groups");
-		grabURL(url, cb_hook);
-		updateTimestamp();
+		String content = syncGetUrl(url);
+		if (content != null)
+			updateTimestamp();
+		
+		return content;
 	}
 	
-	public void fetchFeeds(RestCallback cb_hook)
+	public String fetchFeeds()
 	{
 		String url = String.format(getAPIUrl() + "&feeds");
-		grabURL(url, cb_hook);
+		return(syncGetUrl(url));
 	}
 	
-	// Async http code from Greg's InBoxActivity.java in the Smile project - nice work. Extended
-	// a bit for a callback interface to return data.
-	public void grabURL(String url, RestCallback cb_hook) 
+	// Blocking fetch w/authentication added
+	public String syncGetUrl(String url)
 	{
-		callback = cb_hook;
-		GrabURL gurl = new GrabURL();
-		gurl.execute(url);
-	}
-	
-	private class GrabURL extends AsyncTask<String, Void, Void> 
-	{
-		private HttpClient client;	
-		private String content;
-		private String Error = null;
-		private ProgressDialog Dialog = new ProgressDialog(ctx);
+		HttpClient client;	
+		String content = "";
+		String Error = null;
 		
-		protected void onPreExecute() 
+		try 
 		{
 			client = new DefaultHttpClient();
-			content = "";
+			HttpPost post = new HttpPost(url);
 			
-			Dialog.setIndeterminate(true);
-			Dialog.setMessage("Fetching data...");
-			Dialog.show();
-		}
-
-		protected Void doInBackground(String... urls) 
+			// Add the auth token to the request
+			post = addAuth(post);
+	
+			ResponseHandler<String> responseHandler = new BasicResponseHandler();
+			content = client.execute(post, responseHandler);
+			//Log.d("DATA for  " + url, content);
+			return content;
+		} catch (ClientProtocolException e) 
 		{
-			try 
-			{
-				Log.d(TAG, "Fetching " + urls[0]);
-				HttpPost post = new HttpPost(urls[0]);
-				
-				// Add the auth token to the request
-				post = addAuth(post);
-
-				ResponseHandler<String> responseHandler = new BasicResponseHandler();
-				content = client.execute(post, responseHandler);
-				Log.d(TAG, "Got back: " + content);
-				
-			} catch (ClientProtocolException e) 
-			{
-				Error = "Prot Err: " + e.getMessage();
-				cancel(true);
-			}
-			catch (UnknownHostException e) 
-			{
-				Error = "UnknownHostErr: " + e.getMessage();
-				cancel(true);          
-			}
-			catch (IOException e) 
-			{
-				Error = "IOxErr: " + e.getMessage();
-				cancel(true);
-			}
-			catch (Exception e) 
-			{
-				Error = "Exception. "+e.getMessage();
-				cancel(true);
-			}
-
-			return null;
+			Error = "Prot Err: " + e.getMessage();
 		}
-
-		@Override
-		protected void onCancelled() 
+		catch (UnknownHostException e) 
 		{
-			super.onCancelled();
-
-			Dialog.dismiss();			
+			Error = "UnknownHostErr: " + e.getMessage();
 		}
-
-		protected void onPostExecute(Void unused) 
+		catch (IOException e) 
 		{
-			Dialog.dismiss();
-
-			if (Error != null) 
-				Toast.makeText(ctx, Error, Toast.LENGTH_LONG).show();
-			else
-				callback.handleData(content);
-		}  
-	}		
+			Error = "IOxErr: " + e.getMessage();
+		}
+		catch (Exception e) 
+		{
+			Error = "Exception. "+e.getMessage();
+		}
+		
+		if (Error != null)
+			Log.e(TAG, Error);
+		
+		return null;		
+	}
 }

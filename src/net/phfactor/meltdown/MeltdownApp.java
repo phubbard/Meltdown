@@ -18,10 +18,6 @@ public class MeltdownApp extends Application
 	private List<RssGroup> groups;
 	private List<RssFeed> feeds;
 	private long last_refresh_time;
-	
-	private long gp_tzero;
-	private long fp_tzero;
-	
 	private RestClient xcvr;
 
 
@@ -43,42 +39,7 @@ public class MeltdownApp extends Application
 			rc.add(Integer.valueOf(id_array.getInt(idx)));
 		return rc;
 	}
-	
-	// For JSONArray to ListView I cribbed from
-	// http://p-xr.com/android-tutorial-how-to-parse-read-json-data-into-a-android-listview/
-	
-	public void getGroups()
-	{
-		class GGcb extends RestCallback
-		{
-			@Override
-			public void handleData(String payload)
-			{
-				saveGroupsData(payload);
-			}
-		}
-		
-		GGcb callback = new GGcb();
-		gp_tzero = System.currentTimeMillis();
-		xcvr.fetchGroups(callback);
-	}
-	
-	public void getFeeds()
-	{
-		class GFcb extends RestCallback
-		{
-			@Override
-			public void handleData(String payload)
-			{
-				saveFeedsData(payload);
-			}
-		}
-		
-		GFcb callback = new GFcb();
-		fp_tzero = System.currentTimeMillis();
-		xcvr.fetchFeeds(callback);
-	}
-	
+
 	/* ***********************************
 	 * REST callback methods
 	 */
@@ -86,7 +47,7 @@ public class MeltdownApp extends Application
 	/*!
 	 *  Take the data returned from a groups fetch, parse and save into data model.
 	 */
-	private void saveGroupsData(String payload)
+	protected void saveGroupsData(String payload)
 	{
 		JSONArray jgroups;		
 
@@ -102,18 +63,17 @@ public class MeltdownApp extends Application
 			e.printStackTrace();
 		}
 		
-		Long ftime = System.currentTimeMillis() - gp_tzero;
-		Log.i(TAG, ftime + " msec to pull group feeds");
 		Log.i(TAG, groups.size() + " groups found");
 	}
 
-	private void saveFeedsData(String payload)
+	protected void saveFeedsData(String payload)
 	{
 		JSONArray jfeeds;
 		
 		try
 		{
 			JSONObject jpayload = new JSONObject(payload);
+			Log.d(TAG, jpayload.toString(4));
 			jfeeds = jpayload.getJSONArray("feeds");
 			this.last_refresh_time = jpayload.getLong("last_refreshed_on_time");
 			for (int idx = 0; idx < jfeeds.length(); idx++)
@@ -123,8 +83,6 @@ public class MeltdownApp extends Application
 		{
 			e.printStackTrace();
 		}
-		Long ftime = System.currentTimeMillis() - fp_tzero;
-		Log.d(TAG, ftime + " msec to pull feeds");
 		Log.d(TAG, feeds.size() + " feeds found");
 	}
 
@@ -135,9 +93,7 @@ public class MeltdownApp extends Application
 
 	public void markItemRead(int item_id)
 	{
-		Log.d(TAG, "Firing task to mark item " + item_id + " as read.");
-		RestCallback no_op = new RestCallback();
 		String url = String.format("%s&mark=item&as=read&id=%d", xcvr.getAPIUrl(), item_id);
-		xcvr.grabURL(url, no_op);
+		xcvr.syncGetUrl(url);
 	}
 }
