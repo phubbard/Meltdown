@@ -207,6 +207,17 @@ public class RestClient
 		return(syncGetUrl(url));
 	}
 	
+	public String fetchSomeFeeds(int max_read_id)
+	{
+		// TODO
+		/* As per API, request a chunk of feed items. Chunksize depends on the server and
+		 * number of unread in the queue. The output of this is the content, which is then fed
+		 * into the parser. How do I cleanly detect end of items? And max item number?
+		 */
+		String url = String.format("%s&items&max+_id=%d", getAPIUrl(), max_read_id);
+		return syncGetUrl(url);
+	}
+	
 	// Blocking fetch w/authentication added
 	public String syncGetUrl(String url)
 	{

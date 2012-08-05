@@ -6,14 +6,14 @@
     android:padding="7dp"
     >
 <TextView  
-    android:id="@+id/group_title"
+    android:id="@+id/item_title"
     android:layout_width="fill_parent" 
     android:layout_height="wrap_content" 
     android:textAppearance="?android:attr/textAppearanceMedium"
     android:padding="2dp"
     android:textSize="20dp" />
     <TextView  
-    android:id="@+id/group_subtitle"
+    android:id="@+id/item_subtitle"
     android:layout_width="fill_parent" 
     android:layout_height="wrap_content" 
     android:padding="2dp"

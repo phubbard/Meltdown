@@ -2,6 +2,7 @@ package net.phfactor.meltdown;
 
 import android.app.ListActivity;
 import android.os.Bundle;
+import android.widget.Toast;
 
 public class ItemsActivity extends ListActivity 
 {
@@ -12,7 +13,8 @@ public class ItemsActivity extends ListActivity
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.list);
 		
-		// TODO Send and receive groups ID, populate with 
+		String grp_name = getIntent().getExtras().getString("title");
+		Toast.makeText(this, grp_name, Toast.LENGTH_SHORT).show();
 	}
 
 }
