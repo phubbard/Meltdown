@@ -31,12 +31,14 @@ public class MeltdownApp extends Application
 
 	// Parse array of string-encoded ints into List<Integer>
 	// Library function for this somewhere? JSON breaks a lot of Java-isms.
-	public List<Integer> gsToListInt(JSONArray id_array) throws JSONException
+	public List<Integer> gsToListInt(String id_str) throws JSONException
 	{
 		List<Integer> rc = new ArrayList<Integer>();
 		
-		for (int idx = 0; idx < id_array.length(); idx++)
-			rc.add(Integer.valueOf(id_array.getInt(idx)));
+		String[] nums = id_str.split(",");
+		
+		for (int idx = 0; idx < nums.length; idx++)
+			rc.add(Integer.valueOf(nums[idx]));
 		return rc;
 	}
 
@@ -44,25 +46,48 @@ public class MeltdownApp extends Application
 	 * REST callback methods
 	 */
 	
+	/* The feeds_groups data is a bit different. Separate json array, and the 
+	 * encoding differs. The arrays are CSV instead of JSON, so we have to create 
+	 * a specialized parser for them.
+	 * TODO Feedback to developer on this API
+	 */
+	private void saveFeedsGroupsData(JSONObject payload) throws JSONException
+	{
+		JSONArray fg_arry = payload.getJSONArray("feeds_groups");
+		for (int idx = 0; idx < fg_arry.length(); idx++)
+		{
+			JSONObject cur_grp = fg_arry.getJSONObject(idx);
+			int grp_id = cur_grp.getInt("group_id");
+			for (int grp_idx = 0; grp_idx < groups.size(); grp_idx++)
+			{
+				if (groups.get(grp_idx).id == grp_id)
+					groups.get(grp_idx).feed_ids = gsToListInt(cur_grp.getString("feed_ids"));
+			}
+		}
+	}
+	
 	/*!
 	 *  Take the data returned from a groups fetch, parse and save into data model.
 	 */
 	protected void saveGroupsData(String payload)
 	{
 		JSONArray jgroups;		
-
+		RssGroup this_grp;
 		try
 		{
 			JSONObject jsonPayload = new JSONObject(payload);			
 			jgroups = jsonPayload.getJSONArray("groups");
 			for (int idx = 0; idx < jgroups.length(); idx++)
-				groups.add(new RssGroup(jgroups.getJSONObject(idx), this));
+			{
+				this_grp = new RssGroup(jgroups.getJSONObject(idx), this);				
+				groups.add(this_grp);
+			}			
+			saveFeedsGroupsData(jsonPayload);
 			
 		} catch (JSONException e) 
 		{
 			e.printStackTrace();
-		}
-		
+		}		
 		Log.i(TAG, groups.size() + " groups found");
 	}
 
@@ -73,7 +98,6 @@ public class MeltdownApp extends Application
 		try
 		{
 			JSONObject jpayload = new JSONObject(payload);
-			Log.d(TAG, jpayload.toString(4));
 			jfeeds = jpayload.getJSONArray("feeds");
 			this.last_refresh_time = jpayload.getLong("last_refreshed_on_time");
 			for (int idx = 0; idx < jfeeds.length(); idx++)
