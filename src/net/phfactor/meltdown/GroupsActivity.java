@@ -63,6 +63,11 @@ public class GroupsActivity extends ListActivity
 				
 				// TODO Display groups list while feeds run
 				// FIXME limit fetch limit w/prefs-set bound, e.g. 100. 
+				int item_count = 200;
+				while (item_count > 0)
+				{
+					item_count -= app.saveItemsData(rc.fetchSomeFeeds(app.getMaxFetchedId()));
+				}
 //				while (app.saveItemsData(rc.fetchSomeFeeds(app.getMaxFetchedId())) > 0) 
 //					Log.i(TAG, "Pulling another chunk...");
 				

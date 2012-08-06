@@ -74,7 +74,6 @@ public class MeltdownApp extends Application
 	{
 		for (int idx = 0; idx < groups.size(); idx++)
 		{
-			Log.d(TAG, "   " + groups.get(idx).id);
 			if (groups.get(idx).id == grp_id)
 				return groups.get(idx);
 		}
@@ -100,8 +99,7 @@ public class MeltdownApp extends Application
 		
 		if (my_grp == null)
 		{
-			Log.e(TAG, "" +
-					"Unable to locate group id " + group_id);
+			Log.e(TAG, "Unable to locate group id " + group_id);
 			return null;
 		}
 		for (int cur_feed_idx = 0; cur_feed_idx < my_grp.feed_ids.size(); cur_feed_idx++)
@@ -109,7 +107,8 @@ public class MeltdownApp extends Application
 			// We now have a list of feeds for this group, iterate over the feeds. Inner join?
 			for (int idx = 0; idx < items.size(); idx++)
 			{
-				if (items.get(idx).feed_id == cur_feed_idx)
+				// FIXME this N^2 loop also gives duplicates in feed list. :(
+				if (items.get(idx).feed_id == my_grp.feed_ids.get(cur_feed_idx))
 				{
 					// Item matches current feed and group - save it off
 					HashMap<String, String> item = items.get(idx).getHashMap();

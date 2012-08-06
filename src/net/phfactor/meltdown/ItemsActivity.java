@@ -1,7 +1,14 @@
 package net.phfactor.meltdown;
 
+import java.util.HashMap;
+
 import android.app.ListActivity;
 import android.os.Bundle;
+import android.util.Log;
+import android.view.View;
+import android.view.Window;
+import android.widget.AdapterView;
+import android.widget.AdapterView.OnItemClickListener;
 import android.widget.ListAdapter;
 import android.widget.ListView;
 import android.widget.SimpleAdapter;
@@ -14,23 +21,37 @@ public class ItemsActivity extends ListActivity
 	@Override
 	protected void onCreate(Bundle savedInstanceState) 
 	{
+		// See http://stackoverflow.com/questions/820398/android-change-custom-title-view-at-run-time
+		setContentView(R.layout.items);
 		super.onCreate(savedInstanceState);
-		setContentView(R.layout.list);
-		
-		app = (MeltdownApp) this.getApplicationContext();
-		
+
 		String grp_name = getIntent().getExtras().getString("title");
 		int group_id = getIntent().getExtras().getInt("group_id");
+
+		getActionBar().setTitle(grp_name);
 		
-		final ListView lv = getListView();
+		app = (MeltdownApp) this.getApplicationContext();
+				
+		final ListView lv = getListView();		
 		
 		// TODO Refresh on drag down
 		lv.setOverscrollHeader(getWallpaper());
 		
 		ListAdapter ladapt = new SimpleAdapter(this, app.getALItems(group_id), R.layout.itemrow,
-				new String[] {"Title"},
+				new String[] {"title"},
 				new int[] {R.id.item_title});
+        lv.setTextFilterEnabled(true);
+		
 		setListAdapter(ladapt);
+        lv.setOnItemClickListener(new OnItemClickListener()
+        {
+        	@Override
+        	public void onItemClick(AdapterView<?> arg0, View view, int pos, long id)
+        	{
+				HashMap<String, String> o = (HashMap<String, String>) lv.getItemAtPosition(pos);
+				Log.d(TAG, o.toString());
+        	}
+        });
 	}
 
 }
