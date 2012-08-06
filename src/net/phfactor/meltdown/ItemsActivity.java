@@ -3,6 +3,7 @@ package net.phfactor.meltdown;
 import java.util.HashMap;
 
 import android.app.ListActivity;
+import android.content.Intent;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
@@ -50,6 +51,13 @@ public class ItemsActivity extends ListActivity
         	{
 				HashMap<String, String> o = (HashMap<String, String>) lv.getItemAtPosition(pos);
 				Log.d(TAG, o.toString());
+				
+				RssItem item = app.findPostById(Integer.parseInt(o.get("id")));
+				Intent intent = new Intent(ItemsActivity.this, ItemDisplayActivity.class);
+				Bundle bundle = new Bundle();
+				bundle.putInt("post_id", item.id);
+				intent.putExtras(bundle);
+				startActivity(intent);				
         	}
         });
 	}

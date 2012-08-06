@@ -53,21 +53,6 @@ public class MeltdownApp extends Application
 		return max_fetched_id;
 	}
 	
-	public ArrayList<HashMap<String, String>> getALG()
-	{
-		// Create an array list of maps for the construction of a SimpleAdapter
-		// See http://developer.android.com/reference/android/widget/SimpleAdapter.html
-		ArrayList<HashMap<String, String>> al = new ArrayList<HashMap<String, String>>();
-		for (int idx = 0; idx < groups.size(); idx++)
-		{
-			HashMap<String, String> item = new HashMap<String, String>();
-			item.put("title", groups.get(idx).title);
-			item.put("unread", "0");
-			al.add(item);
-		}
-		Log.d(TAG, al.size() + " items in array, " + groups.size() + " in original");
-		return al;
-	}
 	
 	// TODO Replace by sqlite query once DB-backed
 	protected RssGroup findGroupById(int grp_id)
@@ -90,8 +75,35 @@ public class MeltdownApp extends Application
 		}
 		return null;
 	}
+
+	// TODO Replace by sqlite query
+	protected RssItem findPostById(int post_id)
+	{
+		for (int idx = 0; idx < items.size(); idx++)
+		{
+			if (items.get(idx).id == post_id)
+				return items.get(idx);
+		}
+		return null;
+	}
 	
-	// Same thing, for feeds that match a group ID
+	// Create an array list of maps for the construction of a SimpleAdapter
+	// See http://developer.android.com/reference/android/widget/SimpleAdapter.html
+	public ArrayList<HashMap<String, String>> getALG()
+	{
+		ArrayList<HashMap<String, String>> al = new ArrayList<HashMap<String, String>>();
+		for (int idx = 0; idx < groups.size(); idx++)
+		{
+			HashMap<String, String> item = new HashMap<String, String>();
+			item.put("title", groups.get(idx).title);
+			item.put("unread", "0");
+			al.add(item);
+		}
+		Log.d(TAG, al.size() + " items in array, " + groups.size() + " in original");
+		return al;
+	}
+
+	// Same thing, for items that match a group ID
 	public ArrayList<HashMap<String, String>> getALItems(int group_id)
 	{
 		ArrayList<HashMap<String, String>> al = new ArrayList<HashMap<String, String>>();
