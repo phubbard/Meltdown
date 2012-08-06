@@ -36,7 +36,7 @@ public class GroupsActivity extends ListActivity
 		super.onCreate(savedInstanceState);
 
 		rc = new RestClient(this);
-		app = new MeltdownApp(this);
+		app = (MeltdownApp) this.getApplicationContext();
 		ctx = this;
 		
 		// TODO run setup if login errors out?
@@ -84,9 +84,12 @@ public class GroupsActivity extends ListActivity
 		        	public void onItemClick(AdapterView<?> arg0, View view, int pos, long id)
 		        	{
 						HashMap<String, String> o = (HashMap<String, String>) lv.getItemAtPosition(pos);
+						RssGroup group = app.findGroupByName(o.get("title"));
+						
 						Intent intent = new Intent(GroupsActivity.this, ItemsActivity.class);
 						Bundle bundle = new Bundle();
-						bundle.putString("title", o.get("title"));
+						bundle.putString("title", group.title);
+						bundle.putInt("group_id", group.id);
 						intent.putExtras(bundle);
 						startActivity(intent);
 		        	}

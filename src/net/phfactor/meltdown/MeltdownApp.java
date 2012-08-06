@@ -25,9 +25,11 @@ public class MeltdownApp extends Application
 	private long last_refresh_time;
 	private RestClient xcvr;
 
-
-	public MeltdownApp(Context ctx)
+	@Override
+	public void onCreate()
 	{
+		super.onCreate();
+
 		groups = new ArrayList<RssGroup>();
 		feeds = new ArrayList<RssFeed>();
 		items = new ArrayList<RssItem>();
@@ -35,9 +37,17 @@ public class MeltdownApp extends Application
 		max_fetched_id = 0;
 		max_id_on_server = 0;
 		last_refresh_time = 0L;
-		xcvr = new RestClient(ctx);
+		xcvr = new RestClient(getApplicationContext());		
+	}
+	
+	public MeltdownApp(Context ctx)
+	{
 	}
 
+	public MeltdownApp()
+	{
+	}
+	
 	public int getMaxFetchedId()
 	{
 		return max_fetched_id;
@@ -59,10 +69,27 @@ public class MeltdownApp extends Application
 		return al;
 	}
 	
-	private RssGroup findGroupById(int grp_id)
+	// TODO Replace by sqlite query once DB-backed
+	protected RssGroup findGroupById(int grp_id)
 	{
-		// TODO 
-		return groups.get(0);
+		for (int idx = 0; idx < groups.size(); idx++)
+		{
+			Log.d(TAG, "   " + groups.get(idx).id);
+			if (groups.get(idx).id == grp_id)
+				return groups.get(idx);
+		}
+		return null;
+	}
+	
+	// TODO Replace by sqlite query once DB-backed
+	protected RssGroup findGroupByName(String name)
+	{
+		for (int idx = 0; idx < groups.size(); idx++)
+		{
+			if (groups.get(idx).title.equals(name))
+				return groups.get(idx);
+		}
+		return null;
 	}
 	
 	// Same thing, for feeds that match a group ID
@@ -71,6 +98,12 @@ public class MeltdownApp extends Application
 		ArrayList<HashMap<String, String>> al = new ArrayList<HashMap<String, String>>();
 		RssGroup my_grp = findGroupById(group_id);
 		
+		if (my_grp == null)
+		{
+			Log.e(TAG, "" +
+					"Unable to locate group id " + group_id);
+			return null;
+		}
 		for (int cur_feed_idx = 0; cur_feed_idx < my_grp.feed_ids.size(); cur_feed_idx++)
 		{
 			// We now have a list of feeds for this group, iterate over the feeds. Inner join?
