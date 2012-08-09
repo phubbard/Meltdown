@@ -5,6 +5,7 @@ import java.util.HashMap;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import android.text.format.DateUtils;
 import android.util.Log;
 
 public class RssItem 
@@ -24,6 +25,11 @@ public class RssItem
 	public RssItem()
 	{
 		
+	}
+	
+	public String niceTimedelta()
+	{
+		return String.format("%s", DateUtils.getRelativeTimeSpanString(created_on_time));
 	}
 	
 	public RssItem(JSONObject data)

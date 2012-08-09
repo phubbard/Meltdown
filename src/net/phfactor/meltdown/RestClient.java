@@ -1,23 +1,27 @@
 package net.phfactor.meltdown;
 
+import java.io.BufferedReader;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.UnsupportedEncodingException;
 import java.net.UnknownHostException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 
+import org.apache.http.HttpResponse;
 import org.apache.http.client.ClientProtocolException;
 import org.apache.http.client.HttpClient;
 import org.apache.http.client.ResponseHandler;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.StringEntity;
 import org.apache.http.impl.client.BasicResponseHandler;
-import org.apache.http.impl.client.DefaultHttpClient;
 import org.json.JSONException;
 import org.json.JSONObject;
 
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.net.http.AndroidHttpClient;
 import android.util.Log;
 
 /*!
@@ -215,9 +219,37 @@ public class RestClient
 		 * number of unread in the queue. The output of this is the content, which is then fed
 		 * into the parser. How do I cleanly detect end of items? And max item number?
 		 */
-		String url = String.format("%s&items&max+_id=%d", getAPIUrl(), max_read_id);
+		String url = String.format("%s&items&max_id=%d", getAPIUrl(), max_read_id);
 		return syncGetUrl(url);
 	}
+	
+    /*!
+     * @brief To convert the InputStream to String we use the BufferedReader.readLine()
+     * method. We iterate until the BufferedReader return null which means
+     * there's no more data to read. Each line will appended to a StringBuilder
+     * and returned as String.
+     */
+	private static String convertStreamToString(InputStream is) 
+	{
+        BufferedReader reader = new BufferedReader(new InputStreamReader(is));
+        StringBuilder sb = new StringBuilder();
+ 
+        String line = null;
+        try {
+            while ((line = reader.readLine()) != null) {
+                sb.append(line + "\n");
+            }
+        } catch (IOException e) {
+            e.printStackTrace();
+        } finally {
+            try {
+                is.close();
+            } catch (IOException e) {
+                e.printStackTrace();
+            }
+        }
+        return sb.toString();
+    }
 	
 	// Blocking fetch w/authentication added
 	public String syncGetUrl(String url)
@@ -228,15 +260,26 @@ public class RestClient
 		
 		try 
 		{
-			client = new DefaultHttpClient();
+			client = AndroidHttpClient.newInstance("Meltdown");
 			HttpPost post = new HttpPost(url);
+			
+			// Tell Apache we'll take gzip; should compress really well.
+			AndroidHttpClient.modifyRequestToAcceptGzipResponse(post);
 			
 			// Add the auth token to the request
 			post = addAuth(post);
 	
-			ResponseHandler<String> responseHandler = new BasicResponseHandler();
-			content = client.execute(post, responseHandler);
-			//Log.d("DATA for  " + url, content);
+			HttpResponse response = client.execute(post);
+			InputStream istr = AndroidHttpClient.getUngzippedContent(response.getEntity());
+			content = convertStreamToString(istr);
+			
+//			ResponseHandler<String> responseHandler = new BasicResponseHandler();
+//			content = client.execute(post, responseHandler);
+			Log.d("DATA for  " + url, content);
+			
+			AndroidHttpClient fcc = (AndroidHttpClient) client;
+			fcc.close();
+			
 			return content;
 		} catch (ClientProtocolException e) 
 		{

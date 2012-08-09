@@ -50,9 +50,10 @@ public class ItemDisplayActivity extends FragmentActivity implements ActionBar.O
 		app = (MeltdownApp) this.getApplicationContext();
 
         RssItem item = app.findPostById(post_id);
+        //getActionBar().setTitle(item.title);
         WebView wv = (WebView) findViewById(R.id.itemWebView);
         wv.loadData(item.html, "text/html", null);
-        wv.getSettings().setBuiltInZoomControls(true);
+        //wv.getSettings().setBuiltInZoomControls(true);
     }
 
     @Override

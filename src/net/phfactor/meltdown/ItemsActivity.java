@@ -39,8 +39,8 @@ public class ItemsActivity extends ListActivity
 		lv.setOverscrollHeader(getWallpaper());
 		
 		ListAdapter ladapt = new SimpleAdapter(this, app.getALItems(group_id), R.layout.itemrow,
-				new String[] {"title"},
-				new int[] {R.id.item_title});
+				new String[] {"title", "author"},
+				new int[] {R.id.item_title, R.id.item_subtitle});
         lv.setTextFilterEnabled(true);
 		
 		setListAdapter(ladapt);

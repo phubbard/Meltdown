@@ -87,17 +87,47 @@ public class MeltdownApp extends Application
 		return null;
 	}
 	
-	// Create an array list of maps for the construction of a SimpleAdapter
-	// See http://developer.android.com/reference/android/widget/SimpleAdapter.html
+	// Unread items for a given group
+	public List<Integer> itemsForGroup(int group_id)
+	{
+		ArrayList<Integer> rc = new ArrayList<Integer>();
+		
+		RssGroup group = findGroupById(group_id);
+		if (group == null)
+			return rc;
+		
+		for (int idx = 0; idx < group.feed_ids.size(); idx++)
+		{
+			for (int item_idx = 0; item_idx < items.size(); item_idx++)
+			{
+				if (items.get(item_idx).feed_id == group.feed_ids.get(idx))
+					rc.add(items.get(item_idx).id);
+			}
+		}
+		return rc;
+	}
+	// Unread items count for a given group ID
+	public int unreadItemCount(int group_id)
+	{
+		return itemsForGroup(group_id).size();
+	}
+	
+	/* Create an array list of maps for the construction of a SimpleAdapter 
+	 * containing the list of group titles and their ids
+	 * See http://developer.android.com/reference/android/widget/SimpleAdapter.html
+	 */
 	public ArrayList<HashMap<String, String>> getALG()
 	{
 		ArrayList<HashMap<String, String>> al = new ArrayList<HashMap<String, String>>();
 		for (int idx = 0; idx < groups.size(); idx++)
 		{
-			HashMap<String, String> item = new HashMap<String, String>();
-			item.put("title", groups.get(idx).title);
-			item.put("unread", "0");
-			al.add(item);
+			if (unreadItemCount(groups.get(idx).id) > 0)
+			{
+				HashMap<String, String> item = new HashMap<String, String>();
+				item.put("title", groups.get(idx).title);
+				item.put("unread", Integer.toString(unreadItemCount(groups.get(idx).id)));
+				al.add(item);
+			}
 		}
 		Log.d(TAG, al.size() + " items in array, " + groups.size() + " in original");
 		return al;
@@ -114,7 +144,8 @@ public class MeltdownApp extends Application
 			Log.e(TAG, "Unable to locate group id " + group_id);
 			return null;
 		}
-		for (int cur_feed_idx = 0; cur_feed_idx < my_grp.feed_ids.size(); cur_feed_idx++)
+		
+		for (int cur_feed_idx = 0; cur_feed_idx < feeds.size(); cur_feed_idx++)
 		{
 			// We now have a list of feeds for this group, iterate over the feeds. Inner join?
 			for (int idx = 0; idx < items.size(); idx++)
