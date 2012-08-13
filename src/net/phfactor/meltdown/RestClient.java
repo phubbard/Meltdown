@@ -30,7 +30,7 @@ import android.util.Log;
  * @brief REST/HTTP code for Meltdown
  * @see http://feedafever.com/api
  * 
- * TODO Add gzip support http://stackoverflow.com/questions/1573391/android-http-communication-should-use-accept-encoding-gzip
+ * Done Add gzip support http://stackoverflow.com/questions/1573391/android-http-communication-should-use-accept-encoding-gzip
  * TODO Add progress indicator http://stackoverflow.com/questions/3028306/download-a-file-with-android-and-showing-the-progress-in-a-progressdialog/3028660#3028660
  * Note its getEntity that does the actual fetch, interesting. http://stackoverflow.com/questions/6751241/httpentity-getcontent-progress-indicator
  * 

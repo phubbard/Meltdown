@@ -10,11 +10,12 @@ Please [email me](mailto:phubbard@gmail.com) if you want to hack on it; I could 
 * Redid the http code after re-reading [the Android docs](http://developer.android.com/guide/components/processes-and-threads.html) again.
 * I've decided to use in-memory lists for display in the first pass, and go to SQLite/CursorAdapter once it all works. KISS principle.
 
-### Background information
+### Background information, tools and credits
 
 * [The Fever REST API](http://feedafever.com/api) is elegant, simple and returns either JSON or XML. I can think of no reason to use XML, so JSON it is.
 * The [API widget](https://github.com/phubbard/Meltdown/blob/master/scripts/api-widget.html) is really helpful for poking at the API and responses. I'm also using this [graphical http client](http://httpclient.uservoice.com/) as well, which helped me sort out the header needed to get authentication working. The scripts directory has a copy of the widget for convenience.
 * Since I'm developing for the Galaxy Nexus and Nexus 7, the current target API is 4.0, but it could probably run on older devices.
+* The RSS icon is from [the iDroid S](http://iiro.eu/idroids/) icon set, for which I am thankful.
 
 ### License
 
