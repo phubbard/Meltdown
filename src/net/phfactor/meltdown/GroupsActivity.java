@@ -45,6 +45,7 @@ public class GroupsActivity extends ListActivity
 		{
 			startActivity(new Intent(this, SetupActivity.class));
 			Toast.makeText(this, "Please configure a server", Toast.LENGTH_SHORT).show();
+			return;
 		}
 
 		setContentView(R.layout.list);

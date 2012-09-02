@@ -133,7 +133,12 @@ public class MeltdownApp extends Application
 		return al;
 	}
 
-	// Same thing, for items that match a group ID
+	/*
+	 *  Rewrite, pull all items for a group
+	 *  -Get list of feed IDs
+	 *  -For each feed ID, pull items that match
+	 *  -Skip duplicates
+	 */
 	public ArrayList<HashMap<String, String>> getAllItemsForGroup(int group_id)
 	{
 		ArrayList<HashMap<String, String>> al = new ArrayList<HashMap<String, String>>();
@@ -145,22 +150,24 @@ public class MeltdownApp extends Application
 			return null;
 		}
 		
-		for (int cur_feed_idx = 0; cur_feed_idx < feeds.size(); cur_feed_idx++)
+		for (int cur_feed = 0; cur_feed < my_grp.feed_ids.size(); cur_feed++)
 		{
-			// We now have a list of feeds for this group, iterate over the feeds. Inner join?
-			for (int idx = 0; idx < items.size(); idx++)
+			for (int cur_item = 0; cur_item < items.size(); cur_item++)
 			{
-				// FIXME this N^2 loop also gives duplicates in feed list. :(
-				if (items.get(idx).feed_id == my_grp.feed_ids.get(cur_feed_idx))
-				{
-					// Item matches current feed and group - save it off
-					HashMap<String, String> item = items.get(idx).getHashMap();
+				if (items.get(cur_item).feed_id == my_grp.feed_ids.get(cur_feed))
+				{					
+					HashMap<String, String> item = items.get(cur_item).getHashMap();
+					// Duplicate?
+					if (al.contains(item))
+						continue;
+					
 					al.add(item);
 				}
 			}
 		}
 		Log.d(TAG, al.size() + " items for group " + my_grp.title);
 		return al;
+		
 	}
 	
 	/* The feeds_groups data is a bit different. Separate json array, and the 
