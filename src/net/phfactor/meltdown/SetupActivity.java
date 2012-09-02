@@ -45,7 +45,7 @@ public class SetupActivity extends Activity implements OnClickListener
 		password = tv.getText().toString();
 		
 		rc.setConfig(url, email, password);		
-		if (rc.tryLogin())
+		if (rc.checkAuth())
 		{
 			Toast.makeText(SetupActivity.this, "Logged in OK!", Toast.LENGTH_SHORT).show();
 			SetupActivity.this.finish();			

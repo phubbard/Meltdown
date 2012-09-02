@@ -38,7 +38,7 @@ public class ItemsActivity extends ListActivity
 		// TODO Refresh on drag down
 		lv.setOverscrollHeader(getWallpaper());
 		
-		ListAdapter ladapt = new SimpleAdapter(this, app.getALItems(group_id), R.layout.itemrow,
+		ListAdapter ladapt = new SimpleAdapter(this, app.getAllItemsForGroup(group_id), R.layout.itemrow,
 				new String[] {"title", "author"},
 				new int[] {R.id.item_title, R.id.item_subtitle});
         lv.setTextFilterEnabled(true);

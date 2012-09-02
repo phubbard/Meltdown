@@ -116,7 +116,7 @@ public class MeltdownApp extends Application
 	 * containing the list of group titles and their ids
 	 * See http://developer.android.com/reference/android/widget/SimpleAdapter.html
 	 */
-	public ArrayList<HashMap<String, String>> getALG()
+	public ArrayList<HashMap<String, String>> getAllGroups()
 	{
 		ArrayList<HashMap<String, String>> al = new ArrayList<HashMap<String, String>>();
 		for (int idx = 0; idx < groups.size(); idx++)
@@ -134,7 +134,7 @@ public class MeltdownApp extends Application
 	}
 
 	// Same thing, for items that match a group ID
-	public ArrayList<HashMap<String, String>> getALItems(int group_id)
+	public ArrayList<HashMap<String, String>> getAllItemsForGroup(int group_id)
 	{
 		ArrayList<HashMap<String, String>> al = new ArrayList<HashMap<String, String>>();
 		RssGroup my_grp = findGroupById(group_id);
@@ -205,6 +205,10 @@ public class MeltdownApp extends Application
 	{
 		JSONArray jgroups;		
 		RssGroup this_grp;
+		
+		if (payload == null)
+			return;
+		
 		try
 		{
 			JSONObject jsonPayload = new JSONObject(payload);			
@@ -220,12 +224,16 @@ public class MeltdownApp extends Application
 		{
 			e.printStackTrace();
 		}		
+		
 		Log.i(TAG, groups.size() + " groups found");
 	}
 
 	protected void saveFeedsData(String payload)
 	{
 		JSONArray jfeeds;
+		
+		if (payload == null)
+			return;
 		
 		try
 		{
@@ -242,11 +250,15 @@ public class MeltdownApp extends Application
 		Log.d(TAG, feeds.size() + " feeds found");
 	}
 
+	// Save RSS items parsed from payload, return number saved.
 	public int saveItemsData(String payload)
 	{
 		JSONArray jitems;
 		RssItem this_item;
 		int old_size = items.size();
+		
+		if (payload == null)
+			return 0;
 		
 		try
 		{

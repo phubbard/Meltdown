@@ -77,7 +77,7 @@ public class GroupsActivity extends ListActivity
 			protected void onPostExecute(Void arg) {
 				pd.dismiss();
 				
-				ListAdapter ladapt = new SimpleAdapter(ctx, app.getALG(), R.layout.row,
+				ListAdapter ladapt = new SimpleAdapter(ctx, app.getAllGroups(), R.layout.row,
 						new String[] {"title", "unread"},
 						new int[] {R.id.group_title, R.id.group_subtitle});
 				setListAdapter(ladapt);

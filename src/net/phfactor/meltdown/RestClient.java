@@ -191,11 +191,6 @@ public class RestClient
 		return false;
 	}
 
-	public Boolean tryLogin()
-	{
-		return checkAuth();
-	}
-	
 	public String fetchGroups()
 	{
 		String url = String.format(getAPIUrl() + "&groups");
