@@ -299,7 +299,6 @@ public class MeltdownApp extends Application
 
 	public void markItemRead(int item_id)
 	{
-		String url = String.format("%s&mark=item&as=read&id=%d", xcvr.getAPIUrl(), item_id);
-		xcvr.syncGetUrl(url);
+		xcvr.markItemRead(item_id);
 	}
 }

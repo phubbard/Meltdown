@@ -18,6 +18,8 @@ public class ItemsActivity extends ListActivity
 {
 	static final String TAG = "MeltdownLA";
 	private MeltdownApp app;
+	private String group_name;
+	private int group_id;
 
 	@Override
 	protected void onCreate(Bundle savedInstanceState) 
@@ -26,13 +28,26 @@ public class ItemsActivity extends ListActivity
 		setContentView(R.layout.items);
 		super.onCreate(savedInstanceState);
 
-		String grp_name = getIntent().getExtras().getString("title");
-		int group_id = getIntent().getExtras().getInt("group_id");
-
-		getActionBar().setTitle(grp_name);
-		
 		app = (MeltdownApp) this.getApplicationContext();
 				
+		group_name = getIntent().getExtras().getString("title");
+		group_id = getIntent().getExtras().getInt("group_id");
+
+		//doSetup();
+	}
+	
+	@Override
+	protected void onResume() 
+	{
+		// TODO Auto-generated method stub
+		super.onResume();
+		doSetup();
+	}
+
+	private void doSetup()
+	{
+		getActionBar().setTitle(group_name);
+		
 		final ListView lv = getListView();		
 		
 		// TODO Refresh on drag down
@@ -57,9 +72,14 @@ public class ItemsActivity extends ListActivity
 				Bundle bundle = new Bundle();
 				bundle.putInt("post_id", item.id);
 				intent.putExtras(bundle);
+				
+				// TODO Read reply as next or cancel
+				// 
 				startActivity(intent);				
         	}
         });
+		
 	}
+	
 
 }

@@ -12,16 +12,15 @@ import java.security.NoSuchAlgorithmException;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.ClientProtocolException;
 import org.apache.http.client.HttpClient;
-import org.apache.http.client.ResponseHandler;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.StringEntity;
-import org.apache.http.impl.client.BasicResponseHandler;
 import org.json.JSONException;
 import org.json.JSONObject;
 
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.net.http.AndroidHttpClient;
+import android.os.AsyncTask;
 import android.util.Log;
 
 /*!
@@ -246,6 +245,25 @@ public class RestClient
         return sb.toString();
     }
 	
+	// Asynchronously mark a post as read.
+	public void markItemRead(int post_id)
+	{
+		final String url = String.format("%s&mark=item&as=read&id=%d", getAPIUrl(), post_id);
+		
+		class mTask extends AsyncTask<Void, Void, Void> {
+
+			@Override
+			protected Void doInBackground(Void... params) 			
+			{
+				syncGetUrl(url);
+				return null;
+			}
+		}
+		
+		new mTask().execute();		
+	}
+	
+	
 	// Blocking fetch w/authentication added
 	public String syncGetUrl(String url)
 	{
@@ -264,7 +282,10 @@ public class RestClient
 			// Add the auth token to the request
 			post = addAuth(post);
 	
+			Log.d(TAG, "executing post...");
 			HttpResponse response = client.execute(post);
+			
+			Log.d(TAG, "parsing response");
 			InputStream istr = AndroidHttpClient.getUngzippedContent(response.getEntity());
 			content = convertStreamToString(istr);
 			
@@ -290,7 +311,7 @@ public class RestClient
 		}
 		catch (Exception e) 
 		{
-			Error = "Exception. "+e.getMessage();
+			Error = "General exception: "+e.getMessage() + " " + e.toString();
 		}
 		
 		if (Error != null)
