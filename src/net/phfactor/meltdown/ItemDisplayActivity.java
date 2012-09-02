@@ -1,6 +1,8 @@
 package net.phfactor.meltdown;
 
 import android.app.Activity;
+import android.content.Intent;
+import android.net.Uri;
 import android.os.Bundle;
 import android.view.Menu;
 import android.view.MenuInflater;
@@ -11,6 +13,7 @@ public class ItemDisplayActivity extends Activity
 {
     private MeltdownApp app;
     private int cur_post;
+    private RssItem rss_item;
     
     @Override
     public void onCreate(Bundle savedInstanceState) 
@@ -30,9 +33,10 @@ public class ItemDisplayActivity extends Activity
 
     protected void displayItem()
     {
-        RssItem item = app.findPostById(cur_post);
+        rss_item = app.findPostById(cur_post);
+        getActionBar().setTitle(rss_item.title);
         WebView wv = (WebView) findViewById(R.id.itemWebView);
-        wv.loadData(item.html, "text/html", null);
+        wv.loadData(rss_item.html, "text/html", null);
     }
     
 	@Override
@@ -51,7 +55,14 @@ public class ItemDisplayActivity extends Activity
 		case R.id.itemNextArticle:
 			// Mark-as-read is async/background task
 			app.markItemRead(cur_post);
+			setResult(RESULT_OK);
 			finish();
+			return true;
+			
+		case R.id.menu_load_page:
+			Intent intent = new Intent(Intent.ACTION_VIEW);
+			intent.setData(Uri.parse(rss_item.url));
+			startActivity(intent);
 			return true;
 		}
 		return false;

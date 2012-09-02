@@ -12,7 +12,9 @@ import android.content.Context;
 import android.content.Intent;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.Menu;
+import android.view.MenuItem;
 import android.view.View;
 import android.widget.AdapterView;
 import android.widget.AdapterView.OnItemClickListener;
@@ -107,6 +109,26 @@ public class GroupsActivity extends ListActivity
 		new GGTask().execute();
 	}
 	
+	
+
+	@Override
+	public boolean onOptionsItemSelected(MenuItem item) 
+	{
+		switch (item.getItemId())
+		{
+		case R.id.menu_refresh:
+			Log.d(TAG, "Refreshing...");
+			// TODO
+			return true;
+		case R.id.menu_settings:
+			Log.d(TAG, "Settings selecected");
+			startActivity(new Intent(this, SetupActivity.class));
+			return true;
+		}
+		return false;
+	}
+
+
 
 	@Override
 	public boolean onCreateOptionsMenu(Menu menu) 

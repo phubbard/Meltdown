@@ -76,6 +76,22 @@ public class MeltdownApp extends Application
 		return null;
 	}
 
+	private synchronized int removePost(int post_id)
+	{
+		Log.d(TAG, items.size() + " before delete");
+		for (int idx = 0; idx < items.size(); idx++)
+		{
+			if (items.get(idx).id == post_id)
+			{
+				Log.d(TAG, "Removing post id " + idx);
+				items.remove(idx);
+				Log.d(TAG, items.size() + " after delete");
+				return 0;
+			}
+		}
+		return 1;		
+	}
+	
 	// TODO Replace by sqlite query
 	protected RssItem findPostById(int post_id)
 	{
@@ -299,6 +315,7 @@ public class MeltdownApp extends Application
 
 	public void markItemRead(int item_id)
 	{
+		removePost(item_id);
 		xcvr.markItemRead(item_id);
 	}
 }
