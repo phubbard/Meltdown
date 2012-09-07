@@ -66,7 +66,7 @@ public class GroupsActivity extends ListActivity
 				
 				// TODO Display groups list while feeds run
 				// FIXME limit fetch limit w/prefs-set bound, e.g. 100. 
-				int item_count = 200;
+				int item_count = 100;
 				while (item_count > 0)
 				{
 					item_count -= app.saveItemsData(rc.fetchSomeFeeds(app.getMaxFetchedId()));

@@ -155,7 +155,7 @@ public class MeltdownApp extends Application
 	 *  -For each feed ID, pull items that match
 	 *  -Skip duplicates
 	 */
-	public ArrayList<HashMap<String, String>> getAllItemsForGroup(int group_id)
+	public ArrayList<HashMap<String, String>> OldgetAllItemsForGroup(int group_id)
 	{
 		ArrayList<HashMap<String, String>> al = new ArrayList<HashMap<String, String>>();
 		RssGroup my_grp = findGroupById(group_id);
@@ -182,8 +182,35 @@ public class MeltdownApp extends Application
 			}
 		}
 		Log.d(TAG, al.size() + " items for group " + my_grp.title);
-		return al;
+		return al;		
+	}
+	
+	public List<RssItem> getAllItemsForGroup(int group_id)
+	{
+		ArrayList<RssItem> rc = new ArrayList<RssItem>();
+		RssGroup grp = findGroupById(group_id);
+		if (grp == null)
+		{
+			Log.e(TAG, "Unable to locate group id " + group_id);
+			return null;
+		}
 		
+		for (int cur_feed = 0; cur_feed < grp.feed_ids.size(); cur_feed++)
+		{
+			for (int cur_item = 0; cur_item < items.size(); cur_item++)
+			{
+				RssItem current_item = items.get(cur_item);
+				if (current_item.feed_id == grp.feed_ids.get(cur_feed))				
+				{
+					if (rc.contains(current_item))
+						continue;
+					
+					rc.add(current_item);
+				}
+			}
+		}
+		Log.d(TAG, rc.size() + " items for group ID " + group_id);
+		return rc;
 	}
 	
 	/* The feeds_groups data is a bit different. Separate json array, and the 
