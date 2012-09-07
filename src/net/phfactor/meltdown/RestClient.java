@@ -246,6 +246,10 @@ public class RestClient
     }
 	
 	// Asynchronously mark a post as read.
+	/*
+	 *  FIXME looks like the post args have to be in the body. Bizarre.
+	 *  POST:	api_key=blah&mark=item&as=read&id=57163
+	 */
 	public void markItemRead(int post_id)
 	{
 		final String url = String.format("%s&mark=item&as=read&id=%d", getAPIUrl(), post_id);

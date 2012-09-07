@@ -128,63 +128,6 @@ public class MeltdownApp extends Application
 		return itemsForGroup(group_id).size();
 	}
 	
-	/* Create an array list of maps for the construction of a SimpleAdapter 
-	 * containing the list of group titles and their ids
-	 * See http://developer.android.com/reference/android/widget/SimpleAdapter.html
-	 */
-	public ArrayList<HashMap<String, String>> getAllGroups()
-	{
-		ArrayList<HashMap<String, String>> al = new ArrayList<HashMap<String, String>>();
-		for (int idx = 0; idx < groups.size(); idx++)
-		{
-			if (unreadItemCount(groups.get(idx).id) > 0)
-			{
-				HashMap<String, String> item = new HashMap<String, String>();
-				item.put("title", groups.get(idx).title);
-				item.put("unread", Integer.toString(unreadItemCount(groups.get(idx).id)));
-				al.add(item);
-			}
-		}
-		Log.d(TAG, al.size() + " items in array, " + groups.size() + " in original");
-		return al;
-	}
-
-	/*
-	 *  Rewrite, pull all items for a group
-	 *  -Get list of feed IDs
-	 *  -For each feed ID, pull items that match
-	 *  -Skip duplicates
-	 */
-	public ArrayList<HashMap<String, String>> OldgetAllItemsForGroup(int group_id)
-	{
-		ArrayList<HashMap<String, String>> al = new ArrayList<HashMap<String, String>>();
-		RssGroup my_grp = findGroupById(group_id);
-		
-		if (my_grp == null)
-		{
-			Log.e(TAG, "Unable to locate group id " + group_id);
-			return null;
-		}
-		
-		for (int cur_feed = 0; cur_feed < my_grp.feed_ids.size(); cur_feed++)
-		{
-			for (int cur_item = 0; cur_item < items.size(); cur_item++)
-			{
-				if (items.get(cur_item).feed_id == my_grp.feed_ids.get(cur_feed))
-				{					
-					HashMap<String, String> item = items.get(cur_item).getHashMap();
-					// Duplicate?
-					if (al.contains(item))
-						continue;
-					
-					al.add(item);
-				}
-			}
-		}
-		Log.d(TAG, al.size() + " items for group " + my_grp.title);
-		return al;		
-	}
-	
 	public List<RssItem> getAllItemsForGroup(int group_id)
 	{
 		ArrayList<RssItem> rc = new ArrayList<RssItem>();
@@ -300,6 +243,11 @@ public class MeltdownApp extends Application
 		Log.d(TAG, feeds.size() + " feeds found");
 	}
 
+	public List<RssGroup> getGroups()
+	{
+		return this.groups;
+	}
+	
 	// Save RSS items parsed from payload, return number saved.
 	public int saveItemsData(String payload)
 	{
@@ -329,7 +277,9 @@ public class MeltdownApp extends Application
 				this_item = new RssItem(jitems.getJSONObject(idx));
 				this.max_read_id = Math.max(this.max_read_id, this_item.id);
 				
-				items.add(this_item);
+				if (!items.contains(this_item))
+					
+					items.add(this_item);
 			}
 			Log.i(TAG, items.size() - old_size +" items added, " + items.size() + " total");
 			return jitems.length();
