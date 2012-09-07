@@ -1,6 +1,7 @@
 ## Introduction
-Meltdown (provisional name) is an open-source Android client for [Fever RSS](http://feedafever.com/). This is me trying to solve a personal need: I want a good RSS reader on my new hardware from Google I/O!
+Meltdown (provisional name) is an open-source Android client for [Fever RSS](http://feedafever.com/). This is me trying to solve a personal need: I want a good RSS reader on my new hardware from Google I/O. And that lovely 7" Nexus screen really demands a good feed reader. Boom, off I go.
 
+To use it, you **must have an installed copy of [Fever server](http://feedafever.com/). This is just a client.
 
 Please [email me](mailto:phubbard@gmail.com) if you want to hack on it; I could really use some help as my time is limited.
 
@@ -25,11 +26,10 @@ Please [email me](mailto:phubbard@gmail.com) if you want to hack on it; I could 
 * The [API widget](https://github.com/phubbard/Meltdown/blob/master/scripts/api-widget.html) is really helpful for poking at the API and responses. I'm also using this [graphical http client](http://httpclient.uservoice.com/) as well, which helped me sort out the header needed to get authentication working. The scripts directory has a copy of the widget for convenience.
 * Since I'm developing for the Galaxy Nexus and Nexus 7, the current target API is 4.0, but it could probably run on older devices.
 * The RSS icon is from [the iDroid S](http://iiro.eu/idroids/) icon set, for which I am thankful.
+* The code from RssReader.java is copyright 2007 by the Android Open Source Project under the [Apache 2.0 license](http://www.apache.org/licenses/LICENSE-2.0) for which I am grateful. The ListItem stuff is poorly documented, so this was a big help. 
 
 ### License and credits
 
 This code is open source under the [CC BY 3.0](http://creativecommons.org/licenses/by/3.0/us/) terms. I'd appreciate a note if you make use of it, please.
 
-The code from RssReader.java is copyright 2007 by the Android Open Source Project under
-the [Apache 2.0 license](http://www.apache.org/licenses/LICENSE-2.0) for which I am grateful. The ListItem stuff is poorly documented, so this was a big help. 
 
