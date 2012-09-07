@@ -1,7 +1,7 @@
 ## Introduction
 Meltdown (provisional name) is an open-source Android client for [Fever RSS](http://feedafever.com/). This is me trying to solve a personal need: I want a good RSS reader on my new hardware from Google I/O. And that lovely 7" Nexus screen really demands a good feed reader. Boom, off I go.
 
-To use it, you **must have an installed copy of [Fever server](http://feedafever.com/). This is just a client.
+To use it, you **must have an installed copy of [Fever server](http://feedafever.com/).** This is just a client.
 
 Please [email me](mailto:phubbard@gmail.com) if you want to hack on it; I could really use some help as my time is limited.
 
