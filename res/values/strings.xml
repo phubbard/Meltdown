@@ -10,4 +10,6 @@
     <string name="hello_world">Hello world!</string>
     <string name="title_activity_item_display">ItemDisplayActivity</string>
     <string name="menu_load_page">Load URL</string>
+    <string name="itmBtnOpen">Open URL</string>
+    <string name="itmBtnNext">Next</string>
 </resources>

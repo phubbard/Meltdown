@@ -161,6 +161,7 @@ public class RestClient
 		return md5(pre);
 	}
 	
+	
 	// This took forever to get working. Change with great caution if at all.
 	protected HttpPost addAuth(HttpPost post_request) throws UnsupportedEncodingException
 	{
@@ -252,14 +253,14 @@ public class RestClient
 	 */
 	public void markItemRead(int post_id)
 	{
-		final String url = String.format("%s&mark=item&as=read&id=%d", getAPIUrl(), post_id);
+		final String vars = String.format("mark=item&as=read&id=%d", post_id);
 		
 		class mTask extends AsyncTask<Void, Void, Void> {
 
 			@Override
 			protected Void doInBackground(Void... params) 			
 			{
-				syncGetUrl(url);
+				syncPostUrl(vars);
 				return null;
 			}
 		}
@@ -267,6 +268,67 @@ public class RestClient
 		new mTask().execute();		
 	}
 	
+	/*
+	 *  Specialization of syncGetUrl that puts variables into payload, as seems to be required.
+	 *  Variables string must be url-encoded e.g. 'mark=as&id=1234' *without* leading ampersand.
+	 */
+	public String syncPostUrl(String variables)
+	{
+		HttpClient client;	
+		String content = "";
+		String Error = null;
+		
+		try 
+		{
+			client = AndroidHttpClient.newInstance("Meltdown");
+			HttpPost post = new HttpPost(getAPIUrl());
+			
+			// Tell Apache we'll take gzip; should compress really well.
+			AndroidHttpClient.modifyRequestToAcceptGzipResponse(post);
+			
+			// Add the auth token to the request
+			post.setHeader("Content-Type", "application/x-www-form-urlencoded");
+			StringEntity payload;
+			payload = new StringEntity(String.format("api_key=%s&%s", auth_token, variables), "UTF-8");
+			post.setEntity(payload);				
+	
+			Log.d(TAG, "executing post...");
+			HttpResponse response = client.execute(post);
+			
+			Log.d(TAG, "parsing response");
+			InputStream istr = AndroidHttpClient.getUngzippedContent(response.getEntity());
+			content = convertStreamToString(istr);
+			
+//			ResponseHandler<String> responseHandler = new BasicResponseHandler();
+//			content = client.execute(post, responseHandler);
+			Log.d("DATA for  " + variables, content);
+			
+			AndroidHttpClient fcc = (AndroidHttpClient) client;
+			fcc.close();
+			
+			return content;
+		} catch (ClientProtocolException e) 
+		{
+			Error = "Prot Err: " + e.getMessage();
+		}
+		catch (UnknownHostException e) 
+		{
+			Error = "UnknownHostErr: " + e.getMessage();
+		}
+		catch (IOException e) 
+		{
+			Error = "IOxErr: " + e.getMessage();
+		}
+		catch (Exception e) 
+		{
+			Error = "General exception: "+e.getMessage() + " " + e.toString();
+		}
+		
+		if (Error != null)
+			Log.e(TAG, Error);
+		
+		return null;		
+	}
 	
 	// Blocking fetch w/authentication added
 	public String syncGetUrl(String url)
