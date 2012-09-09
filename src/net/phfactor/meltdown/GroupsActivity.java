@@ -35,7 +35,7 @@ public class GroupsActivity extends ListActivity
 	private RestClient rc;
 	private Context ctx;
 	// Number of RSS items to pull at startup. Quantum on server seems to be 50 FYI.
-	private int NUM_ITEMS = 300; 
+	private int NUM_ITEMS = 200; 
 	private int MAX_PROGRESS = NUM_ITEMS + 2; // For progress dialog. Crude? Why yes it is.
 	
 	@Override
@@ -94,7 +94,10 @@ public class GroupsActivity extends ListActivity
 				int item_count = NUM_ITEMS;
 				while (item_count > 0)
 				{
-					item_count -= app.saveItemsData(rc.fetchSomeItems(app.getMax_read_id()));
+					int cur_items = app.saveItemsData(rc.fetchSomeItems(app.getMax_read_id()));
+					if (cur_items == 0)
+						break;
+					item_count -= cur_items;
 					pd.setProgress(2 + (NUM_ITEMS - item_count));
 				}
 //				while (app.saveItemsData(rc.fetchSomeFeeds(app.getMaxFetchedId())) > 0) 

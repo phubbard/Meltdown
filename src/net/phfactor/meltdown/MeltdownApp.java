@@ -1,7 +1,6 @@
 package net.phfactor.meltdown;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
 
 import org.json.JSONArray;
@@ -9,13 +8,23 @@ import org.json.JSONException;
 import org.json.JSONObject;
 
 import android.app.Application;
+import android.content.ContentValues;
 import android.content.Context;
+import android.database.Cursor;
+import android.database.SQLException;
+import android.database.sqlite.SQLiteDatabase;
+import android.database.sqlite.SQLiteOpenHelper;
 import android.util.Log;
 
 public class MeltdownApp extends Application 
 {	
 	static final String TAG = "MeltdownApp";
 
+	static final String DATABASE = "items.db";
+	static final String TABLE = "items";
+	static final String C_ID = "_id";
+	static final String C_HTML = "html";
+	
 	private List<RssGroup> groups;
 	private List<RssFeed> feeds;
 	private List<RssItem> items;
@@ -24,6 +33,8 @@ public class MeltdownApp extends Application
 	private int max_id_on_server;
 	private long last_refresh_time;
 	private RestClient xcvr;
+	
+	private DbHelper dbHelper;	
 
 	@Override
 	public void onCreate()
@@ -37,6 +48,8 @@ public class MeltdownApp extends Application
 		max_id_on_server = 0;
 		last_refresh_time = 0L;
 		xcvr = new RestClient(getApplicationContext());		
+
+		this.dbHelper = new DbHelper(getApplicationContext(), 1);		
 	}
 	
 	protected int getMax_read_id() {
@@ -148,9 +161,8 @@ public class MeltdownApp extends Application
 				RssItem current_item = items.get(cur_item);
 				if (current_item.feed_id == grp.feed_ids.get(cur_feed))				
 				{
-					if (rc.contains(current_item))
-						continue;
-					
+					// Grab the HTML from disk
+					current_item.html = getItem(current_item.id);
 					rc.add(current_item);
 				}
 			}
@@ -280,10 +292,12 @@ public class MeltdownApp extends Application
 			{
 				this_item = new RssItem(jitems.getJSONObject(idx));
 				this.max_read_id = Math.max(this.max_read_id, this_item.id);
+
+				// Save off the bulky HTML to SQLite
+				saveItem(this_item.id, this_item.html);
+				this_item.html = "";
 				
-				if (!items.contains(this_item))
-					
-					items.add(this_item);
+				items.add(this_item);
 			}
 			Log.i(TAG, items.size() - old_size +" items added, " + items.size() + " total");
 			return jitems.length();
@@ -305,5 +319,89 @@ public class MeltdownApp extends Application
 		this.feeds = new ArrayList<RssFeed>();
 		this.groups = new ArrayList<RssGroup>();
 		this.items = new ArrayList<RssItem>();
+	}
+	
+	private void saveItem(int id, String html)
+	{
+		SQLiteDatabase db = this.dbHelper.getWritableDatabase();
+
+		try
+		{
+			ContentValues data = new ContentValues();
+			data.put(C_ID, id);
+			data.put(C_HTML, html);
+			db.insertWithOnConflict(TABLE, null, data, SQLiteDatabase.CONFLICT_REPLACE);
+			Log.d(TAG, "Record " + id + " saved OK");
+		}
+		finally
+		{
+			db.close();
+		}
+	}
+	
+	private String getItem(int id)
+	{
+		SQLiteDatabase db = this.dbHelper.getReadableDatabase();
+		Cursor cursor;
+		String with_stmt = String.format("%s='%d'", C_ID, id);
+		String rc = "";
+		try
+		{
+			cursor = db.query(TABLE, null, with_stmt, null, null, null, null);
+			if (cursor.moveToNext())
+			{
+				rc = cursor.getString(cursor.getColumnIndex(C_HTML));
+			}
+			else
+				Log.e(TAG, "Missing DB record for ID " + id);
+			
+			
+			cursor.close();
+			db.close();
+			return rc;			
+		}
+		catch (SQLException e) 
+		{
+			Log.e(TAG, "Got an sqlite error on app database!", e);
+			db.close();
+		}
+		
+		return rc;
+	}
+	
+	private class DbHelper extends SQLiteOpenHelper
+	{		
+		public DbHelper(Context context, int version_number)
+		{
+			super(context, DATABASE, null, version_number);			
+		}
+		
+		@Override
+		public void onCreate(SQLiteDatabase db)
+		{
+			try 
+			{
+				db.execSQL("create table " + TABLE + " ( "+ C_ID +" int primary key, "
+						+ C_HTML + " text)");
+			} catch (SQLException e) 
+			{
+				Log.e(TAG, "Unable to create database, fatal error", e);
+				e.printStackTrace();
+			}
+		}
+		
+		@Override
+		public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion)
+		{
+			try {
+				db.execSQL("drop table " + TABLE);
+				Log.w(TAG, "Item database erased");
+				this.onCreate(db);
+			} catch (SQLException e)
+			{
+				Log.e(TAG, "Unable to upgrade database, fatal error", e);
+				e.printStackTrace();
+			}
+		}				
 	}
 }
