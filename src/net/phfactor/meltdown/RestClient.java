@@ -162,16 +162,6 @@ public class RestClient
 	}
 	
 	
-	// This took forever to get working. Change with great caution if at all.
-	protected HttpPost addAuth(HttpPost post_request) throws UnsupportedEncodingException
-	{
-		post_request.setHeader("Content-Type", "application/x-www-form-urlencoded");
-		StringEntity payload;
-		payload = new StringEntity(String.format("api_key=%s", auth_token), "UTF-8");
-		post_request.setEntity(payload);	
-		return post_request;
-	}
-	
 	public Boolean checkAuth()
 	{
 		String payload = syncGetUrl(getAPIUrl());
@@ -207,14 +197,15 @@ public class RestClient
 		return(syncGetUrl(url));
 	}
 	
-	public String fetchSomeFeeds(int max_read_id)
+	public String fetchSomeItems(int max_read_id)
 	{
 		// TODO
 		/* As per API, request a chunk of feed items. Chunksize depends on the server and
 		 * number of unread in the queue. The output of this is the content, which is then fed
 		 * into the parser. How do I cleanly detect end of items? And max item number?
 		 */
-		String url = String.format("%s&items&max_id=%d", getAPIUrl(), max_read_id);
+		String url = String.format("%s&items&since_id=%d", getAPIUrl(), max_read_id);
+		Log.d(TAG, url);
 		return syncGetUrl(url);
 	}
 	
@@ -283,13 +274,17 @@ public class RestClient
 			client = AndroidHttpClient.newInstance("Meltdown");
 			HttpPost post = new HttpPost(getAPIUrl());
 			
+			Log.d(TAG, "URL: " + getAPIUrl() + " vars: " + variables);
+			 
 			// Tell Apache we'll take gzip; should compress really well.
 			AndroidHttpClient.modifyRequestToAcceptGzipResponse(post);
 			
 			// Add the auth token to the request
 			post.setHeader("Content-Type", "application/x-www-form-urlencoded");
 			StringEntity payload;
-			payload = new StringEntity(String.format("api_key=%s&%s", auth_token, variables), "UTF-8");
+			String full_post_vars = String.format("api_key=%s&%s", auth_token, variables);
+			payload = new StringEntity(full_post_vars, "UTF-8");
+			Log.d(TAG, "Payload: " + full_post_vars);
 			post.setEntity(payload);				
 	
 			Log.d(TAG, "executing post...");
@@ -329,6 +324,16 @@ public class RestClient
 		
 		return null;		
 	}
+	
+	// This took forever to get working. Change with great caution if at all.
+	protected HttpPost addAuth(HttpPost post_request) throws UnsupportedEncodingException
+	{
+		post_request.setHeader("Content-Type", "application/x-www-form-urlencoded");
+		StringEntity payload;
+		payload = new StringEntity(String.format("api_key=%s", auth_token), "UTF-8");
+		post_request.setEntity(payload);	
+		return post_request;
+	}	
 	
 	// Blocking fetch w/authentication added
 	public String syncGetUrl(String url)

@@ -30,9 +30,8 @@ public class MeltdownApp extends Application
 	{
 		super.onCreate();
 
-		groups = new ArrayList<RssGroup>();
-		feeds = new ArrayList<RssFeed>();
-		items = new ArrayList<RssItem>();
+		clearAllData();
+
 		max_read_id = 0;
 		max_fetched_id = 0;
 		max_id_on_server = 0;
@@ -40,6 +39,10 @@ public class MeltdownApp extends Application
 		xcvr = new RestClient(getApplicationContext());		
 	}
 	
+	protected int getMax_read_id() {
+		return max_read_id;
+	}
+
 	public MeltdownApp(Context ctx)
 	{
 	}
@@ -186,6 +189,12 @@ public class MeltdownApp extends Application
 			}
 		}
 	}
+
+	public List<RssGroup> getGroups()
+	{
+		return this.groups;
+	}
+	
 	
 	/* ***********************************
 	 * REST callback methods
@@ -243,11 +252,6 @@ public class MeltdownApp extends Application
 		Log.d(TAG, feeds.size() + " feeds found");
 	}
 
-	public List<RssGroup> getGroups()
-	{
-		return this.groups;
-	}
-	
 	// Save RSS items parsed from payload, return number saved.
 	public int saveItemsData(String payload)
 	{
@@ -294,5 +298,12 @@ public class MeltdownApp extends Application
 	{
 		removePost(item_id);
 		xcvr.markItemRead(item_id);
+	}
+
+	public void clearAllData() 
+	{
+		this.feeds = new ArrayList<RssFeed>();
+		this.groups = new ArrayList<RssGroup>();
+		this.items = new ArrayList<RssItem>();
 	}
 }

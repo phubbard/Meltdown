@@ -1,7 +1,7 @@
 package net.phfactor.meltdown;
 
-import java.util.HashMap;
 import java.util.List;
+
 import android.app.ListActivity;
 import android.app.ProgressDialog;
 import android.content.Context;
@@ -17,9 +17,7 @@ import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.AdapterView.OnItemClickListener;
 import android.widget.ArrayAdapter;
-import android.widget.ListAdapter;
 import android.widget.ListView;
-import android.widget.SimpleAdapter;
 import android.widget.Toast;
 import android.widget.TwoLineListItem;
 
@@ -37,7 +35,7 @@ public class GroupsActivity extends ListActivity
 	private RestClient rc;
 	private Context ctx;
 	// Number of RSS items to pull at startup. Quantum on server seems to be 50 FYI.
-	private int NUM_ITEMS = 50; 
+	private int NUM_ITEMS = 300; 
 	private int MAX_PROGRESS = NUM_ITEMS + 2; // For progress dialog. Crude? Why yes it is.
 	
 	@Override
@@ -60,7 +58,14 @@ public class GroupsActivity extends ListActivity
 
 		setContentView(R.layout.list);
 		
+		doRefresh();
+	}
+	
+	public void doRefresh()
+	{
 		pd = new ProgressDialog(this);
+		
+		app.clearAllData();
 		
 		pd.setProgressStyle(ProgressDialog.STYLE_HORIZONTAL);
 		pd.setIndeterminate(false);
@@ -70,6 +75,14 @@ public class GroupsActivity extends ListActivity
 
 		class GGTask extends AsyncTask<Void, Void, Void> 
 		{
+			long tzero, tend;
+			
+			@Override
+			protected void onPreExecute() 
+			{
+				super.onPreExecute();
+				tzero = System.currentTimeMillis();
+			}
 			protected Void doInBackground(Void... args) 
 			{
 				app.saveGroupsData(rc.fetchGroups());
@@ -81,7 +94,7 @@ public class GroupsActivity extends ListActivity
 				int item_count = NUM_ITEMS;
 				while (item_count > 0)
 				{
-					item_count -= app.saveItemsData(rc.fetchSomeFeeds(app.getMaxFetchedId()));
+					item_count -= app.saveItemsData(rc.fetchSomeItems(app.getMax_read_id()));
 					pd.setProgress(2 + (NUM_ITEMS - item_count));
 				}
 //				while (app.saveItemsData(rc.fetchSomeFeeds(app.getMaxFetchedId())) > 0) 
@@ -92,6 +105,10 @@ public class GroupsActivity extends ListActivity
 			@Override
 			protected void onPostExecute(Void arg) {
 				pd.dismiss();
+				
+				tend = System.currentTimeMillis();
+				double elapsed = (tend - tzero) / 1000.0;
+				Log.d(TAG, String.format("%3.1f seconds to retrieve %d items", elapsed, NUM_ITEMS));
 				
 				mAdapter = new GroupListAdapter(GroupsActivity.this, app.getGroups());
 				setListAdapter(mAdapter);
@@ -179,8 +196,6 @@ public class GroupsActivity extends ListActivity
         }
     }
 	
-	
-
 	@Override
 	public boolean onOptionsItemSelected(MenuItem item) 
 	{
@@ -188,7 +203,7 @@ public class GroupsActivity extends ListActivity
 		{
 		case R.id.menu_refresh:
 			Log.d(TAG, "Refreshing...");
-			// TODO
+			doRefresh();
 			return true;
 		case R.id.menu_settings:
 			Log.d(TAG, "Settings selecected");
