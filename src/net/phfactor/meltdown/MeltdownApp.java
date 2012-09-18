@@ -5,6 +5,9 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -12,13 +15,18 @@ import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import android.app.AlarmManager;
 import android.app.Application;
+import android.app.PendingIntent;
 import android.content.ContentValues;
 import android.content.Context;
+import android.content.Intent;
+import android.content.SharedPreferences;
 import android.database.Cursor;
 import android.database.SQLException;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
+import android.os.SystemClock;
 import android.util.Log;
 
 public class MeltdownApp extends Application 
@@ -29,6 +37,11 @@ public class MeltdownApp extends Application
 	static final String TABLE = "items";
 	static final String C_ID = "_id";
 	static final String C_HTML = "html";
+
+	private static final String P_URL = "serverUrl";
+	private static final String P_EMAIL = "email";
+	private static final String P_PASS = "pass";
+	private static final String P_LAST_FETCH = "last_ts";
 	
 	private List<RssGroup> groups;
 	private List<RssFeed> feeds;
@@ -37,17 +50,18 @@ public class MeltdownApp extends Application
 	private int max_fetched_id;
 	private int max_id_on_server;
 	private long last_refresh_time;
-	private RestClient xcvr;
-	public Boolean updateInProgress;
 	
 	private DbHelper dbHelper;	
+	private RestClient xcvr;
 
-	public MeltdownApp(Context ctx)
-	{
-	}
+	public Boolean updateInProgress;
+
+	private SharedPreferences prefs;
+	private SharedPreferences.Editor editor;
 
 	public MeltdownApp()
 	{
+		super();
 	}
 		
 	@Override
@@ -55,7 +69,7 @@ public class MeltdownApp extends Application
 	{
 		super.onCreate();
 
-		Log.i(TAG, "OnCreate called!");
+		Log.i(TAG, "App created, initializing");
 		clearAllData();
 
 		max_read_id = 0;
@@ -64,8 +78,40 @@ public class MeltdownApp extends Application
 		last_refresh_time = 0L;
 		updateInProgress = false;
 		
-		xcvr = new RestClient(getApplicationContext());		
-		this.dbHelper = new DbHelper(getApplicationContext(), 2);		
+		prefs = getSharedPreferences(TAG, Context.MODE_PRIVATE);
+		xcvr = new RestClient(this);		
+		this.dbHelper = new DbHelper(getApplicationContext(), 2);
+		startUpdates();
+		
+		Log.i(TAG, "App init completed.");
+	}
+	
+	private void startUpdates()
+	{
+		startService(new Intent(this, Downloader.class));
+		
+		Log.i(TAG, "Setting up periodic updates...");
+		
+    	Context ctx = getApplicationContext();
+		Intent svc_intent = new Intent(ctx, Downloader.class);
+		PendingIntent pending_intent = PendingIntent.getService(ctx, 0, svc_intent, PendingIntent.FLAG_UPDATE_CURRENT);
+		AlarmManager am = (AlarmManager) ctx.getSystemService(Context.ALARM_SERVICE);
+		am.setInexactRepeating(AlarmManager.ELAPSED_REALTIME, SystemClock.elapsedRealtime(), 
+				AlarmManager.INTERVAL_HALF_HOUR, pending_intent);
+
+		Log.d(TAG, "Score update service scheduled for execution");		
+	}
+	
+	// Helper method - used by landing page to display progress bar
+	public int getProgress()
+	{
+		if (!updateInProgress)
+			return 100;
+		
+		// FIXME Make sure these variables are being written by RestClient and/or methods here!!
+		int numerator = (max_read_id - max_fetched_id);
+		int denominator = (max_id_on_server - max_fetched_id);
+		return (int) (numerator / denominator);
 	}
 	
 	@Override
@@ -346,6 +392,7 @@ public class MeltdownApp extends Application
 
 	public synchronized void clearAllData() 
 	{
+		// FIXME sync items files and delete outdated and read items		
 		this.feeds = new ArrayList<RssFeed>();
 		this.groups = new ArrayList<RssGroup>();
 		this.items = new ArrayList<RssItem>();
@@ -447,6 +494,7 @@ public class MeltdownApp extends Application
 		return rc;
 	}
 	
+	// Now idle - DB for storing items. Too slow on writes; might be fixable
 	private class DbHelper extends SQLiteOpenHelper
 	{		
 		public DbHelper(Context context, int version_number)
@@ -482,4 +530,103 @@ public class MeltdownApp extends Application
 			}
 		}				
 	}
+	
+
+	// *****************************************************************************
+	//! @see http://stackoverflow.com/questions/8700744/md5-with-android-and-php
+	// Used for creating the dev token
+	private static final String md5(final String s) 
+	{
+		try 
+		{
+			// Create MD5 Hash
+			MessageDigest digest = java.security.MessageDigest.getInstance("MD5");
+			try 
+			{
+				digest.update(s.getBytes("UTF-8"));
+			} catch (UnsupportedEncodingException e) 
+			{
+				Log.e(TAG, "Error encoding into UTF-8!", e);
+				e.printStackTrace();
+			}
+			byte messageDigest[] = digest.digest();
+
+			// Create Hex String
+			StringBuffer hexString = new StringBuffer();
+			for (int i = 0; i < messageDigest.length; i++) {
+				String h = Integer.toHexString(0xFF & messageDigest[i]);
+				while (h.length() < 2)
+					h = "0" + h;
+				hexString.append(h);
+			}
+			return hexString.toString();
+
+		} catch (NoSuchAlgorithmException e) {
+			e.printStackTrace();
+		}
+		return "";
+	}	
+	
+	public void setConfig(String url, String email, String password)
+	{
+		editor = prefs.edit();
+		editor.putString(P_URL, url);
+		editor.putString(P_EMAIL, email);
+		editor.putString(P_PASS, password);
+		editor.commit();
+	}
+	
+	protected String getURL()
+	{
+		return prefs.getString(P_URL, null);
+	}
+	
+	protected String getEmail()
+	{
+		return prefs.getString(P_EMAIL, null);
+	}
+	
+	private String getPass()
+	{
+		return prefs.getString(P_PASS, null);
+	}
+	
+	protected String getAPIUrl()
+	{
+		return getURL() + "/?api";
+	}
+		
+	protected void updateTimestamp()
+	{
+		editor = prefs.edit();
+		editor.putLong(P_LAST_FETCH, System.currentTimeMillis() / 1000L);
+		editor.commit();
+	}
+	
+	public long getLastFetchTime()
+	{
+		return prefs.getLong(P_LAST_FETCH, 0L);
+	}
+	
+	public Boolean haveSetup()
+	{
+		if (prefs.getString(P_URL, null) == null)
+			return false;
+		if (prefs.getString(P_EMAIL, null) == null)
+			return false;
+		if (prefs.getString(P_PASS, null) == null)
+			return false;
+		
+		return true;
+	}
+	
+	protected String makeAuthToken()
+	{
+		String pre = String.format("%s:%s", getEmail(), getPass());
+		return md5(pre);
+	}
+		
+	
+	// Prefs currently used for storing and retrieving server/email/password
+	
 }

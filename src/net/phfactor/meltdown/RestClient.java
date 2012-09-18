@@ -6,8 +6,6 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.UnsupportedEncodingException;
 import java.net.UnknownHostException;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 
 import org.apache.http.HttpResponse;
 import org.apache.http.client.ClientProtocolException;
@@ -17,8 +15,6 @@ import org.apache.http.entity.StringEntity;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import android.content.Context;
-import android.content.SharedPreferences;
 import android.net.http.AndroidHttpClient;
 import android.os.AsyncTask;
 import android.util.Log;
@@ -38,133 +34,26 @@ import android.util.Log;
 public class RestClient 
 {
 	static final String TAG = "MeltdownRestClient";
-
-	private static final String P_URL = "serverUrl";
-	private static final String P_EMAIL = "email";
-	private static final String P_PASS = "pass";
-	private static final String P_LAST_FETCH = "last_ts";
-	private final SharedPreferences prefs;
-	private SharedPreferences.Editor editor;
 	
-	private Context ctx;
+	private MeltdownApp mapp;
 	private String auth_token;
 	
 	public String last_result;
 	
-	public RestClient(Context context)
+	public RestClient(MeltdownApp g_app)
 	{
-		ctx = context;
-		prefs = ctx.getSharedPreferences(TAG, Context.MODE_PRIVATE);
-		
-		doSetup();
-	}
-	
-
-	// *****************************************************************************
-	//! @see http://stackoverflow.com/questions/8700744/md5-with-android-and-php
-	private static final String md5(final String s) 
-	{
-		try 
+		if (g_app == null)
 		{
-			// Create MD5 Hash
-			MessageDigest digest = java.security.MessageDigest.getInstance("MD5");
-			try 
-			{
-				digest.update(s.getBytes("UTF-8"));
-			} catch (UnsupportedEncodingException e) 
-			{
-				Log.e(TAG, "Error encoding into UTF-8!", e);
-				e.printStackTrace();
-			}
-			byte messageDigest[] = digest.digest();
-
-			// Create Hex String
-			StringBuffer hexString = new StringBuffer();
-			for (int i = 0; i < messageDigest.length; i++) {
-				String h = Integer.toHexString(0xFF & messageDigest[i]);
-				while (h.length() < 2)
-					h = "0" + h;
-				hexString.append(h);
-			}
-			return hexString.toString();
-
-		} catch (NoSuchAlgorithmException e) {
-			e.printStackTrace();
+			Log.e(TAG, "No valid app in parameter!");
+			return;
 		}
-		return "";
-	}	
-
-	public void setConfig(String url, String email, String password)
-	{
-		editor = prefs.edit();
-		editor.putString(P_URL, url);
-		editor.putString(P_EMAIL, email);
-		editor.putString(P_PASS, password);
-		editor.commit();
-		
-		doSetup();
+		mapp = g_app;
+		auth_token = mapp.makeAuthToken();
 	}
-	
-	protected String getURL()
-	{
-		return prefs.getString(P_URL, null);
-	}
-	
-	protected String getEmail()
-	{
-		return prefs.getString(P_EMAIL, null);
-	}
-	
-	protected String getPass()
-	{
-		return prefs.getString(P_PASS, null);
-	}
-	
-	protected String getAPIUrl()
-	{
-		return getURL() + "/?api";
-	}
-		
-	private void updateTimestamp()
-	{
-		editor = prefs.edit();
-		editor.putLong(P_LAST_FETCH, System.currentTimeMillis() / 1000L);
-		editor.commit();
-	}
-	
-	public long getLastFetchTime()
-	{
-		return prefs.getLong(P_LAST_FETCH, 0L);
-	}
-	
-	private void doSetup()
-	{
-		auth_token = makeAuthToken();		
-		last_result = "";
-	}
-	
-	public Boolean haveSetup()
-	{
-		if (prefs.getString(P_URL, null) == null)
-			return false;
-		if (prefs.getString(P_EMAIL, null) == null)
-			return false;
-		if (prefs.getString(P_PASS, null) == null)
-			return false;
-		
-		return true;
-	}
-	
-	protected String makeAuthToken()
-	{
-		String pre = String.format("%s:%s", getEmail(), getPass());
-		return md5(pre);
-	}
-	
 	
 	public Boolean checkAuth()
 	{
-		String payload = syncGetUrl(getAPIUrl());
+		String payload = syncGetUrl(mapp.getAPIUrl());
 		JSONObject jsonObj;
 		
 		try 
@@ -183,28 +72,30 @@ public class RestClient
 
 	public String fetchGroups()
 	{
-		String url = String.format(getAPIUrl() + "&groups");
+		String url = String.format(mapp.getAPIUrl() + "&groups");
 		String content = syncGetUrl(url);
 		if (content != null)
-			updateTimestamp();
+			mapp.updateTimestamp();
 		
 		return content;
 	}
 	
 	public String fetchFeeds()
 	{
-		String url = String.format(getAPIUrl() + "&feeds");
+		String url = String.format(mapp.getAPIUrl() + "&feeds");
 		return(syncGetUrl(url));
 	}
 	
+	/* As per API, request a chunk of feed items. Chunksize depends on the server and
+	 * number of unread in the queue. The output of this is the content, which is then fed
+	 * into the parser. 
+	 * 
+	 * TODO How do I cleanly detect end of items? And max item number?
+	 */
 	public String fetchSomeItems(int max_read_id)
 	{
-		// TODO
-		/* As per API, request a chunk of feed items. Chunksize depends on the server and
-		 * number of unread in the queue. The output of this is the content, which is then fed
-		 * into the parser. How do I cleanly detect end of items? And max item number?
-		 */
-		String url = String.format("%s&items&since_id=%d", getAPIUrl(), max_read_id);
+		// TODO Update percentages and read IDs		
+		String url = String.format("%s&items&since_id=%d", mapp.getAPIUrl(), max_read_id);
 		Log.d(TAG, url);
 		return syncGetUrl(url);
 	}
@@ -272,9 +163,9 @@ public class RestClient
 		try 
 		{
 			client = AndroidHttpClient.newInstance("Meltdown");
-			HttpPost post = new HttpPost(getAPIUrl());
+			HttpPost post = new HttpPost(mapp.getAPIUrl());
 			
-			Log.d(TAG, "URL: " + getAPIUrl() + " vars: " + variables);
+			Log.d(TAG, "URL: " + mapp.getAPIUrl() + " vars: " + variables);
 			 
 			// Tell Apache we'll take gzip; should compress really well.
 			AndroidHttpClient.modifyRequestToAcceptGzipResponse(post);

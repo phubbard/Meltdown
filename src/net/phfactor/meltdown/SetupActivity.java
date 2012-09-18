@@ -10,25 +10,26 @@ import android.widget.Toast;
 
 public class SetupActivity extends Activity implements OnClickListener 
 {
-	private RestClient rc;
+	private MeltdownApp mapp;
 	
 	@Override
 	protected void onCreate(Bundle savedInstanceState) 
 	{
 		super.onCreate(savedInstanceState);
+		
 		setContentView(R.layout.setup);
 		Button testBtn = (Button) findViewById(R.id.sbTest);
 		testBtn.setOnClickListener(this);
 		
-		rc = new RestClient(this);
-		if (rc.haveSetup())
+		mapp = (MeltdownApp) getApplication();
+		if (mapp.haveSetup())
 		{
 			TextView tv = (TextView) findViewById(R.id.sServerUrl);
-			tv.setText(rc.getURL());
+			tv.setText(mapp.getURL());
 			tv = (TextView) findViewById(R.id.sEmail);
-			tv.setText(rc.getEmail());
+			tv.setText(mapp.getEmail());
 			tv = (TextView) findViewById(R.id.sPass);
-			tv.setText(rc.getPass()); 
+			tv.setText(""); 
 		}
 	}
 	
@@ -44,7 +45,8 @@ public class SetupActivity extends Activity implements OnClickListener
 		tv = (TextView) findViewById(R.id.sPass);
 		password = tv.getText().toString();
 		
-		rc.setConfig(url, email, password);		
+		mapp.setConfig(url, email, password);
+		RestClient rc = new RestClient(mapp);
 		if (rc.checkAuth())
 		{
 			Toast.makeText(SetupActivity.this, "Logged in OK!", Toast.LENGTH_SHORT).show();

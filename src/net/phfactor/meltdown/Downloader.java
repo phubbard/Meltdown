@@ -20,16 +20,36 @@ public class Downloader extends IntentService
 	public Downloader(String name) 
 	{
 		super(name);
-		mapp = (MeltdownApp) getApplication();
-		xcvr = new RestClient(getApplicationContext());
-		Log.d(TAG, "created OK");
+		doSetup();
 	}
 
+	public Downloader()
+	{
+		super("Downloader");
+		doSetup();
+	}
+	
+	private void doSetup()
+	{
+		mapp = (MeltdownApp) getApplication();
+		xcvr = new RestClient(mapp);
+		Log.d(TAG, "created OK");		
+	}
+	
 	@Override
 	protected void onHandleIntent(Intent intent) 
 	{
 		Long tzero = System.currentTimeMillis();
 		Log.i(TAG, "Beginning download");
+		
+		if (mapp == null)
+			doSetup();
+		
+		if (!mapp.haveSetup())
+		{
+			Log.w(TAG, "Setup incomplete, cannot download");
+			return;
+		}
 		
 		mapp.updateInProgress = true;
 		mapp.clearAllData();

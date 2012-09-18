@@ -32,11 +32,6 @@ public class GroupsActivity extends ListActivity
 	private MeltdownApp app;
 	
 	private ProgressDialog pd;
-	private RestClient rc;
-	private Context ctx;
-	// Number of RSS items to pull at startup. Quantum on server seems to be 50 FYI.
-	private int NUM_ITEMS = 200; 
-	private int MAX_PROGRESS = NUM_ITEMS + 2; // For progress dialog. Crude? Why yes it is.
 	
 	@Override
 	public void onCreate(Bundle savedInstanceState) 
@@ -44,16 +39,14 @@ public class GroupsActivity extends ListActivity
 		super.onCreate(savedInstanceState);
 
 		Log.i(TAG, "GA created");
-		rc = new RestClient(this);
 		app = (MeltdownApp) this.getApplicationContext();
-		ctx = this;
 		
 		// TODO run setup if login errors out?
 		// Check for login, run prefs
-		if (rc.haveSetup() == false)
+		if (app.haveSetup() == false)
 		{
 			startActivity(new Intent(this, SetupActivity.class));
-			Toast.makeText(this, "Please configure a server", Toast.LENGTH_SHORT).show();
+			Toast.makeText(this, "Please configure your server", Toast.LENGTH_SHORT).show();
 			return;
 		}
 
@@ -66,56 +59,39 @@ public class GroupsActivity extends ListActivity
 	{
 		pd = new ProgressDialog(this);
 		
-		app.clearAllData();
-		
-		//pd.setProgressStyle(ProgressDialog.STYLE_HORIZONTAL);
-		pd.setIndeterminate(true);
-//		pd.setMax(MAX_PROGRESS);
+		pd.setProgressStyle(ProgressDialog.STYLE_HORIZONTAL);
+		pd.setIndeterminate(false);
 		pd.setMessage("Fetching groups, feeds & items...");
 		pd.show();
 
 		class GGTask extends AsyncTask<Void, Void, Void> 
 		{
-			long tzero, tend;
-			
 			@Override
 			protected void onPreExecute() 
 			{
 				super.onPreExecute();
-				tzero = System.currentTimeMillis();
 			}
 			protected Void doInBackground(Void... args) 
 			{
-				app.saveGroupsData(rc.fetchGroups());
-//				pd.setProgress(1);
-				app.saveFeedsData(rc.fetchFeeds());
-//				pd.setProgress(2);
-				// TODO Add Runnable upate-on-the-fly code from RssReader.java
-				// FIXME limit fetch limit w/prefs-set bound, e.g. 100. 
-/*
-				int item_count = NUM_ITEMS;
-				while (item_count > 0)
+				while (app.updateInProgress)
 				{
-					int cur_items = app.saveItemsData(rc.fetchSomeItems(app.getMax_read_id()));
-					if (cur_items == 0)
-						break;
-					item_count -= cur_items;
-					pd.setProgress(2 + (NUM_ITEMS - item_count));
+					try
+					{
+						// Just busy-wait for Downloader to run
+						Thread.sleep(500);
+						pd.setProgress(app.getProgress());
+					} catch (InterruptedException e)
+					{
+						e.printStackTrace();
+					}
 				}
-*/				
-				while (app.saveItemsData(rc.fetchSomeItems(app.getMax_read_id())) > 0) 
-					Log.i(TAG, "Pulling another chunk...");
-				
 				return null;
 			}
+			
 			@Override
-			protected void onPostExecute(Void arg) {
+			protected void onPostExecute(Void arg) 
+			{
 				pd.dismiss();
-				
-				tend = System.currentTimeMillis();
-				double elapsed = (tend - tzero) / 1000.0;
-				Log.d(TAG, String.format("%3.1f seconds to retrieve items", elapsed));
-				
 				mAdapter = new GroupListAdapter(GroupsActivity.this, app.getGroups());
 				setListAdapter(mAdapter);
 		        final ListView lv = getListView();
