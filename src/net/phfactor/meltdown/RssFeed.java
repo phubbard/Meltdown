@@ -10,7 +10,7 @@ import android.util.Log;
  */
 public class RssFeed 
 {
-	static final String TAG = "MeltdownRF";
+	static final String TAG = "MeltdownRssFeed";
 	
 	public  String site_url;
 	public  String url;

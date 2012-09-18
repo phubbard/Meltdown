@@ -23,8 +23,7 @@ public class RssItem
 	public String author;
 	
 	public RssItem()
-	{
-		
+	{		
 	}
 	
 	public String niceTimedelta()

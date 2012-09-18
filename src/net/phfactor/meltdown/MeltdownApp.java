@@ -114,6 +114,11 @@ public class MeltdownApp extends Application
 		return (int) (numerator / denominator);
 	}
 	
+	public int getNumItems()
+	{
+		return items.size();
+	}
+	
 	@Override
 	public void onLowMemory() 
 	{
@@ -197,16 +202,21 @@ public class MeltdownApp extends Application
 		if (group == null)
 			return rc;
 		
+		Log.d(TAG, group.feed_ids.size() + " feeds to check in group " + group.title);
 		for (int idx = 0; idx < group.feed_ids.size(); idx++)
 		{
+			Log.d(TAG, items.size() + " items to check");
 			for (int item_idx = 0; item_idx < items.size(); item_idx++)
 			{
 				if (items.get(item_idx).feed_id == group.feed_ids.get(idx))
 					rc.add(items.get(item_idx).id);
 			}
 		}
+		
+		Log.d(TAG, rc.size() + " items found for " + group.title);
 		return rc;
 	}
+	
 	// Unread items count for a given group ID
 	public int unreadItemCount(int group_id)
 	{
@@ -249,7 +259,7 @@ public class MeltdownApp extends Application
 	 * a specialized parser for them.
 	 * TODO Feedback to developer on this API
 	 */
-	public List<Integer> gsToListInt(String id_str) throws JSONException
+	private List<Integer> gsToListInt(String id_str) throws JSONException
 	{
 		List<Integer> rc = new ArrayList<Integer>();
 		
@@ -277,6 +287,7 @@ public class MeltdownApp extends Application
 
 	public List<RssGroup> getGroups()
 	{
+		Log.d(TAG, "returning groups " + this.groups.size());
 		return this.groups;
 	}
 	
@@ -383,14 +394,14 @@ public class MeltdownApp extends Application
 		
 		return 0;		
 	}
-
+	
 	public synchronized void markItemRead(int item_id)
 	{
 		removePost(item_id);
 		xcvr.markItemRead(item_id);
 	}
 
-	public synchronized void clearAllData() 
+	protected synchronized void clearAllData() 
 	{
 		// FIXME sync items files and delete outdated and read items		
 		this.feeds = new ArrayList<RssFeed>();
@@ -531,7 +542,9 @@ public class MeltdownApp extends Application
 		}				
 	}
 	
-
+	
+	
+	// Prefs currently used for storing and retrieving server/email/password
 	// *****************************************************************************
 	//! @see http://stackoverflow.com/questions/8700744/md5-with-android-and-php
 	// Used for creating the dev token
@@ -625,8 +638,6 @@ public class MeltdownApp extends Application
 		String pre = String.format("%s:%s", getEmail(), getPass());
 		return md5(pre);
 	}
-		
-	
-	// Prefs currently used for storing and retrieving server/email/password
 	
 }
+ 

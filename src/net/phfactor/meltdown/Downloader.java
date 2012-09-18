@@ -16,17 +16,16 @@ public class Downloader extends IntentService
 	private final String TAG = "MeltdownDownloader";
 	private MeltdownApp mapp;
 	private RestClient xcvr;
+	private Long tzero, tend;
 	
 	public Downloader(String name) 
 	{
 		super(name);
-		doSetup();
 	}
 
 	public Downloader()
 	{
 		super("Downloader");
-		doSetup();
 	}
 	
 	private void doSetup()
@@ -36,14 +35,24 @@ public class Downloader extends IntentService
 		Log.d(TAG, "created OK");		
 	}
 	
+	private void logProgress()
+	{
+		int num_pulled = mapp.getMax_read_id();
+		int num_extant = mapp.getMax_id_on_server(); 
+		Double pct_complete = ((num_extant - num_pulled) / num_extant) * 100.0;
+		Double rate = (num_pulled / ((System.currentTimeMillis() - tzero) * 1000.0));
+		Log.d(TAG, "At " + mapp.getMax_read_id() + " of " + mapp.getMax_id_on_server());
+		Log.d(TAG, String.format("%3.2f percent complete at %3.2f per second", pct_complete, rate));
+	}
+	
+	
 	@Override
 	protected void onHandleIntent(Intent intent) 
 	{
-		Long tzero = System.currentTimeMillis();
+		tzero = System.currentTimeMillis();
 		Log.i(TAG, "Beginning download");
 		
-		if (mapp == null)
-			doSetup();
+		doSetup();
 		
 		if (!mapp.haveSetup())
 		{
@@ -60,12 +69,12 @@ public class Downloader extends IntentService
 		mapp.saveFeedsData(xcvr.fetchFeeds());
 		Log.i(TAG, "Now fetching items...");
 		while (mapp.saveItemsData(xcvr.fetchSomeItems(mapp.getMax_read_id())) > 0)
-			Log.d(TAG, "Pulling another chunk, max now " + mapp.getMax_read_id());
+			logProgress();
 		
 		mapp.updateInProgress = false;
-		Long tend = System.currentTimeMillis();
+		tend = System.currentTimeMillis();
 		Double elapsed = (tend - tzero) / 1000.0;
-		Log.i(TAG, "Download complete, " + elapsed + " seconds elapsed."); 
+		Log.i(TAG, "Feed download complete, " + elapsed + " seconds elapsed to get " + mapp.getNumItems() + " items."); 
 	}
 
 }

@@ -42,13 +42,8 @@ public class RestClient
 	
 	public RestClient(MeltdownApp g_app)
 	{
-		if (g_app == null)
-		{
-			Log.e(TAG, "No valid app in parameter!");
-			return;
-		}
 		mapp = g_app;
-		auth_token = mapp.makeAuthToken();
+		auth_token = g_app.makeAuthToken();
 	}
 	
 	public Boolean checkAuth()
@@ -96,7 +91,7 @@ public class RestClient
 	{
 		// TODO Update percentages and read IDs		
 		String url = String.format("%s&items&since_id=%d", mapp.getAPIUrl(), max_read_id);
-		Log.d(TAG, url);
+		//Log.d(TAG, url);
 		return syncGetUrl(url);
 	}
 	
@@ -178,16 +173,12 @@ public class RestClient
 			Log.d(TAG, "Payload: " + full_post_vars);
 			post.setEntity(payload);				
 	
-			Log.d(TAG, "executing post...");
+			//Log.d(TAG, "executing post...");
 			HttpResponse response = client.execute(post);
 			
-			Log.d(TAG, "parsing response");
+			//Log.d(TAG, "parsing response");
 			InputStream istr = AndroidHttpClient.getUngzippedContent(response.getEntity());
 			content = convertStreamToString(istr);
-			
-//			ResponseHandler<String> responseHandler = new BasicResponseHandler();
-//			content = client.execute(post, responseHandler);
-			Log.d("DATA for  " + variables, content);
 			
 			AndroidHttpClient fcc = (AndroidHttpClient) client;
 			fcc.close();
@@ -244,16 +235,16 @@ public class RestClient
 			// Add the auth token to the request
 			post = addAuth(post);
 	
-			Log.d(TAG, "executing post...");
+			//Log.d(TAG, "executing post...");
 			HttpResponse response = client.execute(post);
 			
-			Log.d(TAG, "parsing response");
+			//Log.d(TAG, "parsing response");
 			InputStream istr = AndroidHttpClient.getUngzippedContent(response.getEntity());
 			content = convertStreamToString(istr);
 			
 //			ResponseHandler<String> responseHandler = new BasicResponseHandler();
 //			content = client.execute(post, responseHandler);
-			Log.d("DATA for  " + url, content);
+//			Log.d("DATA for  " + url, content);
 			
 			AndroidHttpClient fcc = (AndroidHttpClient) client;
 			fcc.close();

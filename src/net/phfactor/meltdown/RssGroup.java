@@ -14,7 +14,7 @@ import android.util.Log;
 
 public class RssGroup 
 {
-	static final String TAG = "MeltdownRG";
+	static final String TAG = "MeltdownRssGroup";
 	
 	public  String title;
 	public  int id;
