@@ -1,5 +1,10 @@
 package net.phfactor.meltdown;
 
+import java.io.ByteArrayOutputStream;
+import java.io.FileInputStream;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -33,28 +38,9 @@ public class MeltdownApp extends Application
 	private int max_id_on_server;
 	private long last_refresh_time;
 	private RestClient xcvr;
+	public Boolean updateInProgress;
 	
 	private DbHelper dbHelper;	
-
-	@Override
-	public void onCreate()
-	{
-		super.onCreate();
-
-		clearAllData();
-
-		max_read_id = 0;
-		max_fetched_id = 0;
-		max_id_on_server = 0;
-		last_refresh_time = 0L;
-		xcvr = new RestClient(getApplicationContext());		
-
-		this.dbHelper = new DbHelper(getApplicationContext(), 1);		
-	}
-	
-	protected int getMax_read_id() {
-		return max_read_id;
-	}
 
 	public MeltdownApp(Context ctx)
 	{
@@ -63,7 +49,44 @@ public class MeltdownApp extends Application
 	public MeltdownApp()
 	{
 	}
+		
+	@Override
+	public void onCreate()
+	{
+		super.onCreate();
+
+		Log.i(TAG, "OnCreate called!");
+		clearAllData();
+
+		max_read_id = 0;
+		max_fetched_id = 0;
+		max_id_on_server = 0;
+		last_refresh_time = 0L;
+		updateInProgress = false;
+		
+		xcvr = new RestClient(getApplicationContext());		
+		this.dbHelper = new DbHelper(getApplicationContext(), 2);		
+	}
 	
+	@Override
+	public void onLowMemory() 
+	{
+		super.onLowMemory();
+		Log.w(TAG, "Low memory triggered!");
+	}
+
+	@Override
+	public void onTrimMemory(int level) 
+	{
+		super.onTrimMemory(level);
+		Log.w(TAG, "Trim memory called!");
+	}
+
+	protected int getMax_read_id() 
+	{
+		return max_read_id;
+	}
+
 	public int getMaxFetchedId()
 	{
 		return max_fetched_id;
@@ -162,7 +185,7 @@ public class MeltdownApp extends Application
 				if (current_item.feed_id == grp.feed_ids.get(cur_feed))				
 				{
 					// Grab the HTML from disk
-					current_item.html = getItem(current_item.id);
+					current_item.html = loadFromFile(current_item.id);
 					rc.add(current_item);
 				}
 			}
@@ -171,6 +194,10 @@ public class MeltdownApp extends Application
 		return rc;
 	}
 	
+	protected int getMax_id_on_server() {
+		return max_id_on_server;
+	}
+
 	/* The feeds_groups data is a bit different. Separate json array, and the 
 	 * encoding differs. The arrays are CSV instead of JSON, so we have to create 
 	 * a specialized parser for them.
@@ -294,7 +321,9 @@ public class MeltdownApp extends Application
 				this.max_read_id = Math.max(this.max_read_id, this_item.id);
 
 				// Save off the bulky HTML to SQLite
-				saveItem(this_item.id, this_item.html);
+				saveToFile(this_item.id, this_item.html);
+				
+				// This should trigger GC of the now-orphaned HTML
 				this_item.html = "";
 				
 				items.add(this_item);
@@ -305,20 +334,69 @@ public class MeltdownApp extends Application
 		{
 			e.printStackTrace();
 		}	
+		
 		return 0;		
 	}
 
-	public void markItemRead(int item_id)
+	public synchronized void markItemRead(int item_id)
 	{
 		removePost(item_id);
 		xcvr.markItemRead(item_id);
 	}
 
-	public void clearAllData() 
+	public synchronized void clearAllData() 
 	{
 		this.feeds = new ArrayList<RssFeed>();
 		this.groups = new ArrayList<RssGroup>();
 		this.items = new ArrayList<RssItem>();
+	}
+	
+	// PLan B. http://developer.android.com/guide/topics/data/data-storage.html
+	private void saveToFile(int id, String html)
+	{
+		String filename = String.format("%d.post", id);
+		
+		try 
+		{
+			FileOutputStream fos = openFileOutput(filename, Context.MODE_PRIVATE);
+			fos.write(html.getBytes());
+			fos.close();
+		}
+		catch (FileNotFoundException fe)
+		{
+			Log.e(TAG, "File error", fe);
+		} catch (IOException e) 
+		{
+			Log.e(TAG, "File error on item " + id, e);
+		}
+	}
+	
+	private String loadFromFile(int id)
+	{
+		String filename = String.format("%d.post", id);
+		ByteArrayOutputStream buffer = new ByteArrayOutputStream();
+		
+		try 
+		{
+			FileInputStream fos = openFileInput(filename);
+			int r_char = fos.read();
+			
+			while (r_char > -1)
+			{
+				buffer.write(r_char);
+				r_char = fos.read();
+			}
+			fos.close();
+		}			
+		catch (FileNotFoundException fe)
+		{
+			Log.e(TAG, "File error", fe);
+		} catch (IOException e) 
+		{
+			Log.e(TAG, "File error on item " + id, e);
+		}
+		
+		return buffer.toString();
 	}
 	
 	private void saveItem(int id, String html)

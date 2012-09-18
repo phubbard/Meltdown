@@ -43,6 +43,7 @@ public class GroupsActivity extends ListActivity
 	{
 		super.onCreate(savedInstanceState);
 
+		Log.i(TAG, "GA created");
 		rc = new RestClient(this);
 		app = (MeltdownApp) this.getApplicationContext();
 		ctx = this;
@@ -67,9 +68,9 @@ public class GroupsActivity extends ListActivity
 		
 		app.clearAllData();
 		
-		pd.setProgressStyle(ProgressDialog.STYLE_HORIZONTAL);
-		pd.setIndeterminate(false);
-		pd.setMax(MAX_PROGRESS);
+		//pd.setProgressStyle(ProgressDialog.STYLE_HORIZONTAL);
+		pd.setIndeterminate(true);
+//		pd.setMax(MAX_PROGRESS);
 		pd.setMessage("Fetching groups, feeds & items...");
 		pd.show();
 
@@ -86,11 +87,12 @@ public class GroupsActivity extends ListActivity
 			protected Void doInBackground(Void... args) 
 			{
 				app.saveGroupsData(rc.fetchGroups());
-				pd.setProgress(1);
+//				pd.setProgress(1);
 				app.saveFeedsData(rc.fetchFeeds());
-				pd.setProgress(2);
+//				pd.setProgress(2);
 				// TODO Add Runnable upate-on-the-fly code from RssReader.java
 				// FIXME limit fetch limit w/prefs-set bound, e.g. 100. 
+/*
 				int item_count = NUM_ITEMS;
 				while (item_count > 0)
 				{
@@ -100,8 +102,9 @@ public class GroupsActivity extends ListActivity
 					item_count -= cur_items;
 					pd.setProgress(2 + (NUM_ITEMS - item_count));
 				}
-//				while (app.saveItemsData(rc.fetchSomeFeeds(app.getMaxFetchedId())) > 0) 
-//					Log.i(TAG, "Pulling another chunk...");
+*/				
+				while (app.saveItemsData(rc.fetchSomeItems(app.getMax_read_id())) > 0) 
+					Log.i(TAG, "Pulling another chunk...");
 				
 				return null;
 			}
@@ -111,7 +114,7 @@ public class GroupsActivity extends ListActivity
 				
 				tend = System.currentTimeMillis();
 				double elapsed = (tend - tzero) / 1000.0;
-				Log.d(TAG, String.format("%3.1f seconds to retrieve %d items", elapsed, NUM_ITEMS));
+				Log.d(TAG, String.format("%3.1f seconds to retrieve items", elapsed));
 				
 				mAdapter = new GroupListAdapter(GroupsActivity.this, app.getGroups());
 				setListAdapter(mAdapter);
