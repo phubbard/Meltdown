@@ -30,14 +30,14 @@ public class GroupsActivity extends ListActivity
     private GroupListAdapter mAdapter;
 	
 	private MeltdownApp app;
-	
+	private Boolean in_background;
 	private ProgressDialog pd;
 	
 	@Override
 	public void onCreate(Bundle savedInstanceState) 
 	{
 		super.onCreate(savedInstanceState);
-
+		in_background = false;
 		Log.i(TAG, "GA created");
 		app = (MeltdownApp) this.getApplicationContext();
 		
@@ -51,10 +51,24 @@ public class GroupsActivity extends ListActivity
 		}
 
 		setContentView(R.layout.list);
+	}
+	
+	@Override
+	protected void onPause()
+	{
+		super.onPause();
+		in_background = true;
+	}
+
+	@Override
+	protected void onResume()
+	{
+		super.onResume();
+		in_background = false;
 		
 		doRefresh();
 	}
-	
+
 	public void doRefresh()
 	{
 		pd = new ProgressDialog(this);
@@ -73,13 +87,16 @@ public class GroupsActivity extends ListActivity
 			}
 			protected Void doInBackground(Void... args) 
 			{
-				while (app.updateInProgress)
+				while ((app.updateInProgress) || app.waiting_for_data())
 				{
 					try
 					{
 						// Just busy-wait for Downloader to run
 						Thread.sleep(500);
-						pd.setProgress(app.getProgress());
+						
+						if (!in_background)
+							pd.setProgress(app.getProgress());
+						
 					} catch (InterruptedException e)
 					{
 						e.printStackTrace();
@@ -91,7 +108,9 @@ public class GroupsActivity extends ListActivity
 			@Override
 			protected void onPostExecute(Void arg) 
 			{
-				pd.dismiss();
+				if (!in_background)
+					pd.dismiss();
+				
 				mAdapter = new GroupListAdapter(GroupsActivity.this, app.getGroups());
 				setListAdapter(mAdapter);
 		        final ListView lv = getListView();

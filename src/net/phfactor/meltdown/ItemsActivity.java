@@ -4,6 +4,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import android.app.ListActivity;
+import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.Intent;
 import android.os.Bundle;
@@ -33,6 +34,7 @@ public class ItemsActivity extends ListActivity
 	private int group_id;
 	private int last_pos;
 	
+	// TODO Menu item / icon/ button for 'mark all as read'
 	// Cache - list of item IDs we are to display
 	List<RssItem> items;
 
@@ -56,8 +58,11 @@ public class ItemsActivity extends ListActivity
         // which ListActivity adopts as its list -- we can
         // access it with getListView().
 
-		// TODO start a progress dialog when this goes to SQLite data - might be slow
+		ProgressDialog pd = new ProgressDialog(this);
+		pd.setIndeterminate(true);
+		pd.show();
 		items = app.getAllItemsForGroup(group_id);
+		pd.dismiss();
 		
 		// TODO Refresh on drag down
 		lv.setOverscrollHeader(getWallpaper());
@@ -66,16 +71,6 @@ public class ItemsActivity extends ListActivity
         mAdapter = new RSSListAdapter(this, items);
         getListView().setAdapter(mAdapter);
 
-/*        
-		ListAdapter ladapt = new SimpleAdapter(this, item_ids, R.layout.itemrow,
-				new String[] {"title", "author"},
-				new int[] {R.id.item_title, R.id.item_subtitle});
-        lv.setTextFilterEnabled(true);
-		
-        Log.d(TAG, ladapt.getCount() + " items for " + group_name);
-        
-		setListAdapter(ladapt);
-*/		
         lv.setOnItemClickListener(new OnItemClickListener()
         {
         	@Override
@@ -136,11 +131,10 @@ public class ItemsActivity extends ListActivity
             view.getText2().setText(final_descr);
             return view;
         }
-
     }
 
     /**
-     * Simple code to strip out <tag>s -- primitive way to sortof display HTML as
+     * Simple code to strip out <tag>s -- primitive way to sort of display HTML as
      * plain text.
      */
     public String removeTags(String str) 
@@ -162,19 +156,6 @@ public class ItemsActivity extends ListActivity
     }
 
 	
-	private void removeItem(int post_id)
-	{
-		for (int idx = 0; idx < items.size(); idx++)
-		{
-			int cur_id = items.get(idx).id;
-			if (cur_id == post_id)
-			{
-				items.remove(idx);
-				return;
-			}
-		}		
-	}
-	
 	private void viewPost(int position)
 	{
 		RssItem item = (RssItem) getListView().getItemAtPosition(position);
@@ -195,10 +176,9 @@ public class ItemsActivity extends ListActivity
 		if (resultCode == RESULT_OK)
 		{
 			Log.d(TAG, "Item #" + requestCode + " displayed and marked as read");
-			removeItem(requestCode);
 			
 			// Out of posts?
-			if (items.size() == 0)
+			if ((last_pos + 1) >= items.size())
 			{
 				finish();
 				return;

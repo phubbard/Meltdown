@@ -10,6 +10,7 @@ import android.view.MenuItem;
 import android.view.View;
 import android.webkit.WebView;
 import android.widget.Button;
+import android.widget.TextView;
 
 public class ItemDisplayActivity extends Activity 
 {
@@ -55,8 +56,16 @@ public class ItemDisplayActivity extends Activity
     {
         rss_item = app.findPostById(cur_post);
         getActionBar().setTitle(rss_item.title);
+        
+        // Lookup feed name and display it between the buttons
+        TextView tv = (TextView) findViewById(R.id.itmFeedTitle);
+
+        RssFeed rgrp = app.findFeedById(rss_item.feed_id);
+        tv.setText(rgrp.title);
+        
+        // TODO Change action bar icon to feeds' favicon
         WebView wv = (WebView) findViewById(R.id.itemWebView);
-        wv.loadData(rss_item.html, "text/html", null);
+        wv.loadData(rss_item.html, "text/html", "UTF-8");
     }
     
 	@Override

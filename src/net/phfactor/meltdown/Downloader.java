@@ -8,7 +8,6 @@ import android.util.Log;
  * The Downloader is run like a cron job, via the AlarmService, and 
  * does all of the downloading of groups, feeds and items.
  * 
- * TODO: Mark-and-sweep GC of the items files in my next class to write.
  * TODO: Make run interval a preference
  */
 public class Downloader extends IntentService 
@@ -60,18 +59,17 @@ public class Downloader extends IntentService
 			return;
 		}
 		
-		mapp.updateInProgress = true;
-		mapp.clearAllData();
+		mapp.download_start();
 		
 		Log.i(TAG, "Getting groups...");
 		mapp.saveGroupsData(xcvr.fetchGroups());
 		Log.i(TAG, "Getting feeds....");
 		mapp.saveFeedsData(xcvr.fetchFeeds());
 		Log.i(TAG, "Now fetching items...");
-		while (mapp.saveItemsData(xcvr.fetchSomeItems(mapp.getMax_read_id())) > 0)
+		while (mapp.saveItemsData(xcvr.fetchSomeItems(mapp.getMax_read_id())) >= 0)
 			logProgress();
 		
-		mapp.updateInProgress = false;
+		mapp.download_complete();
 		tend = System.currentTimeMillis();
 		Double elapsed = (tend - tzero) / 1000.0;
 		Log.i(TAG, "Feed download complete, " + elapsed + " seconds elapsed to get " + mapp.getNumItems() + " items."); 

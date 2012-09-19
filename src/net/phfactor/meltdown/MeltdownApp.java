@@ -26,6 +26,7 @@ import android.database.Cursor;
 import android.database.SQLException;
 import android.database.sqlite.SQLiteDatabase;
 import android.database.sqlite.SQLiteOpenHelper;
+import android.os.PatternMatcher;
 import android.os.SystemClock;
 import android.util.Log;
 
@@ -46,6 +47,9 @@ public class MeltdownApp extends Application
 	private List<RssGroup> groups;
 	private List<RssFeed> feeds;
 	private List<RssItem> items;
+	
+	private List<Integer> new_items;
+	
 	private int max_read_id;
 	private int max_fetched_id;
 	private int max_id_on_server;
@@ -111,7 +115,11 @@ public class MeltdownApp extends Application
 		// FIXME Make sure these variables are being written by RestClient and/or methods here!!
 		int numerator = (max_read_id - max_fetched_id);
 		int denominator = (max_id_on_server - max_fetched_id);
-		return (int) (numerator / denominator);
+		
+		if (denominator > 0)
+			return (int) (numerator / denominator);
+		else
+			return 0;
 	}
 	
 	public int getNumItems()
@@ -133,6 +141,12 @@ public class MeltdownApp extends Application
 		Log.w(TAG, "Trim memory called!");
 	}
 
+	// Simple helper - if items is empty, we are waiting for something
+	protected Boolean waiting_for_data()
+	{
+		return (items.size() == 0);
+	}
+	
 	protected int getMax_read_id() 
 	{
 		return max_read_id;
@@ -155,6 +169,16 @@ public class MeltdownApp extends Application
 		return null;
 	}
 	
+	protected RssFeed findFeedById(int feed_id)
+	{
+		for (int idx =0; idx < feeds.size(); idx++)
+		{
+			if (feeds.get(idx).id == feed_id)
+				return feeds.get(idx);
+		}
+		return null;
+	}
+	
 	// TODO Replace by sqlite query once DB-backed
 	protected RssGroup findGroupByName(String name)
 	{
@@ -164,22 +188,6 @@ public class MeltdownApp extends Application
 				return groups.get(idx);
 		}
 		return null;
-	}
-
-	private synchronized int removePost(int post_id)
-	{
-		Log.d(TAG, items.size() + " before delete");
-		for (int idx = 0; idx < items.size(); idx++)
-		{
-			if (items.get(idx).id == post_id)
-			{
-				Log.d(TAG, "Removing post id " + idx);
-				items.remove(idx);
-				Log.d(TAG, items.size() + " after delete");
-				return 0;
-			}
-		}
-		return 1;		
 	}
 	
 	// TODO Replace by sqlite query
@@ -193,8 +201,8 @@ public class MeltdownApp extends Application
 		return null;
 	}
 	
-	// Unread items for a given group
-	public List<Integer> itemsForGroup(int group_id)
+	// Unread items for a given group - crap n2 algorithm
+	public List<Integer> olditemsForGroup(int group_id)
 	{
 		ArrayList<Integer> rc = new ArrayList<Integer>();
 		
@@ -210,6 +218,27 @@ public class MeltdownApp extends Application
 			{
 				if (items.get(item_idx).feed_id == group.feed_ids.get(idx))
 					rc.add(items.get(item_idx).id);
+			}
+		}
+		
+		Log.d(TAG, rc.size() + " items found for " + group.title);
+		return rc;
+	}
+	
+	public List<Integer> itemsForGroup(int group_id)
+	{
+		ArrayList<Integer> rc = new ArrayList<Integer>();
+		
+		RssGroup group = findGroupById(group_id);
+		if (group == null)
+			return rc;
+		
+		for (int item_idx = 0; item_idx < items.size(); item_idx++)
+		{
+			int items_feed_id = items.get(item_idx).feed_id;
+			if (group.feed_ids.contains(items_feed_id))
+			{
+				rc.add(items.get(item_idx).id);
 			}
 		}
 		
@@ -367,7 +396,7 @@ public class MeltdownApp extends Application
 			if (jitems.length() == 0)
 			{
 				Log.i(TAG, "No more items in feed!");
-				return 0;
+				return -1;
 			}
 			
 			this.max_id_on_server = jdata.getInt("total_items");
@@ -377,6 +406,13 @@ public class MeltdownApp extends Application
 				this_item = new RssItem(jitems.getJSONObject(idx));
 				this.max_read_id = Math.max(this.max_read_id, this_item.id);
 
+				// Skip over items that've been read already
+				if (this_item.is_read)
+					continue;
+				
+				// Save ID to new-items list for post-DL cleanup
+				new_items.add(this_item.id);
+				
 				// Save off the bulky HTML to SQLite
 				saveToFile(this_item.id, this_item.html);
 				
@@ -394,6 +430,22 @@ public class MeltdownApp extends Application
 		
 		return 0;		
 	}
+
+	private synchronized int removePost(int post_id)
+	{
+		Log.d(TAG, items.size() + " before delete");
+		for (int idx = 0; idx < items.size(); idx++)
+		{
+			if (items.get(idx).id == post_id)
+			{
+				Log.d(TAG, "Removing post id " + idx);
+				items.remove(idx);
+				Log.d(TAG, items.size() + " after delete");
+				return 0;
+			}
+		}
+		return 1;		
+	}
 	
 	public synchronized void markItemRead(int item_id)
 	{
@@ -401,6 +453,74 @@ public class MeltdownApp extends Application
 		xcvr.markItemRead(item_id);
 	}
 
+	/*
+	 * Given an items' filename in the format "%d.post", return the %d
+	 */
+	private int filenameToInt(String filename)
+	{
+		if (filename == null)
+			return -1;
+		
+		String delims = "[.]";
+		String[] tokens = filename.split(delims);
+		if (tokens.length == 2)
+			return (Integer.parseInt(tokens[0]));
+		
+		Log.e(TAG, "Unable to parse " + filename);
+		return -1;
+	}
+	
+	private void cullItemFiles()
+	{
+		Log.d(TAG, "Starting cull of on-disk files");
+		Long ftzero = System.currentTimeMillis();
+		
+		int new_count = 0, old_count = 0;
+		
+		PatternMatcher pm = new PatternMatcher("*.post", PatternMatcher.PATTERN_SIMPLE_GLOB);
+		String[] filenames = fileList();
+		for (int idx = 0; idx < filenames.length; idx++)
+		{
+			if (pm.match(filenames[idx]))
+			{
+				Log.d(TAG, "checking " + filenames[idx]);
+				if (new_items.contains(filenameToInt(filenames[idx])))
+				{
+					Log.d(TAG, " - that one is new, leaving");
+					new_count++;
+				}
+				else
+				{
+					old_count++;
+					if (deleteFile(filenames[idx]))
+						Log.d(TAG, " removed successfully");
+					else
+						Log.e(TAG, " error removing " + filenames[idx]);
+				}
+			}
+		}
+		
+		Long ftend = System.currentTimeMillis();
+		Log.d(TAG, "Cull completed in " + ftend / 1000L + " seconds");
+		Log.d(TAG, "New: " + new_count + " old: " + old_count + " ref: " + new_items.size());
+		if (new_items.size() != new_count)
+			Log.e(TAG, "CULL COUNT MISMATCH!!!");
+	}
+	
+	// Called by Downloader - this cues the creation of old-vs-new lists for post-download GC
+	protected void download_start()
+	{
+		this.updateInProgress = true;
+		this.new_items = new ArrayList<Integer>();
+	}
+	
+	protected void download_complete()
+	{
+		cullItemFiles();
+		
+		this.updateInProgress = false;
+	}
+	
 	protected synchronized void clearAllData() 
 	{
 		// FIXME sync items files and delete outdated and read items		

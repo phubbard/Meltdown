@@ -21,7 +21,6 @@
         android:layout_alignParentBottom="true"
         android:layout_alignParentLeft="true"
         android:text="@string/itmBtnOpen" />
-
     <Button
         android:id="@+id/itmBtnNext"
         android:layout_width="wrap_content"
@@ -29,5 +28,14 @@
         android:layout_alignParentBottom="true"
         android:layout_alignParentRight="true"
         android:text="@string/itmBtnNext" />
+
+    <TextView
+        android:id="@+id/itmFeedTitle"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignBaseline="@+id/itmBtnOpen"
+        android:layout_alignBottom="@+id/itmBtnOpen"
+        android:layout_toRightOf="@+id/itmBtnOpen"
+        android:text="foo" />
 
 </RelativeLayout>
