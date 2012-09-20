@@ -18,15 +18,9 @@ import org.json.JSONObject;
 import android.app.AlarmManager;
 import android.app.Application;
 import android.app.PendingIntent;
-import android.content.ContentValues;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
-import android.database.Cursor;
-import android.database.SQLException;
-import android.database.sqlite.SQLiteDatabase;
-import android.database.sqlite.SQLiteOpenHelper;
-import android.os.PatternMatcher;
 import android.os.SystemClock;
 import android.util.Log;
 
@@ -55,7 +49,6 @@ public class MeltdownApp extends Application
 	private int max_id_on_server;
 	private long last_refresh_time;
 	
-	private DbHelper dbHelper;	
 	private RestClient xcvr;
 
 	public Boolean updateInProgress;
@@ -74,6 +67,8 @@ public class MeltdownApp extends Application
 		super.onCreate();
 
 		Log.i(TAG, "App created, initializing");
+	
+		// TODO Save/reload indices from disk
 		clearAllData();
 
 		max_read_id = 0;
@@ -84,7 +79,6 @@ public class MeltdownApp extends Application
 		
 		prefs = getSharedPreferences(TAG, Context.MODE_PRIVATE);
 		xcvr = new RestClient(this);		
-		this.dbHelper = new DbHelper(getApplicationContext(), 2);
 		startUpdates();
 		
 		Log.i(TAG, "App init completed.");
@@ -107,6 +101,7 @@ public class MeltdownApp extends Application
 	}
 	
 	// Helper method - used by landing page to display progress bar
+	// FIXME
 	public int getProgress()
 	{
 		if (!updateInProgress)
@@ -157,8 +152,9 @@ public class MeltdownApp extends Application
 		return max_fetched_id;
 	}
 	
-	
-	// TODO Replace by sqlite query once DB-backed
+	/*
+	 *  Reverse index methods - find group, feed or post by numeric ID.
+	 */
 	protected RssGroup findGroupById(int grp_id)
 	{
 		for (int idx = 0; idx < groups.size(); idx++)
@@ -179,18 +175,6 @@ public class MeltdownApp extends Application
 		return null;
 	}
 	
-	// TODO Replace by sqlite query once DB-backed
-	protected RssGroup findGroupByName(String name)
-	{
-		for (int idx = 0; idx < groups.size(); idx++)
-		{
-			if (groups.get(idx).title.equals(name))
-				return groups.get(idx);
-		}
-		return null;
-	}
-	
-	// TODO Replace by sqlite query
 	protected RssItem findPostById(int post_id)
 	{
 		for (int idx = 0; idx < items.size(); idx++)
@@ -201,30 +185,19 @@ public class MeltdownApp extends Application
 		return null;
 	}
 	
-	// Unread items for a given group - crap n2 algorithm
-	public List<Integer> olditemsForGroup(int group_id)
+	// Similar - locate a group object by title string
+	protected RssGroup findGroupByName(String name)
 	{
-		ArrayList<Integer> rc = new ArrayList<Integer>();
-		
-		RssGroup group = findGroupById(group_id);
-		if (group == null)
-			return rc;
-		
-		Log.d(TAG, group.feed_ids.size() + " feeds to check in group " + group.title);
-		for (int idx = 0; idx < group.feed_ids.size(); idx++)
+		for (int idx = 0; idx < groups.size(); idx++)
 		{
-			Log.d(TAG, items.size() + " items to check");
-			for (int item_idx = 0; item_idx < items.size(); item_idx++)
-			{
-				if (items.get(item_idx).feed_id == group.feed_ids.get(idx))
-					rc.add(items.get(item_idx).id);
-			}
+			if (groups.get(idx).title.equals(name))
+				return groups.get(idx);
 		}
-		
-		Log.d(TAG, rc.size() + " items found for " + group.title);
-		return rc;
+		return null;
 	}
 	
+	
+	// Reverse index - search all items for those with a feed ID in the current groups' feed list
 	public List<Integer> itemsForGroup(int group_id)
 	{
 		ArrayList<Integer> rc = new ArrayList<Integer>();
@@ -252,7 +225,8 @@ public class MeltdownApp extends Application
 		return itemsForGroup(group_id).size();
 	}
 	
-	public List<RssItem> getAllItemsForGroup(int group_id)
+	// Return items, with HTML loaded from disk. Could lazy-load the HTML on item display.... TODO
+	public List<RssItem> getFullItemsForGroup(int group_id)
 	{
 		ArrayList<RssItem> rc = new ArrayList<RssItem>();
 		RssGroup grp = findGroupById(group_id);
@@ -261,18 +235,16 @@ public class MeltdownApp extends Application
 			Log.e(TAG, "Unable to locate group id " + group_id);
 			return null;
 		}
-		
-		for (int cur_feed = 0; cur_feed < grp.feed_ids.size(); cur_feed++)
+
+		for (int item_idx = 0; item_idx < items.size(); item_idx++)
 		{
-			for (int cur_item = 0; cur_item < items.size(); cur_item++)
+			int items_feed_id = items.get(item_idx).feed_id;
+			if (grp.feed_ids.contains(items_feed_id))
 			{
-				RssItem current_item = items.get(cur_item);
-				if (current_item.feed_id == grp.feed_ids.get(cur_feed))				
-				{
-					// Grab the HTML from disk
-					current_item.html = loadFromFile(current_item.id);
-					rc.add(current_item);
-				}
+				RssItem current_item = items.get(item_idx);
+				// Grab the HTML from disk
+				current_item.html = loadFromFile(current_item.id);
+				rc.add(current_item);
 			}
 		}
 		Log.d(TAG, rc.size() + " items for group ID " + group_id);
@@ -316,10 +288,24 @@ public class MeltdownApp extends Application
 
 	public List<RssGroup> getGroups()
 	{
-		Log.d(TAG, "returning groups " + this.groups.size());
 		return this.groups;
 	}
 	
+	// Used by top-level landing screen, returns a list of groups that have unread items in them.
+	// TODO index over items instead of groups - O(n) instead of n^2
+	public List<RssGroup> slowGetGroups()
+	{
+		List<RssGroup> rc = new ArrayList<RssGroup>();
+		
+		// Start simple and stupid!
+		for (int group_idx = 0; group_idx < groups.size(); group_idx++)
+		{
+			if (unreadItemCount(groups.get(group_idx).id) > 0)
+				rc.add(groups.get(group_idx));
+		}
+		
+		return rc;
+	}
 	
 	/* ***********************************
 	 * REST callback methods
@@ -477,31 +463,29 @@ public class MeltdownApp extends Application
 		
 		int new_count = 0, old_count = 0;
 		
-		PatternMatcher pm = new PatternMatcher("*.post", PatternMatcher.PATTERN_SIMPLE_GLOB);
 		String[] filenames = fileList();
 		for (int idx = 0; idx < filenames.length; idx++)
 		{
-			if (pm.match(filenames[idx]))
+			int fn_idx = filenameToInt(filenames[idx]);
+			if (fn_idx > 0)
 			{
-				Log.d(TAG, "checking " + filenames[idx]);
-				if (new_items.contains(filenameToInt(filenames[idx])))
+				if (new_items.contains(fn_idx))
 				{
-					Log.d(TAG, " - that one is new, leaving");
 					new_count++;
 				}
 				else
 				{
 					old_count++;
-					if (deleteFile(filenames[idx]))
-						Log.d(TAG, " removed successfully");
-					else
+					if (!deleteFile(filenames[idx]))
 						Log.e(TAG, " error removing " + filenames[idx]);
 				}
 			}
+			else
+				Log.d(TAG, "Skipping non-post file " + filenames[idx]);
 		}
 		
 		Long ftend = System.currentTimeMillis();
-		Log.d(TAG, "Cull completed in " + ftend / 1000L + " seconds");
+		Log.d(TAG, "Cull completed in " + (ftend - ftzero) / 1000L + " seconds");
 		Log.d(TAG, "New: " + new_count + " old: " + old_count + " ref: " + new_items.size());
 		if (new_items.size() != new_count)
 			Log.e(TAG, "CULL COUNT MISMATCH!!!");
@@ -576,93 +560,6 @@ public class MeltdownApp extends Application
 		
 		return buffer.toString();
 	}
-	
-	private void saveItem(int id, String html)
-	{
-		SQLiteDatabase db = this.dbHelper.getWritableDatabase();
-
-		try
-		{
-			ContentValues data = new ContentValues();
-			data.put(C_ID, id);
-			data.put(C_HTML, html);
-			db.insertWithOnConflict(TABLE, null, data, SQLiteDatabase.CONFLICT_REPLACE);
-			Log.d(TAG, "Record " + id + " saved OK");
-		}
-		finally
-		{
-			db.close();
-		}
-	}
-	
-	private String getItem(int id)
-	{
-		SQLiteDatabase db = this.dbHelper.getReadableDatabase();
-		Cursor cursor;
-		String with_stmt = String.format("%s='%d'", C_ID, id);
-		String rc = "";
-		try
-		{
-			cursor = db.query(TABLE, null, with_stmt, null, null, null, null);
-			if (cursor.moveToNext())
-			{
-				rc = cursor.getString(cursor.getColumnIndex(C_HTML));
-			}
-			else
-				Log.e(TAG, "Missing DB record for ID " + id);
-			
-			
-			cursor.close();
-			db.close();
-			return rc;			
-		}
-		catch (SQLException e) 
-		{
-			Log.e(TAG, "Got an sqlite error on app database!", e);
-			db.close();
-		}
-		
-		return rc;
-	}
-	
-	// Now idle - DB for storing items. Too slow on writes; might be fixable
-	private class DbHelper extends SQLiteOpenHelper
-	{		
-		public DbHelper(Context context, int version_number)
-		{
-			super(context, DATABASE, null, version_number);			
-		}
-		
-		@Override
-		public void onCreate(SQLiteDatabase db)
-		{
-			try 
-			{
-				db.execSQL("create table " + TABLE + " ( "+ C_ID +" int primary key, "
-						+ C_HTML + " text)");
-			} catch (SQLException e) 
-			{
-				Log.e(TAG, "Unable to create database, fatal error", e);
-				e.printStackTrace();
-			}
-		}
-		
-		@Override
-		public void onUpgrade(SQLiteDatabase db, int oldVersion, int newVersion)
-		{
-			try {
-				db.execSQL("drop table " + TABLE);
-				Log.w(TAG, "Item database erased");
-				this.onCreate(db);
-			} catch (SQLException e)
-			{
-				Log.e(TAG, "Unable to upgrade database, fatal error", e);
-				e.printStackTrace();
-			}
-		}				
-	}
-	
-	
 	
 	// Prefs currently used for storing and retrieving server/email/password
 	// *****************************************************************************

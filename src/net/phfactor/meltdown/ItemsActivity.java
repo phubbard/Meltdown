@@ -61,8 +61,7 @@ public class ItemsActivity extends ListActivity
 		ProgressDialog pd = new ProgressDialog(this);
 		pd.setIndeterminate(true);
 		pd.show();
-		items = app.getAllItemsForGroup(group_id);
-		pd.dismiss();
+		items = app.getFullItemsForGroup(group_id);
 		
 		// TODO Refresh on drag down
 		lv.setOverscrollHeader(getWallpaper());
@@ -78,7 +77,9 @@ public class ItemsActivity extends ListActivity
         	{
         		viewPost(pos);
         	}
-        });		
+        });
+        
+		pd.dismiss();        
 	}
 	
 
@@ -178,7 +179,7 @@ public class ItemsActivity extends ListActivity
 			Log.d(TAG, "Item #" + requestCode + " displayed and marked as read");
 			
 			// Out of posts?
-			if ((last_pos + 1) >= items.size())
+			if (app.unreadItemCount(group_id) == 0)
 			{
 				finish();
 				return;
