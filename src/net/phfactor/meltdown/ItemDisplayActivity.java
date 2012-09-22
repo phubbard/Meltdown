@@ -10,6 +10,7 @@ import android.view.MenuItem;
 import android.view.View;
 import android.webkit.WebView;
 import android.widget.Button;
+import android.widget.ShareActionProvider;
 import android.widget.TextView;
 
 public class ItemDisplayActivity extends Activity 
@@ -60,19 +61,41 @@ public class ItemDisplayActivity extends Activity
         // Lookup feed name and display it between the buttons
         TextView tv = (TextView) findViewById(R.id.itmFeedTitle);
 
+        // Feed title - currently in footer
         RssFeed rgrp = app.findFeedById(rss_item.feed_id);
         tv.setText(rgrp.title);
         
         // TODO Change action bar icon to feeds' favicon
         WebView wv = (WebView) findViewById(R.id.itemWebView);
-        wv.loadData(rss_item.html, "text/html", "UTF-8");
+        wv.loadData(rss_item.getHTML(getApplicationContext()), "text/html", "UTF-8");
+    }
+    
+    // See http://android-developers.blogspot.com/2012/02/share-with-intents.html
+    private Intent createShareIntent()
+    {
+    	Intent shareIntent = new Intent(Intent.ACTION_SEND);
+    	shareIntent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_WHEN_TASK_RESET);
+    	shareIntent.setType("text/url");
+    	shareIntent.putExtra(Intent.EXTRA_SUBJECT, rss_item.title);
+    	shareIntent.putExtra(Intent.EXTRA_TEXT, rss_item.url);
+    	return shareIntent;
     }
     
 	@Override
 	public boolean onCreateOptionsMenu(Menu menu) 
     {
     	MenuInflater infl = getMenuInflater();
-    	infl.inflate(R.menu.activity_item_display, menu);
+    	infl.inflate(R.menu.activity_item, menu);
+    	
+        // Get the menu item.
+        MenuItem menuItem = menu.findItem(R.id.itemShare);
+        // Get the provider and hold onto it to set/change the share intent.
+        ShareActionProvider mShareActionProvider = (ShareActionProvider) menuItem.getActionProvider();
+
+        // Attach an intent to this ShareActionProvider.  You can update this at any time,
+        // like when the user selects a new piece of data they might like to share.
+        mShareActionProvider.setShareIntent(createShareIntent());
+    	
     	return true;
 	}
     

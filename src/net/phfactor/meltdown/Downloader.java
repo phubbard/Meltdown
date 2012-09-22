@@ -27,31 +27,14 @@ public class Downloader extends IntentService
 		super("Downloader");
 	}
 	
-	private void doSetup()
-	{
-		mapp = (MeltdownApp) getApplication();
-		xcvr = new RestClient(mapp);
-		Log.d(TAG, "created OK");		
-	}
-	
-	private void logProgress()
-	{
-		int num_pulled = mapp.getMax_read_id();
-		int num_extant = mapp.getMax_id_on_server(); 
-		Double pct_complete = ((num_extant - num_pulled) / num_extant) * 100.0;
-		Double rate = (num_pulled / ((System.currentTimeMillis() - tzero) * 1000.0));
-		Log.d(TAG, "At " + mapp.getMax_read_id() + " of " + mapp.getMax_id_on_server());
-		Log.d(TAG, String.format("%3.2f percent complete at %3.2f per second", pct_complete, rate));
-	}
-	
-	
 	@Override
 	protected void onHandleIntent(Intent intent) 
 	{
+		mapp = (MeltdownApp) getApplication();
+		xcvr = new RestClient(mapp);
+
 		tzero = System.currentTimeMillis();
 		Log.i(TAG, "Beginning download");
-		
-		doSetup();
 		
 		if (!mapp.haveSetup())
 		{
@@ -65,14 +48,25 @@ public class Downloader extends IntentService
 		mapp.saveGroupsData(xcvr.fetchGroups());
 		Log.i(TAG, "Getting feeds....");
 		mapp.saveFeedsData(xcvr.fetchFeeds());
+		
+		if (intent.getExtras().getBoolean("first_run"))		
+			mapp.reloadItemsFromDisk();
+		
 		Log.i(TAG, "Now fetching items...");
-		while (mapp.saveItemsData(xcvr.fetchSomeItems(mapp.getMax_read_id())) >= 0)
-			logProgress();
+		while (mapp.saveItemsData(xcvr.fetchSomeItems(mapp.getMax_read_id())) >= 0) 
+			{};
+		
+		Log.i(TAG, "Culling on-disk storage...");
+		mapp.cullItemFiles();
+		
+		Log.i(TAG, "Cullng in-memory storage...");
+		mapp.sweepReadItems();
 		
 		mapp.download_complete();
 		tend = System.currentTimeMillis();
 		Double elapsed = (tend - tzero) / 1000.0;
-		Log.i(TAG, "Feed download complete, " + elapsed + " seconds elapsed to get " + mapp.getNumItems() + " items."); 
+		Log.i(TAG, "Service complete, " + elapsed + " seconds elapsed, "
+		+ mapp.getNumItems() + " items."); 
 	}
 
 }

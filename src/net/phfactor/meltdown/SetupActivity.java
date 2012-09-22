@@ -46,10 +46,11 @@ public class SetupActivity extends Activity implements OnClickListener
 		password = tv.getText().toString();
 		
 		mapp.setConfig(url, email, password);
-		RestClient rc = new RestClient(mapp);
-		if (rc.checkAuth())
+		
+		if (mapp.verifyLogin())
 		{
 			Toast.makeText(SetupActivity.this, "Logged in OK!", Toast.LENGTH_SHORT).show();
+			mapp.startUpdates();
 			SetupActivity.this.finish();			
 		}
 		else

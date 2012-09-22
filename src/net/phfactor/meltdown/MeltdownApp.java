@@ -1,10 +1,5 @@
 package net.phfactor.meltdown;
 
-import java.io.ByteArrayOutputStream;
-import java.io.FileInputStream;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -41,20 +36,18 @@ public class MeltdownApp extends Application
 	private List<RssGroup> groups;
 	private List<RssFeed> feeds;
 	private List<RssItem> items;
-	
-	private List<Integer> new_items;
-	
+		
 	private int max_read_id;
 	private int max_fetched_id;
 	private int max_id_on_server;
+	@SuppressWarnings("unused")
 	private long last_refresh_time;
 	
 	private RestClient xcvr;
-
-	public Boolean updateInProgress;
-
 	private SharedPreferences prefs;
 	private SharedPreferences.Editor editor;
+
+	public Boolean updateInProgress;
 
 	public MeltdownApp()
 	{
@@ -67,15 +60,14 @@ public class MeltdownApp extends Application
 		super.onCreate();
 
 		Log.i(TAG, "App created, initializing");
-	
-		// TODO Save/reload indices from disk
-		clearAllData();
-
 		max_read_id = 0;
 		max_fetched_id = 0;
 		max_id_on_server = 0;
 		last_refresh_time = 0L;
-		updateInProgress = false;
+		updateInProgress = false;		
+	
+		// Reload indices from disk before we start downloading
+		clearAllData();
 		
 		prefs = getSharedPreferences(TAG, Context.MODE_PRIVATE);
 		xcvr = new RestClient(this);		
@@ -84,14 +76,29 @@ public class MeltdownApp extends Application
 		Log.i(TAG, "App init completed.");
 	}
 	
-	private void startUpdates()
+	protected synchronized void clearAllData() 
 	{
-		startService(new Intent(this, Downloader.class));
+		this.feeds = new ArrayList<RssFeed>();
+		this.groups = new ArrayList<RssGroup>();
+		this.items = new ArrayList<RssItem>();
+	}
+		
+	/*
+	 * Start the Downloader, and add it to twice-hourly (approximate) via alarm service. We use
+	 * inexact to save battery life; the fetches can be off but that's fine.
+	 */
+	protected void startUpdates()
+	{
+		// Tell downloader that this is the first run, so it should reload the items from disk
+		Intent sIntent = new Intent(this, Downloader.class);
+		sIntent.putExtra("first_run", true);
+		startService(sIntent);
 		
 		Log.i(TAG, "Setting up periodic updates...");
 		
     	Context ctx = getApplicationContext();
 		Intent svc_intent = new Intent(ctx, Downloader.class);
+		svc_intent.putExtra("first_run", false);
 		PendingIntent pending_intent = PendingIntent.getService(ctx, 0, svc_intent, PendingIntent.FLAG_UPDATE_CURRENT);
 		AlarmManager am = (AlarmManager) ctx.getSystemService(Context.ALARM_SERVICE);
 		am.setInexactRepeating(AlarmManager.ELAPSED_REALTIME, SystemClock.elapsedRealtime(), 
@@ -100,43 +107,13 @@ public class MeltdownApp extends Application
 		Log.d(TAG, "Score update service scheduled for execution");		
 	}
 	
-	// Helper method - used by landing page to display progress bar
-	// FIXME
-	public int getProgress()
-	{
-		if (!updateInProgress)
-			return 100;
-		
-		// FIXME Make sure these variables are being written by RestClient and/or methods here!!
-		int numerator = (max_read_id - max_fetched_id);
-		int denominator = (max_id_on_server - max_fetched_id);
-		
-		if (denominator > 0)
-			return (int) (numerator / denominator);
-		else
-			return 0;
-	}
-	
 	public int getNumItems()
 	{
 		return items.size();
 	}
 	
-	@Override
-	public void onLowMemory() 
-	{
-		super.onLowMemory();
-		Log.w(TAG, "Low memory triggered!");
-	}
-
-	@Override
-	public void onTrimMemory(int level) 
-	{
-		super.onTrimMemory(level);
-		Log.w(TAG, "Trim memory called!");
-	}
-
-	// Simple helper - if items is empty, we are waiting for something
+	// Simple helper - if items is empty, we are waiting for something. Used by main page as a way
+	// to keep or dismiss the progress dialog.
 	protected Boolean waiting_for_data()
 	{
 		return (items.size() == 0);
@@ -211,7 +188,8 @@ public class MeltdownApp extends Application
 			int items_feed_id = items.get(item_idx).feed_id;
 			if (group.feed_ids.contains(items_feed_id))
 			{
-				rc.add(items.get(item_idx).id);
+				if (items.get(item_idx).is_read == false)
+					rc.add(items.get(item_idx).id);
 			}
 		}
 		
@@ -225,7 +203,7 @@ public class MeltdownApp extends Application
 		return itemsForGroup(group_id).size();
 	}
 	
-	// Return items, with HTML loaded from disk. Could lazy-load the HTML on item display.... TODO
+	// Return items, with HTML only loaded at the last minute.
 	public List<RssItem> getFullItemsForGroup(int group_id)
 	{
 		ArrayList<RssItem> rc = new ArrayList<RssItem>();
@@ -241,10 +219,7 @@ public class MeltdownApp extends Application
 			int items_feed_id = items.get(item_idx).feed_id;
 			if (grp.feed_ids.contains(items_feed_id))
 			{
-				RssItem current_item = items.get(item_idx);
-				// Grab the HTML from disk
-				current_item.html = loadFromFile(current_item.id);
-				rc.add(current_item);
+				rc.add(items.get(item_idx));
 			}
 		}
 		Log.d(TAG, rc.size() + " items for group ID " + group_id);
@@ -269,21 +244,6 @@ public class MeltdownApp extends Application
 		for (int idx = 0; idx < nums.length; idx++)
 			rc.add(Integer.valueOf(nums[idx]));
 		return rc;
-	}
-
-	private void saveFeedsGroupsData(JSONObject payload) throws JSONException
-	{
-		JSONArray fg_arry = payload.getJSONArray("feeds_groups");
-		for (int idx = 0; idx < fg_arry.length(); idx++)
-		{
-			JSONObject cur_grp = fg_arry.getJSONObject(idx);
-			int grp_id = cur_grp.getInt("group_id");
-			for (int grp_idx = 0; grp_idx < groups.size(); grp_idx++)
-			{
-				if (groups.get(grp_idx).id == grp_id)
-					groups.get(grp_idx).feed_ids = gsToListInt(cur_grp.getString("feed_ids"));
-			}
-		}
 	}
 
 	public List<RssGroup> getGroups()
@@ -311,6 +271,22 @@ public class MeltdownApp extends Application
 	 * REST callback methods
 	 */
 	
+	// Feeds groups associate groups with the feeds they contain.
+	private void saveFeedsGroupsData(JSONObject payload) throws JSONException
+	{
+		JSONArray fg_arry = payload.getJSONArray("feeds_groups");
+		for (int idx = 0; idx < fg_arry.length(); idx++)
+		{
+			JSONObject cur_grp = fg_arry.getJSONObject(idx);
+			int grp_id = cur_grp.getInt("group_id");
+			for (int grp_idx = 0; grp_idx < groups.size(); grp_idx++)
+			{
+				if (groups.get(grp_idx).id == grp_id)
+					groups.get(grp_idx).feed_ids = gsToListInt(cur_grp.getString("feed_ids"));
+			}
+		}
+	}
+
 	/*!
 	 *  Take the data returned from a groups fetch, parse and save into data model.
 	 */
@@ -373,6 +349,8 @@ public class MeltdownApp extends Application
 		if (payload == null)
 			return 0;
 		
+		Context ctx = getApplicationContext();
+		
 		try
 		{
 			JSONObject jdata = new JSONObject(payload);
@@ -390,24 +368,23 @@ public class MeltdownApp extends Application
 			for (int idx = 0; idx < jitems.length(); idx++)
 			{
 				this_item = new RssItem(jitems.getJSONObject(idx));
-				this.max_read_id = Math.max(this.max_read_id, this_item.id);
+				setMaxLocal(this_item);
 
 				// Skip over items that've been read already
 				if (this_item.is_read)
 					continue;
+
 				
-				// Save ID to new-items list for post-DL cleanup
-				new_items.add(this_item.id);
+				// Save it to disk
+				this_item.saveToFile(ctx);
 				
-				// Save off the bulky HTML to SQLite
-				saveToFile(this_item.id, this_item.html);
-				
-				// This should trigger GC of the now-orphaned HTML
-				this_item.html = "";
+				// Remove the HTML for later loading if needed
+				this_item.dropHTML();
 				
 				items.add(this_item);
 			}
-			Log.i(TAG, items.size() - old_size +" items added, " + items.size() + " total");
+			Log.i(TAG, items.size() - old_size +" items added, " + jitems.length() + " in payload, "
+			+ items.size() + " total, " + getMax_read_id() + " max ID");
 			return jitems.length();
 		} catch (JSONException e) 
 		{
@@ -416,27 +393,148 @@ public class MeltdownApp extends Application
 		
 		return 0;		
 	}
-
-	private synchronized int removePost(int post_id)
+	
+	// At startup, load all of the items from disk, and reset max_ids before starting download from server.
+	// Called by the Downloader, as this takes minutes for 10k items on a nexus7.
+	protected void reloadItemsFromDisk()
 	{
-		Log.d(TAG, items.size() + " before delete");
-		for (int idx = 0; idx < items.size(); idx++)
+		Log.d(TAG, "Starting load of data from disk");
+		Long tzero = System.currentTimeMillis();
+		Long last_printf = System.currentTimeMillis();
+		Long notif_delta = 2000L;
+		
+		String[] files = fileList();
+		int fcount = 0;
+		Context ctx = getApplicationContext();
+		
+		for (int idx = 0; idx < files.length; idx++)
 		{
-			if (items.get(idx).id == post_id)
+			// Polish - display an update every couple seconds
+			if ((System.currentTimeMillis() - last_printf) >= notif_delta)
 			{
-				Log.d(TAG, "Removing post id " + idx);
-				items.remove(idx);
-				Log.d(TAG, items.size() + " after delete");
-				return 0;
+				last_printf = System.currentTimeMillis();
+				Log.d(TAG, " - at " + idx + " of " + files.length + " files");
+			}
+			
+			int post_id = filenameToInt(files[idx]);
+			if (post_id > 0)
+			{
+				RssItem item = new RssItem(ctx, post_id);
+				items.add(item);
+				setMaxLocal(item);
+				fcount++;
 			}
 		}
-		return 1;		
+		Log.d(TAG, files.length + " files processed, " + fcount + " loaded in " + 
+		((System.currentTimeMillis() - tzero) / 1000L) + " seconds");
+		Log.d(TAG, "Max read ID is now " + max_read_id);
 	}
 	
+	
+	private void setMaxLocal(RssItem item)
+	{
+		max_read_id = Math.max(max_read_id, item.id);
+	}
+	
+	
+	/*
+	 * Iterate over the items, remove any that are marked read. GC, called by Downloader 
+	 * and when exiting a group view. Mark and sweep GC, very basic.
+	 */
+	protected void sweepReadItems()
+	{
+		Long tzero = System.currentTimeMillis();
+		Log.d(TAG, "Starting sweep of read items...");
+		int item_count = 0;
+
+		for (int idx = 0; idx < items.size(); idx++)
+		{
+			RssItem item = items.get(idx);
+			if (item.is_read)
+			{
+				item_count++;
+				item.deleteDiskFile();
+				
+				// Is this valid? To remove an entry as we iterate over it?
+				items.remove(idx);
+			}
+		}		
+		Log.d(TAG, item_count + " items removed in " + (System.currentTimeMillis() - tzero) + " msec, " + items.size() + " remaining");
+	}
+	
+	
+	protected Boolean verifyLogin()
+	{
+		// FIXME Async login check
+		return haveSetup();
+	}
+	
+	// Mark an item/post as read, both locally and on the server.
 	public synchronized void markItemRead(int item_id)
 	{
-		removePost(item_id);
+		// Get the server update running in the background
 		xcvr.markItemRead(item_id);
+
+		RssItem item = findPostById(item_id);
+		if (item != null)
+		{
+			item.is_read = true;
+		}
+	}
+	
+	// Mark some thread read in a group matching a given title.
+	// Use case is long-running threads in RSS feeds from WatchUSeek and similar.
+	protected int markGroupThreadRead(int group_id, String title)
+	{
+		int rm_count = 0;
+		RssGroup grp = findGroupById(group_id);
+		if (grp == null)
+		{
+			Log.e(TAG, "Unable to locate group " + group_id);
+			return 0;
+		}
+	
+		Log.d(TAG, "Starting to mark thread '" + title + "' in group " + grp.title + " as read");
+		for (int idx = 0; idx < items.size(); idx++)
+		{
+			int feed_id = items.get(idx).feed_id;
+			if (grp.feed_ids.contains(feed_id))
+			{
+				if (title.equals(items.get(idx).title))
+				{
+					markItemRead(items.get(idx).id);
+					rm_count++;
+				}
+			}
+		}
+		
+		sweepReadItems();
+		
+		Log.d(TAG, "Completed marking group as read, " + rm_count + " removed.");		
+		return rm_count;
+	}
+	
+	// Iterate over a group, and mark all of the items in it as read.
+	protected synchronized void markGroupRead(int group_id)
+	{
+		RssGroup grp = findGroupById(group_id);
+		if (grp == null)
+		{
+			Log.e(TAG, "Unable to locate group " + group_id);
+			return;
+		}
+	
+		Log.d(TAG, "Starting to mark group " + grp.title + " as read");
+		for (int idx = 0; idx < items.size(); idx++)
+		{
+			int feed_id = items.get(idx).feed_id;
+			if (grp.feed_ids.contains(feed_id))
+				markItemRead(items.get(idx).id);
+		}
+		
+		sweepReadItems();
+		
+		Log.d(TAG, "Completed marking group as read");
 	}
 
 	/*
@@ -450,18 +548,28 @@ public class MeltdownApp extends Application
 		String delims = "[.]";
 		String[] tokens = filename.split(delims);
 		if (tokens.length == 2)
-			return (Integer.parseInt(tokens[0]));
+		{
+			try
+			{
+				return (Integer.parseInt(tokens[0]));				
+			} catch (NumberFormatException nfe)
+			{
+				return -1;
+			}
+		}
 		
 		Log.e(TAG, "Unable to parse " + filename);
 		return -1;
 	}
 	
-	private void cullItemFiles()
+	/* Sweep disk files and remove any not present in the in-memory items array
+	 * 
+	 */
+	protected void cullItemFiles()
 	{
 		Log.d(TAG, "Starting cull of on-disk files");
 		Long ftzero = System.currentTimeMillis();
-		
-		int new_count = 0, old_count = 0;
+		int rm_ct = 0;
 		
 		String[] filenames = fileList();
 		for (int idx = 0; idx < filenames.length; idx++)
@@ -469,15 +577,12 @@ public class MeltdownApp extends Application
 			int fn_idx = filenameToInt(filenames[idx]);
 			if (fn_idx > 0)
 			{
-				if (new_items.contains(fn_idx))
+				if (findPostById(fn_idx) == null)
 				{
-					new_count++;
-				}
-				else
-				{
-					old_count++;
 					if (!deleteFile(filenames[idx]))
 						Log.e(TAG, " error removing " + filenames[idx]);
+					else
+						rm_ct++;
 				}
 			}
 			else
@@ -485,80 +590,19 @@ public class MeltdownApp extends Application
 		}
 		
 		Long ftend = System.currentTimeMillis();
-		Log.d(TAG, "Cull completed in " + (ftend - ftzero) / 1000L + " seconds");
-		Log.d(TAG, "New: " + new_count + " old: " + old_count + " ref: " + new_items.size());
-		if (new_items.size() != new_count)
-			Log.e(TAG, "CULL COUNT MISMATCH!!!");
+		Log.d(TAG, "Cull of " + filenames.length + " completed in " + (ftend - ftzero) / 1000L + " seconds, " +
+		rm_ct + " removed.");
 	}
 	
 	// Called by Downloader - this cues the creation of old-vs-new lists for post-download GC
 	protected void download_start()
 	{
 		this.updateInProgress = true;
-		this.new_items = new ArrayList<Integer>();
 	}
 	
 	protected void download_complete()
-	{
-		cullItemFiles();
-		
+	{		
 		this.updateInProgress = false;
-	}
-	
-	protected synchronized void clearAllData() 
-	{
-		// FIXME sync items files and delete outdated and read items		
-		this.feeds = new ArrayList<RssFeed>();
-		this.groups = new ArrayList<RssGroup>();
-		this.items = new ArrayList<RssItem>();
-	}
-	
-	// PLan B. http://developer.android.com/guide/topics/data/data-storage.html
-	private void saveToFile(int id, String html)
-	{
-		String filename = String.format("%d.post", id);
-		
-		try 
-		{
-			FileOutputStream fos = openFileOutput(filename, Context.MODE_PRIVATE);
-			fos.write(html.getBytes());
-			fos.close();
-		}
-		catch (FileNotFoundException fe)
-		{
-			Log.e(TAG, "File error", fe);
-		} catch (IOException e) 
-		{
-			Log.e(TAG, "File error on item " + id, e);
-		}
-	}
-	
-	private String loadFromFile(int id)
-	{
-		String filename = String.format("%d.post", id);
-		ByteArrayOutputStream buffer = new ByteArrayOutputStream();
-		
-		try 
-		{
-			FileInputStream fos = openFileInput(filename);
-			int r_char = fos.read();
-			
-			while (r_char > -1)
-			{
-				buffer.write(r_char);
-				r_char = fos.read();
-			}
-			fos.close();
-		}			
-		catch (FileNotFoundException fe)
-		{
-			Log.e(TAG, "File error", fe);
-		} catch (IOException e) 
-		{
-			Log.e(TAG, "File error on item " + id, e);
-		}
-		
-		return buffer.toString();
 	}
 	
 	// Prefs currently used for storing and retrieving server/email/password

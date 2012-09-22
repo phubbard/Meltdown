@@ -125,7 +125,7 @@ public class RestClient
 	
 	// Asynchronously mark a post as read.
 	/*
-	 *  FIXME looks like the post args have to be in the body. Bizarre.
+	 *  The post args have to be in the body. 
 	 *  POST:	api_key=blah&mark=item&as=read&id=57163
 	 */
 	public void markItemRead(int post_id)
@@ -160,7 +160,7 @@ public class RestClient
 			client = AndroidHttpClient.newInstance("Meltdown");
 			HttpPost post = new HttpPost(mapp.getAPIUrl());
 			
-			Log.d(TAG, "URL: " + mapp.getAPIUrl() + " vars: " + variables);
+			//Log.d(TAG, "URL: " + mapp.getAPIUrl() + " vars: " + variables);
 			 
 			// Tell Apache we'll take gzip; should compress really well.
 			AndroidHttpClient.modifyRequestToAcceptGzipResponse(post);
@@ -170,7 +170,7 @@ public class RestClient
 			StringEntity payload;
 			String full_post_vars = String.format("api_key=%s&%s", auth_token, variables);
 			payload = new StringEntity(full_post_vars, "UTF-8");
-			Log.d(TAG, "Payload: " + full_post_vars);
+			//Log.d(TAG, "Payload: " + full_post_vars);
 			post.setEntity(payload);				
 	
 			//Log.d(TAG, "executing post...");

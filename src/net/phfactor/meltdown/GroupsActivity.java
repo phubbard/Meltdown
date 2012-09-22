@@ -30,15 +30,27 @@ public class GroupsActivity extends ListActivity
     private GroupListAdapter mAdapter;
 	
 	private MeltdownApp app;
-	private Boolean in_background;
 	private ProgressDialog pd;
 	
 	@Override
 	public void onCreate(Bundle savedInstanceState) 
 	{
 		super.onCreate(savedInstanceState);
-		in_background = false;
 		Log.i(TAG, "GA created");
+		setContentView(R.layout.list);
+	}
+	
+	@Override
+	protected void onPause()
+	{
+		super.onPause();
+		Log.d(TAG, "now pausing...");
+	}
+
+	@Override
+	protected void onResume()
+	{
+		super.onResume();
 		app = (MeltdownApp) this.getApplicationContext();
 		
 		// TODO run setup if login errors out?
@@ -49,32 +61,12 @@ public class GroupsActivity extends ListActivity
 			Toast.makeText(this, "Please configure your server", Toast.LENGTH_SHORT).show();
 			return;
 		}
-
-		setContentView(R.layout.list);
-	}
-	
-	@Override
-	protected void onPause()
-	{
-		super.onPause();
-		in_background = true;
-	}
-
-	@Override
-	protected void onResume()
-	{
-		super.onResume();
-		in_background = false;
-		
 		doRefresh();
 	}
 
 	public void doRefresh()
 	{
 		pd = new ProgressDialog(this);
-		
-		pd.setProgressStyle(ProgressDialog.STYLE_HORIZONTAL);
-		pd.setIndeterminate(false);
 		pd.setMessage("Fetching groups, feeds & items...");
 		pd.show();
 
@@ -87,16 +79,12 @@ public class GroupsActivity extends ListActivity
 			}
 			protected Void doInBackground(Void... args) 
 			{
-				while ((app.updateInProgress) || app.waiting_for_data())
+				while (app.updateInProgress)
 				{
 					try
 					{
 						// Just busy-wait for Downloader to run
 						Thread.sleep(500);
-						
-						if (!in_background)
-							pd.setProgress(app.getProgress());
-						
 					} catch (InterruptedException e)
 					{
 						e.printStackTrace();
@@ -108,8 +96,7 @@ public class GroupsActivity extends ListActivity
 			@Override
 			protected void onPostExecute(Void arg) 
 			{
-				if (!in_background)
-					pd.dismiss();
+				pd.dismiss();
 				
 				mAdapter = new GroupListAdapter(GroupsActivity.this, app.getGroups());
 				setListAdapter(mAdapter);
@@ -129,18 +116,14 @@ public class GroupsActivity extends ListActivity
 						bundle.putInt("group_id", group.id);
 						intent.putExtras(bundle);
 						startActivity(intent);
-		        	}
-		        	
+		        	}		        	
 		        });
 			}
 		}
-
-		new GGTask().execute();
-		
+		new GGTask().execute();		
 		// TODO Change title to include number of unread items?
 	}
 	
-
     /**
      * ArrayAdapter encapsulates a java.util.List of T, for presentation in a
      * ListView. This subclass specializes it to hold RssItems and display
@@ -213,8 +196,6 @@ public class GroupsActivity extends ListActivity
 		}
 		return false;
 	}
-
-
 
 	@Override
 	public boolean onCreateOptionsMenu(Menu menu) 

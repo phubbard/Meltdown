@@ -1,4 +1,7 @@
 <menu xmlns:android="http://schemas.android.com/apk/res/android">
     <item android:id="@+id/itemNextArticle" android:title="@string/next_item"></item>
     <item android:id="@+id/menu_load_page" android:title="@string/menu_load_page"></item>
+    <item android:id="@+id/itemShare" android:title="@string/itmShare"
+        android:actionProviderClass="android.widget.ShareActionProvider" 
+        android:showAsAction="ifRoom|collapseActionView"></item>
 </menu>

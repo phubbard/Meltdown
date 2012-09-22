@@ -12,4 +12,7 @@
     <string name="menu_load_page">Load URL</string>
     <string name="itmBtnOpen">Open URL</string>
     <string name="itmBtnNext">Next</string>
+    <string name="mgdMarkAllRead">Mark all items in group as read</string>
+    <string name="mgdMARb">Mark all read</string>
+    <string name="itmShare">Share</string>
 </resources>

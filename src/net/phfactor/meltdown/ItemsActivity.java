@@ -3,19 +3,26 @@ package net.phfactor.meltdown;
 import java.util.ArrayList;
 import java.util.List;
 
+import android.app.AlertDialog;
 import android.app.ListActivity;
 import android.app.ProgressDialog;
 import android.content.Context;
+import android.content.DialogInterface;
 import android.content.Intent;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.LayoutInflater;
+import android.view.Menu;
+import android.view.MenuInflater;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.AdapterView.OnItemClickListener;
+import android.widget.AdapterView.OnItemLongClickListener;
 import android.widget.ArrayAdapter;
 import android.widget.ListView;
+import android.widget.Toast;
 import android.widget.TwoLineListItem;
 
 public class ItemsActivity extends ListActivity 
@@ -26,9 +33,6 @@ public class ItemsActivity extends ListActivity
      */
     private RSSListAdapter mAdapter;
 	
-    // Take this many chars from the front of the description.
-    public static final int SNIPPET_LENGTH = 87;
-
     private MeltdownApp app;
 	private String group_name;
 	private int group_id;
@@ -58,18 +62,9 @@ public class ItemsActivity extends ListActivity
         // which ListActivity adopts as its list -- we can
         // access it with getListView().
 
-		ProgressDialog pd = new ProgressDialog(this);
-		pd.setIndeterminate(true);
-		pd.show();
-		items = app.getFullItemsForGroup(group_id);
-		
 		// TODO Refresh on drag down
 		lv.setOverscrollHeader(getWallpaper());
 		
-        // Install our custom RSSListAdapter.
-        mAdapter = new RSSListAdapter(this, items);
-        getListView().setAdapter(mAdapter);
-
         lv.setOnItemClickListener(new OnItemClickListener()
         {
         	@Override
@@ -79,7 +74,23 @@ public class ItemsActivity extends ListActivity
         	}
         });
         
-		pd.dismiss();        
+        lv.setOnItemLongClickListener(new OnItemLongClickListener()
+		{
+
+			@Override
+			public boolean onItemLongClick(AdapterView<?> arg0, View view,
+					int pos, long id)
+			{
+				RssItem item = (RssItem) getListView().getItemAtPosition(pos);
+				
+				int rm_ct = app.markGroupThreadRead(group_id, item.title);
+				reloadItemsAndView();
+				Toast.makeText(ItemsActivity.this, rm_ct + " item(s) removed", Toast.LENGTH_LONG).show();
+				return true;
+			}
+		});
+        
+        reloadItemsAndView();
 	}
 	
 
@@ -126,23 +137,22 @@ public class ItemsActivity extends ListActivity
             // the description look better, we strip out the
             // tags and take just the first SNIPPET_LENGTH chars.
             view.getText1().setText(item.title);
-            String descr = item.html;
-            descr = removeTags(descr);
-            String final_descr = descr.substring(0, Math.min(descr.length(), SNIPPET_LENGTH)) + "...";
-            view.getText2().setText(final_descr);
+            view.getText2().setText(item.excerpt);
             return view;
         }
     }
 
-    /**
-     * Simple code to strip out <tag>s -- primitive way to sort of display HTML as
-     * plain text.
+    /*
+     * Reload items and the list view adapter - used when contents change.
+     * TODO Research mutable listviews - dynamic possible?
      */
-    public String removeTags(String str) 
+    private void reloadItemsAndView()
     {
-        str = str.replaceAll("<.*?>", " ");
-        str = str.replaceAll("\\s+", " ");
-        return str;
+		items = app.getFullItemsForGroup(group_id);
+		
+        // Install our custom RSSListAdapter.		
+        mAdapter = new RSSListAdapter(this, items);
+        getListView().setAdapter(mAdapter);    	
     }
 
     /**
@@ -155,8 +165,11 @@ public class ItemsActivity extends ListActivity
         mAdapter = new RSSListAdapter(this, items);
         getListView().setAdapter(mAdapter);
     }
-
-	
+    
+    
+	/* Open a post/item, and note if the user hits back or next to get out. If back, we don't
+	 * mark it as read.
+	 */
 	private void viewPost(int position)
 	{
 		RssItem item = (RssItem) getListView().getItemAtPosition(position);
@@ -170,6 +183,36 @@ public class ItemsActivity extends ListActivity
 		// http://developer.android.com/training/basics/intents/result.html
 		startActivityForResult(intent, item.id);						
 	}
+
+	/* Want to make sure that user wants to mark an entire group as read - 
+	 * this is harder than you'd expect, see
+	 * http://stackoverflow.com/questions/2478517/how-to-display-a-yes-no-dialog-box-in-android
+	 */
+	private void showARDialog()
+	{
+		DialogInterface.OnClickListener dcl = new DialogInterface.OnClickListener(){
+			@Override
+			public void onClick(DialogInterface dialog, int which)
+			{
+				switch(which)
+				{
+				case DialogInterface.BUTTON_POSITIVE:
+					app.markGroupRead(group_id);
+					finish();
+					return;
+				case DialogInterface.BUTTON_NEGATIVE:
+					return;
+				}
+			}
+		};
+		
+		AlertDialog.Builder builder = new AlertDialog.Builder(this);
+		builder.setMessage(String.format("Do you want to mark %d items as read in group %s?", 
+				app.unreadItemCount(group_id), group_name));
+		builder.setPositiveButton("Yes", dcl);
+		builder.setNegativeButton("No", dcl);
+		builder.show();
+	}
 	
 	@Override
 	protected void onActivityResult(int requestCode, int resultCode, Intent data) 
@@ -177,6 +220,7 @@ public class ItemsActivity extends ListActivity
 		if (resultCode == RESULT_OK)
 		{
 			Log.d(TAG, "Item #" + requestCode + " displayed and marked as read");
+			app.sweepReadItems();
 			
 			// Out of posts?
 			if (app.unreadItemCount(group_id) == 0)
@@ -193,5 +237,26 @@ public class ItemsActivity extends ListActivity
 			Log.d(TAG, "Item display cancelled, leaving unread");
 	}
 	
+	@Override
+	public boolean onOptionsItemSelected(MenuItem item) 
+	{
+		switch (item.getItemId())
+		{
+		case R.id.itemMGDr:
+			// Mark entire group as read - confirm first
+			showARDialog();
+			return true;
+		}
+		
+		return false;
+	}
+    
+	@Override
+	public boolean onCreateOptionsMenu(Menu menu) 
+    {
+    	MenuInflater infl = getMenuInflater();
+    	infl.inflate(R.menu.activity_group, menu);
+    	return true;
+	}
 
 }
