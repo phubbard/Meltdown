@@ -26,12 +26,10 @@ public class SetupActivity extends Activity implements OnClickListener
 		{
 			TextView tv = (TextView) findViewById(R.id.sServerUrl);
 			tv.setText(mapp.getURL());
-			tv = (TextView) findViewById(R.id.sEmail);
-			tv.setText(mapp.getEmail());
-			tv = (TextView) findViewById(R.id.sPass);
-			tv.setText(""); 
 		}
 	}
+	
+	// TODO Add update interval to prefs
 	
 	@Override
 	public void onClick(View v) 

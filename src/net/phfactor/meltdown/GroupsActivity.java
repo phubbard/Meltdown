@@ -3,7 +3,6 @@ package net.phfactor.meltdown;
 import java.util.List;
 
 import android.app.ListActivity;
-import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.Intent;
 import android.os.AsyncTask;
@@ -30,23 +29,15 @@ public class GroupsActivity extends ListActivity
     private GroupListAdapter mAdapter;
 	
 	private MeltdownApp app;
-	private ProgressDialog pd;
 	
 	@Override
 	public void onCreate(Bundle savedInstanceState) 
 	{
 		super.onCreate(savedInstanceState);
-		Log.i(TAG, "GA created");
 		setContentView(R.layout.list);
+		getActionBar().setSubtitle("Starting up...");
 	}
 	
-	@Override
-	protected void onPause()
-	{
-		super.onPause();
-		Log.d(TAG, "now pausing...");
-	}
-
 	@Override
 	protected void onResume()
 	{
@@ -66,17 +57,15 @@ public class GroupsActivity extends ListActivity
 
 	public void doRefresh()
 	{
-		pd = new ProgressDialog(this);
-		pd.setMessage("Fetching groups, feeds & items...");
-		pd.show();
-
 		class GGTask extends AsyncTask<Void, Void, Void> 
 		{
 			@Override
 			protected void onPreExecute() 
 			{
 				super.onPreExecute();
+				getActionBar().setSubtitle("Updating");
 			}
+			
 			protected Void doInBackground(Void... args) 
 			{
 				while (app.updateInProgress)
@@ -96,13 +85,12 @@ public class GroupsActivity extends ListActivity
 			@Override
 			protected void onPostExecute(Void arg) 
 			{
-				pd.dismiss();
-				
+				getActionBar().setSubtitle(app.getTotalUnread() + " to read");
 				mAdapter = new GroupListAdapter(GroupsActivity.this, app.getGroups());
 				setListAdapter(mAdapter);
 		        final ListView lv = getListView();
 
-		        // TODO Display already-read on long click?
+		        // TODO Use ActionBar tabs for new/read/saved/sparks/river
 		        lv.setOnItemClickListener(new OnItemClickListener()
 		        {
 		        	@Override
@@ -121,7 +109,6 @@ public class GroupsActivity extends ListActivity
 			}
 		}
 		new GGTask().execute();		
-		// TODO Change title to include number of unread items?
 	}
 	
     /**

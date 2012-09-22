@@ -43,7 +43,7 @@ public class RestClient
 	public RestClient(MeltdownApp g_app)
 	{
 		mapp = g_app;
-		auth_token = g_app.makeAuthToken();
+		auth_token = g_app.getToken();
 	}
 	
 	public Boolean checkAuth()

@@ -33,19 +33,19 @@ public class Downloader extends IntentService
 		mapp = (MeltdownApp) getApplication();
 		xcvr = new RestClient(mapp);
 
-		tzero = System.currentTimeMillis();
-		Log.i(TAG, "Beginning download");
-		
 		if (!mapp.haveSetup())
 		{
 			Log.w(TAG, "Setup incomplete, cannot download");
 			return;
 		}
 		
+		tzero = System.currentTimeMillis();
+		Log.i(TAG, "Beginning update...");
 		mapp.download_start();
 		
 		Log.i(TAG, "Getting groups...");
 		mapp.saveGroupsData(xcvr.fetchGroups());
+		
 		Log.i(TAG, "Getting feeds....");
 		mapp.saveFeedsData(xcvr.fetchFeeds());
 		

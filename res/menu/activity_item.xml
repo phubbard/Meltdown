@@ -3,5 +3,5 @@
     <item android:id="@+id/menu_load_page" android:title="@string/menu_load_page"></item>
     <item android:id="@+id/itemShare" android:title="@string/itmShare"
         android:actionProviderClass="android.widget.ShareActionProvider" 
-        android:showAsAction="ifRoom|collapseActionView"></item>
+        android:showAsAction="ifRoom"></item>
 </menu>

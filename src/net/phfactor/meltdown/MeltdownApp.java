@@ -29,8 +29,7 @@ public class MeltdownApp extends Application
 	static final String C_HTML = "html";
 
 	private static final String P_URL = "serverUrl";
-	private static final String P_EMAIL = "email";
-	private static final String P_PASS = "pass";
+	private static final String P_TOKEN = "token";
 	private static final String P_LAST_FETCH = "last_ts";
 	
 	private List<RssGroup> groups;
@@ -66,8 +65,9 @@ public class MeltdownApp extends Application
 		last_refresh_time = 0L;
 		updateInProgress = false;		
 	
-		// Reload indices from disk before we start downloading
-		clearAllData();
+		this.feeds = new ArrayList<RssFeed>();
+		this.groups = new ArrayList<RssGroup>();
+		this.items = new ArrayList<RssItem>();
 		
 		prefs = getSharedPreferences(TAG, Context.MODE_PRIVATE);
 		xcvr = new RestClient(this);		
@@ -76,13 +76,6 @@ public class MeltdownApp extends Application
 		Log.i(TAG, "App init completed.");
 	}
 	
-	protected synchronized void clearAllData() 
-	{
-		this.feeds = new ArrayList<RssFeed>();
-		this.groups = new ArrayList<RssGroup>();
-		this.items = new ArrayList<RssItem>();
-	}
-		
 	/*
 	 * Start the Downloader, and add it to twice-hourly (approximate) via alarm service. We use
 	 * inexact to save battery life; the fetches can be off but that's fine.
@@ -102,7 +95,7 @@ public class MeltdownApp extends Application
 		PendingIntent pending_intent = PendingIntent.getService(ctx, 0, svc_intent, PendingIntent.FLAG_UPDATE_CURRENT);
 		AlarmManager am = (AlarmManager) ctx.getSystemService(Context.ALARM_SERVICE);
 		am.setInexactRepeating(AlarmManager.ELAPSED_REALTIME, SystemClock.elapsedRealtime(), 
-				AlarmManager.INTERVAL_HALF_HOUR, pending_intent);
+				AlarmManager.INTERVAL_FIFTEEN_MINUTES, pending_intent);
 
 		Log.d(TAG, "Score update service scheduled for execution");		
 	}
@@ -172,7 +165,6 @@ public class MeltdownApp extends Application
 		}
 		return null;
 	}
-	
 	
 	// Reverse index - search all items for those with a feed ID in the current groups' feed list
 	public List<Integer> itemsForGroup(int group_id)
@@ -251,9 +243,14 @@ public class MeltdownApp extends Application
 		return this.groups;
 	}
 	
+	public int getTotalUnread()
+	{
+		return items.size();
+	}
+	
 	// Used by top-level landing screen, returns a list of groups that have unread items in them.
 	// TODO index over items instead of groups - O(n) instead of n^2
-	public List<RssGroup> slowGetGroups()
+	public List<RssGroup> slowgetGroups()
 	{
 		List<RssGroup> rc = new ArrayList<RssGroup>();
 		
@@ -298,6 +295,8 @@ public class MeltdownApp extends Application
 		if (payload == null)
 			return;
 		
+		this.groups = new ArrayList<RssGroup>();
+
 		try
 		{
 			JSONObject jsonPayload = new JSONObject(payload);			
@@ -323,6 +322,8 @@ public class MeltdownApp extends Application
 		
 		if (payload == null)
 			return;
+		
+		this.feeds = new ArrayList<RssFeed>();
 		
 		try
 		{
@@ -370,11 +371,6 @@ public class MeltdownApp extends Application
 				this_item = new RssItem(jitems.getJSONObject(idx));
 				setMaxLocal(this_item);
 
-				// Skip over items that've been read already
-				if (this_item.is_read)
-					continue;
-
-				
 				// Save it to disk
 				this_item.saveToFile(ctx);
 				
@@ -382,6 +378,13 @@ public class MeltdownApp extends Application
 				this_item.dropHTML();
 				
 				items.add(this_item);
+				
+				// This should handle the case where the item was read elsewhere. Downloader will sweep when done. 
+				if (this_item.is_read)
+				{
+					markItemListRead(this_item.id);
+					continue;
+				}				
 			}
 			Log.i(TAG, items.size() - old_size +" items added, " + jitems.length() + " in payload, "
 			+ items.size() + " total, " + getMax_read_id() + " max ID");
@@ -469,17 +472,20 @@ public class MeltdownApp extends Application
 		return haveSetup();
 	}
 	
+	// Just updates the in-memory list
+	private void markItemListRead(int item_id)
+	{
+		RssItem item = findPostById(item_id);
+		if (item != null)
+			item.is_read = true;		
+	}
+	
 	// Mark an item/post as read, both locally and on the server.
 	public synchronized void markItemRead(int item_id)
 	{
 		// Get the server update running in the background
 		xcvr.markItemRead(item_id);
-
-		RssItem item = findPostById(item_id);
-		if (item != null)
-		{
-			item.is_read = true;
-		}
+		markItemListRead(item_id);
 	}
 	
 	// Mark some thread read in a group matching a given title.
@@ -645,8 +651,7 @@ public class MeltdownApp extends Application
 	{
 		editor = prefs.edit();
 		editor.putString(P_URL, url);
-		editor.putString(P_EMAIL, email);
-		editor.putString(P_PASS, password);
+		editor.putString(P_TOKEN, makeAuthToken(email, password));
 		editor.commit();
 	}
 	
@@ -655,14 +660,9 @@ public class MeltdownApp extends Application
 		return prefs.getString(P_URL, null);
 	}
 	
-	protected String getEmail()
+	protected String getToken()
 	{
-		return prefs.getString(P_EMAIL, null);
-	}
-	
-	private String getPass()
-	{
-		return prefs.getString(P_PASS, null);
+		return prefs.getString(P_TOKEN, null);
 	}
 	
 	protected String getAPIUrl()
@@ -686,17 +686,15 @@ public class MeltdownApp extends Application
 	{
 		if (prefs.getString(P_URL, null) == null)
 			return false;
-		if (prefs.getString(P_EMAIL, null) == null)
-			return false;
-		if (prefs.getString(P_PASS, null) == null)
+		if (prefs.getString(P_TOKEN, null) == null)
 			return false;
 		
 		return true;
 	}
 	
-	protected String makeAuthToken()
+	protected String makeAuthToken(String email, String pass)
 	{
-		String pre = String.format("%s:%s", getEmail(), getPass());
+		String pre = String.format("%s:%s", email, pass);
 		return md5(pre);
 	}
 	
