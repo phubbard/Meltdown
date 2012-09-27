@@ -49,19 +49,20 @@ public class Downloader extends IntentService
 		Log.i(TAG, "Getting feeds....");
 		mapp.saveFeedsData(xcvr.fetchFeeds());
 		
-		if (intent.getExtras().getBoolean("first_run"))		
-			mapp.reloadItemsFromDisk();
-		
 		Log.i(TAG, "Now fetching items...");
-		while (mapp.saveItemsData(xcvr.fetchSomeItems(mapp.getMax_read_id())) >= 0) 
-			{};
-		
+//		while (mapp.saveItemsData(xcvr.fetchSomeItems(mapp.getMaxItemID())) >= 0) 
+//			{};
+		mapp.gimmeANameFool(intent.getExtras().getBoolean(MeltdownApp.FIRST_RUN));
+
 		Log.i(TAG, "Culling on-disk storage...");
 		mapp.cullItemFiles();
 		
-		Log.i(TAG, "Cullng in-memory storage...");
-		mapp.sweepReadItems();
+//		Log.i(TAG, "Culling in-memory storage...");
+//		mapp.sweepReadItems();
 		
+		Log.i(TAG, "Creating index");
+		mapp.updateGroupIndices();
+	
 		mapp.download_complete();
 		tend = System.currentTimeMillis();
 		Double elapsed = (tend - tzero) / 1000.0;

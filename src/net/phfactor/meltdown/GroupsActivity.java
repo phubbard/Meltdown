@@ -5,6 +5,7 @@ import java.util.List;
 import android.app.ListActivity;
 import android.content.Context;
 import android.content.Intent;
+import android.graphics.Color;
 import android.os.AsyncTask;
 import android.os.Bundle;
 import android.util.Log;
@@ -86,7 +87,7 @@ public class GroupsActivity extends ListActivity
 			protected void onPostExecute(Void arg) 
 			{
 				getActionBar().setSubtitle(app.getTotalUnread() + " to read");
-				mAdapter = new GroupListAdapter(GroupsActivity.this, app.getGroups());
+				mAdapter = new GroupListAdapter(GroupsActivity.this, app.getUnreadGroups());
 				setListAdapter(mAdapter);
 		        final ListView lv = getListView();
 
@@ -150,7 +151,7 @@ public class GroupsActivity extends ListActivity
                 view = (TwoLineListItem) convertView;
             }
 
-            RssGroup grp = app.getGroups().get(position);
+            RssGroup grp = app.getUnreadGroups().get(position);
 
             // Set the item title and description into the view.
             view.getText1().setText(grp.title);
@@ -163,6 +164,11 @@ public class GroupsActivity extends ListActivity
             else
             	descr = String.format("%d unread items", unread_count);
             view.getText2().setText(descr);
+            
+            // Simulate zebra-striping - a touch of class. Maybe. Need to consider themes.
+            if (position % 2 == 0)
+            	view.setBackgroundColor(Color.LTGRAY);
+                        
             return view;
         }
     }

@@ -16,9 +16,12 @@ public class RssGroup
 {
 	static final String TAG = "MeltdownRssGroup";
 	
-	public  String title;
-	public  int id;
-	public  List<Integer> feed_ids;
+	public String title;
+	public int id;
+	public List<Integer> feed_ids;
+	
+	// This is derived from walking the data from the server
+	public List<Integer> items;
 	
 	public RssGroup(JSONObject data, MeltdownApp app)
 	{
@@ -27,6 +30,7 @@ public class RssGroup
 			this.title = data.getString("title");
 			this.id = data.getInt("id");
 			this.feed_ids = new ArrayList<Integer>();
+			this.items = new ArrayList<Integer>();
 			
 		} catch (JSONException e) 
 		{
@@ -34,6 +38,4 @@ public class RssGroup
 			e.printStackTrace();
 		}
 	}	
-	
-	
 }

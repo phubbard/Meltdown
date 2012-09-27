@@ -6,6 +6,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.UnsupportedEncodingException;
 import java.net.UnknownHostException;
+import java.util.List;
 
 import org.apache.http.HttpResponse;
 import org.apache.http.client.ClientProtocolException;
@@ -81,18 +82,30 @@ public class RestClient
 		return(syncGetUrl(url));
 	}
 	
-	/* As per API, request a chunk of feed items. Chunksize depends on the server and
-	 * number of unread in the queue. The output of this is the content, which is then fed
-	 * into the parser. 
-	 * 
-	 * TODO How do I cleanly detect end of items? And max item number?
-	 */
-	public String fetchSomeItems(int max_read_id)
+	public String fetchUnreadList()
 	{
-		// TODO Update percentages and read IDs		
-		String url = String.format("%s&items&since_id=%d", mapp.getAPIUrl(), max_read_id);
-		//Log.d(TAG, url);
-		return syncGetUrl(url);
+		String url = String.format(mapp.getAPIUrl() + "&unread_item_ids");
+		return(syncGetUrl(url));	
+	}
+	
+	// TODO Write Me!
+	private String makeItemListURL(List<Integer> ids)
+	{
+		String idstr = mapp.getAPIUrl() + "&items&with_ids=";
+		for (int idx = 0; idx < ids.size(); idx++)
+			idstr += String.format("%d,", ids.get(idx));
+		
+		// Remove trailing comma
+		return (idstr.substring(0, idstr.length() - 1));
+	}
+	
+	public String fetchListOfItems(List<Integer> ids)
+	{
+		if (ids.size() == 0)
+			return null;
+		
+		String url = makeItemListURL(ids);
+		return (syncGetUrl(url));
 	}
 	
     /*!

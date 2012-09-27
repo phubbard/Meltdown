@@ -1,14 +1,13 @@
 package net.phfactor.meltdown;
 
-import java.util.ArrayList;
 import java.util.List;
 
 import android.app.AlertDialog;
 import android.app.ListActivity;
-import android.app.ProgressDialog;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.graphics.Color;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.LayoutInflater;
@@ -119,7 +118,8 @@ public class ItemsActivity extends ListActivity
          * @see ArrayAdapter#getView
          */
         @Override
-        public View getView(int position, View convertView, ViewGroup parent) {
+        public View getView(int position, View convertView, ViewGroup parent)
+        {
             TwoLineListItem view;
 
             // Here view may be passed in for re-use, or we make a new one.
@@ -138,6 +138,11 @@ public class ItemsActivity extends ListActivity
             // tags and take just the first SNIPPET_LENGTH chars.
             view.getText1().setText(item.title);
             view.getText2().setText(item.excerpt);
+            
+            // FIXME Simulate zebra-striping - a touch of class. Maybe. Need to consider themes.
+            if (position % 2 == 0)
+            	view.setBackgroundColor(Color.LTGRAY);
+            
             return view;
         }
     }
@@ -148,25 +153,13 @@ public class ItemsActivity extends ListActivity
      */
     private void reloadItemsAndView()
     {
-		items = app.getFullItemsForGroup(group_id);
+		items = app.getItemsForGroup(group_id);
 		
         // Install our custom RSSListAdapter.		
         mAdapter = new RSSListAdapter(this, items);
         getListView().setAdapter(mAdapter);    	
     }
 
-    /**
-     * Resets the output UI -- list and status text empty.
-     */
-    public void resetUI() 
-    {
-        // Reset the list to be empty.
-        List<RssItem> items = new ArrayList<RssItem>();
-        mAdapter = new RSSListAdapter(this, items);
-        getListView().setAdapter(mAdapter);
-    }
-    
-    
 	/* Open a post/item, and note if the user hits back or next to get out. If back, we don't
 	 * mark it as read.
 	 */
@@ -220,7 +213,7 @@ public class ItemsActivity extends ListActivity
 		if (resultCode == RESULT_OK)
 		{
 			Log.d(TAG, "Item #" + requestCode + " displayed and marked as read");
-			app.sweepReadItems();
+			// app.sweepReadItems();
 			
 			// Out of posts?
 			if (app.unreadItemCount(group_id) == 0)
@@ -244,6 +237,7 @@ public class ItemsActivity extends ListActivity
 		{
 		case R.id.itemMGDr:
 			// Mark entire group as read - confirm first
+			// TODO User-set threshold - don't verify if below N items
 			showARDialog();
 			return true;
 		}

@@ -75,9 +75,11 @@ public class ItemDisplayActivity extends Activity
     {
     	Intent shareIntent = new Intent(Intent.ACTION_SEND);
     	shareIntent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_WHEN_TASK_RESET);
-    	shareIntent.setType("text/url");
+    	shareIntent.setType("text/plain");
     	shareIntent.putExtra(Intent.EXTRA_SUBJECT, rss_item.title);
-    	shareIntent.putExtra(Intent.EXTRA_TEXT, rss_item.url);
+    	
+    	String shareBody = String.format("%s\n\n -- Shared from Meltdown RSS Reader", rss_item.url);
+    	shareIntent.putExtra(Intent.EXTRA_TEXT, shareBody);
     	return shareIntent;
     }
     
@@ -102,7 +104,7 @@ public class ItemDisplayActivity extends Activity
 	private void nextItem()
 	{
 		// Mark-as-read is async/background task
-		app.markItemRead(cur_post);
+		app.markItemRead(cur_post, MeltdownApp.GROUP_UNKNOWN);
 		setResult(RESULT_OK);
 		finish();
 	}
