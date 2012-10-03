@@ -2,6 +2,7 @@ package net.phfactor.meltdown;
 
 import android.app.IntentService;
 import android.content.Intent;
+import android.support.v4.content.LocalBroadcastManager;
 import android.util.Log;
 
 /*!
@@ -17,6 +18,10 @@ public class Downloader extends IntentService
 	private RestClient xcvr;
 	private Long tzero, tend;
 	
+	static final String ACTION_UPDATED_GROUPS = "updatedGroups";
+	static final String ACTION_UPDATED_FEEDS = "updatedFeeds";
+	static final String ACTION_UPDATED_ITEMS = "updatedItems";
+	
 	public Downloader(String name) 
 	{
 		super(name);
@@ -25,6 +30,14 @@ public class Downloader extends IntentService
 	public Downloader()
 	{
 		super("Downloader");
+	}
+	
+	// See http://www.intertech.com/Blog/Post/Using-LocalBroadcastManager-in-Service-to-Activity-Communications.aspx
+	// Local-only async updates to any listening activities
+	private void sendLocalBroadcast(String action)
+	{
+		Intent intent = new Intent(action);
+		LocalBroadcastManager.getInstance(this).sendBroadcast(intent);
 	}
 	
 	@Override
@@ -45,23 +58,20 @@ public class Downloader extends IntentService
 		
 		Log.i(TAG, "Getting groups...");
 		mapp.saveGroupsData(xcvr.fetchGroups());
+		sendLocalBroadcast(ACTION_UPDATED_GROUPS);
 		
 		Log.i(TAG, "Getting feeds....");
 		mapp.saveFeedsData(xcvr.fetchFeeds());
+		sendLocalBroadcast(ACTION_UPDATED_FEEDS);
 		
 		Log.i(TAG, "Now fetching items...");
-//		while (mapp.saveItemsData(xcvr.fetchSomeItems(mapp.getMaxItemID())) >= 0) 
-//			{};
 		mapp.gimmeANameFool(intent.getExtras().getBoolean(MeltdownApp.FIRST_RUN));
-
 		Log.i(TAG, "Culling on-disk storage...");
 		mapp.cullItemFiles();
 		
-//		Log.i(TAG, "Culling in-memory storage...");
-//		mapp.sweepReadItems();
-		
 		Log.i(TAG, "Creating index");
 		mapp.updateGroupIndices();
+		sendLocalBroadcast(ACTION_UPDATED_ITEMS);
 	
 		mapp.download_complete();
 		tend = System.currentTimeMillis();
@@ -69,5 +79,4 @@ public class Downloader extends IntentService
 		Log.i(TAG, "Service complete, " + elapsed + " seconds elapsed, "
 		+ mapp.getNumItems() + " items."); 
 	}
-
 }

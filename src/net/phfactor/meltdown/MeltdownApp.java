@@ -31,6 +31,7 @@ public class MeltdownApp extends Application
 	private static final String P_URL = "serverUrl";
 	private static final String P_TOKEN = "token";
 	private static final String P_LAST_FETCH = "last_ts";
+	private static final String P_CACHE_ENABLED = "useDiskCache";
 	
 	static final String FIRST_RUN = "first_run";
 	static final int GROUP_UNKNOWN = -1;
@@ -177,7 +178,16 @@ public class MeltdownApp extends Application
 	// Unread items count for a given group ID
 	public int unreadItemCount(int group_id)
 	{
-		return itemsIDsForGroup(group_id).size();
+		List<Integer> plist = itemsIDsForGroup(group_id);
+		int rc = 0;
+		for (int idx = 0; idx < plist.size(); idx++)
+		{
+			if (findPostById(plist.get(idx)).is_read)
+				continue;
+			rc++;
+		}
+		
+		return rc;
 	}
 	
 	// Return items, with HTML only lazy-loaded at the last minute by the caller.
@@ -192,9 +202,13 @@ public class MeltdownApp extends Application
 		}
 
 		for (int idx = 0; idx < grp.items.size(); idx++)
-			rc.add(findPostById(grp.items.get(idx)));
+		{
+			RssItem item = findPostById(grp.items.get(idx));
+			if (item.is_read == false)
+				rc.add(findPostById(grp.items.get(idx)));
+		}
 
-		Log.d(TAG, rc.size() + " items for group ID " + group_id);
+		Log.d(TAG, rc.size() + " items for group ID " + group_id + " " + grp.title);
 		return rc;
 	}
 	
@@ -360,17 +374,14 @@ public class MeltdownApp extends Application
 	protected void gimmeANameFool(Boolean first_run)
 	{
 		List<Integer> newItems = fetchUnreadItemsIDs();
+		Log.d(TAG, newItems.size() + " unread items found on server.");	
 		if (newItems.size() == 0)
 			return;
-		
-		Log.d(TAG, newItems.size() + " unread items found on server.");	
-		for (int idx = 0; idx < newItems.size(); idx++)
-			Log.d(TAG, newItems.get(idx).toString());
-		
+				
 		// If necessary, reload any as-yet-unread-but-downloaded items from disk
 		if (first_run)
-			reloadItemsFromDisk(newItems);
-		else
+				reloadItemsFromDisk(newItems);				
+		else // Run N
 		{
 			// Sweep out any posts we have locally that aren't unread on the server.
 			for (int idx = 0; idx < items.size(); idx++)
@@ -378,31 +389,36 @@ public class MeltdownApp extends Application
 				if (newItems.contains(items.get(idx).id))
 					continue;
 				
-				items.remove(idx);
+				items.remove(items.get(idx));
 			}
 		}
 		
 		// Remove any on server list that we have locally before we run the fetches
+		List<Integer> unseenItems = new ArrayList<Integer>();
+		
 		for (int idx = 0; idx < newItems.size(); idx++)
 		{
 			if (findPostById(newItems.get(idx)) != null)
-				newItems.remove(idx);
+			{
+				// Dup of local cache; skip
+				continue;
+			}
+			else // new to us!
+				unseenItems.add(newItems.get(idx));
 		}
 		
-		Log.d(TAG, newItems.size() + " left to fetch.");
-		for (int idx = 0; idx < newItems.size(); idx++)
-			Log.d(TAG, newItems.get(idx).toString());
+		Log.d(TAG, unseenItems.size() + " left to fetch.");
 		
-		// Could use size of newItems for progress dialog. Someday.
+		// Could use size of newItems for progress dialog. Someday. Maybe a 'persistent activity' notification? TODO.
 		final int PER_FETCH = 50;
-		final int num_fetches = (int) Math.ceil(newItems.size() / PER_FETCH) + 1;
+		final int num_fetches = (int) Math.ceil(unseenItems.size() / PER_FETCH) + 1;
 		for (int idx = 0; idx < num_fetches; idx++)
 		{
 			int left_index = idx * PER_FETCH;
-			int right_index = Math.min((idx + 1) * PER_FETCH, newItems.size());
-			Log.d(TAG, "On run " + idx + " pulling from " + left_index + " to " + right_index + " of " + newItems.size());
+			int right_index = Math.min((idx + 1) * PER_FETCH, unseenItems.size());
+			Log.d(TAG, "On run " + idx + " pulling from " + left_index + " to " + right_index + " of " + unseenItems.size());
 			
-			List<Integer> ids = newItems.subList(left_index, right_index);
+			List<Integer> ids = unseenItems.subList(left_index, right_index);
 			String payload = xcvr.fetchListOfItems(ids);
 			saveItemsData(payload);
 		}		
@@ -484,6 +500,9 @@ public class MeltdownApp extends Application
 				items.add(item);
 				fcount++;
 			}
+			else if (post_id > 0)
+				deleteFile(files[idx]);
+				
 		}
 		Log.d(TAG, files.length + " files processed, " + fcount + " loaded in " + 
 		((System.currentTimeMillis() - tzero) / 1000L) + " seconds");
@@ -509,7 +528,7 @@ public class MeltdownApp extends Application
 				item.deleteDiskFile();
 				
 				// Is this valid? To remove an entry as we iterate over it?
-				items.remove(idx);
+				items.remove(item);
 			}
 		}		
 		Log.d(TAG, item_count + " items removed in " + (System.currentTimeMillis() - tzero) + " msec, " + items.size() + " remaining");
@@ -521,37 +540,15 @@ public class MeltdownApp extends Application
 		return haveSetup();
 	}
 	
-	// Just updates the in-memory list
-	private void markItemListRead(int item_id, int group_id)
-	{
-		RssItem item = findPostById(item_id);
-		if (item != null)
-			item.is_read = true;		
-		
-		if (group_id != GROUP_UNKNOWN)
-		{
-			RssGroup grp = findGroupById(group_id);
-			if (grp == null)
-				return;
-			grp.items.remove(item_id);
-			return;
-		}
-		
-		// Gotta search all groups for this item. Need another index, added to RssFeed I think. TODO.
-		// FIXME Removing integers from an array may be removing THE WRONG ITEM due to op overloading. SHIT.
-		for (int idx = 0; idx < groups.size(); idx++)
-		{
-			if (groups.get(idx).items.contains(item_id))
-				groups.get(idx).items.remove(item_id);
-		}
-	}
-	
 	// Mark an item/post as read, both locally and on the server.
 	public synchronized void markItemRead(int item_id, int group_id)
 	{
 		// Get the server update running in the background
 		xcvr.markItemRead(item_id);
-		markItemListRead(item_id, group_id);
+
+		RssItem item = findPostById(item_id);
+		if (item != null)
+			item.is_read = true;			
 	}
 	
 	// Mark some thread read in a group matching a given title.

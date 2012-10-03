@@ -67,7 +67,13 @@ public class ItemDisplayActivity extends Activity
         
         // TODO Change action bar icon to feeds' favicon
         WebView wv = (WebView) findViewById(R.id.itemWebView);
-        wv.loadData(rss_item.getHTML(getApplicationContext()), "text/html", "UTF-8");
+        
+        // Note that the most-basic load from file inserts garbage characters-
+        //wv.loadData(rss_item.getHTML(getApplicationContext()), "text/html", "UTF-8");
+        
+        // See http://stackoverflow.com/questions/3150400/html-list-tag-not-working-in-android-textview-what-can-i-do
+        // This works. Workaround.
+        wv.loadDataWithBaseURL(null, rss_item.getHTML(getApplicationContext()), "text/html", "utf-8", null);
     }
     
     // See http://android-developers.blogspot.com/2012/02/share-with-intents.html

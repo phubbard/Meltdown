@@ -3,11 +3,14 @@ package net.phfactor.meltdown;
 import java.util.List;
 
 import android.app.ListActivity;
+import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.graphics.Color;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.support.v4.content.LocalBroadcastManager;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.Menu;
@@ -28,7 +31,7 @@ public class GroupsActivity extends ListActivity
      * Custom list adapter that fits our rss data into the list.
      */
     private GroupListAdapter mAdapter;
-	
+	private mBroadcastCatcher catcher;
 	private MeltdownApp app;
 	
 	@Override
@@ -39,6 +42,14 @@ public class GroupsActivity extends ListActivity
 		getActionBar().setSubtitle("Starting up...");
 	}
 	
+	@Override
+	protected void onPause()
+	{
+		super.onPause();
+		// Don't need to update if not active. I think. TODO verify this!
+		LocalBroadcastManager.getInstance(this).unregisterReceiver(catcher);
+	}
+
 	@Override
 	protected void onResume()
 	{
@@ -53,9 +64,18 @@ public class GroupsActivity extends ListActivity
 			Toast.makeText(this, "Please configure your server", Toast.LENGTH_SHORT).show();
 			return;
 		}
+		
+		catcher = new mBroadcastCatcher();
+		IntentFilter ifilter = new IntentFilter();
+		ifilter.addAction(Downloader.ACTION_UPDATED_GROUPS);
+		ifilter.addAction(Downloader.ACTION_UPDATED_FEEDS);
+		ifilter.addAction(Downloader.ACTION_UPDATED_ITEMS);
+		LocalBroadcastManager.getInstance(this).registerReceiver(catcher, ifilter);
+		
 		doRefresh();
 	}
 
+	
 	public void doRefresh()
 	{
 		class GGTask extends AsyncTask<Void, Void, Void> 
@@ -112,7 +132,7 @@ public class GroupsActivity extends ListActivity
 		new GGTask().execute();		
 	}
 	
-    /**
+	/**
      * ArrayAdapter encapsulates a java.util.List of T, for presentation in a
      * ListView. This subclass specializes it to hold RssItems and display
      * their title/description data in a TwoLineListItem.
@@ -173,6 +193,21 @@ public class GroupsActivity extends ListActivity
         }
     }
 	
+    // Catch updates from the Service, update the data adapter. Needs more work.
+    // See http://www.intertech.com/Blog/Post/Using-LocalBroadcastManager-in-Service-to-Activity-Communications.aspx
+    private class mBroadcastCatcher extends BroadcastReceiver
+    {
+		@Override
+		public void onReceive(Context context, Intent intent)
+		{
+			Log.d(TAG, "Got a local broadcast, action: " + intent.getAction());
+			mAdapter = new GroupListAdapter(GroupsActivity.this, app.getUnreadGroups());
+			setListAdapter(mAdapter);
+			
+			//mAdapter.notifyDataSetChanged();
+		}
+    }
+    
 	@Override
 	public boolean onOptionsItemSelected(MenuItem item) 
 	{

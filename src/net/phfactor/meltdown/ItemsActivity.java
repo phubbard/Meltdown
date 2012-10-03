@@ -4,11 +4,14 @@ import java.util.List;
 
 import android.app.AlertDialog;
 import android.app.ListActivity;
+import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.graphics.Color;
 import android.os.Bundle;
+import android.support.v4.content.LocalBroadcastManager;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.Menu;
@@ -34,6 +37,7 @@ public class ItemsActivity extends ListActivity
 	
     private MeltdownApp app;
 	private String group_name;
+	private mBroadcastCatcher catcher;
 	private int group_id;
 	private int last_pos;
 	
@@ -89,9 +93,45 @@ public class ItemsActivity extends ListActivity
 			}
 		});
         
+        // Install our custom RSSListAdapter.		
+		items = app.getItemsForGroup(group_id);        
+        mAdapter = new RSSListAdapter(this, items);
+        getListView().setAdapter(mAdapter);    	
+        
         reloadItemsAndView();
 	}
 	
+	@Override
+	protected void onPause()
+	{
+		super.onPause();
+		// Don't need to update if not active. I think. TODO verify this!
+		LocalBroadcastManager.getInstance(this).unregisterReceiver(catcher);
+	}
+
+	@Override
+	protected void onResume()
+	{
+		super.onResume();
+		catcher = new mBroadcastCatcher();
+		IntentFilter ifilter = new IntentFilter();
+		ifilter.addAction(Downloader.ACTION_UPDATED_GROUPS);
+		ifilter.addAction(Downloader.ACTION_UPDATED_FEEDS);
+		ifilter.addAction(Downloader.ACTION_UPDATED_ITEMS);
+		LocalBroadcastManager.getInstance(this).registerReceiver(catcher, ifilter);
+	}
+	
+    // Catch updates from the Service, update the data adapter. Needs more work.
+    // See http://www.intertech.com/Blog/Post/Using-LocalBroadcastManager-in-Service-to-Activity-Communications.aspx
+    private class mBroadcastCatcher extends BroadcastReceiver
+    {
+		@Override
+		public void onReceive(Context context, Intent intent)
+		{
+			Log.d(TAG, "Got a local broadcast, action: " + intent.getAction());
+			mAdapter.notifyDataSetChanged();
+		}
+    }
 
     /**
      * ArrayAdapter encapsulates a java.util.List of T, for presentation in a
@@ -153,11 +193,8 @@ public class ItemsActivity extends ListActivity
      */
     private void reloadItemsAndView()
     {
-		items = app.getItemsForGroup(group_id);
-		
-        // Install our custom RSSListAdapter.		
-        mAdapter = new RSSListAdapter(this, items);
-        getListView().setAdapter(mAdapter);    	
+		items = app.getItemsForGroup(group_id);            	
+        mAdapter.notifyDataSetChanged();		
     }
 
 	/* Open a post/item, and note if the user hits back or next to get out. If back, we don't
@@ -207,12 +244,16 @@ public class ItemsActivity extends ListActivity
 		builder.show();
 	}
 	
+	// Item viewer returns RESULT_OK if the user hit next, in which case we mark it as read and move to next.
 	@Override
 	protected void onActivityResult(int requestCode, int resultCode, Intent data) 
 	{
 		if (resultCode == RESULT_OK)
 		{
 			Log.d(TAG, "Item #" + requestCode + " displayed and marked as read");
+			// This is experimental, to say the least!
+			LocalBroadcastManager.getInstance(this).sendBroadcastSync(new Intent(Downloader.ACTION_UPDATED_ITEMS));
+			
 			// app.sweepReadItems();
 			
 			// Out of posts?
@@ -222,6 +263,7 @@ public class ItemsActivity extends ListActivity
 				return;
 			}
 			
+			// FIXME
 			int pos = (last_pos + 1) % items.size();
 			Log.d(TAG, "Next item " + pos + " of " + items.size());
 			viewPost(pos);

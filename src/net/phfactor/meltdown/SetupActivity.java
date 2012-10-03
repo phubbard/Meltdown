@@ -30,6 +30,7 @@ public class SetupActivity extends Activity implements OnClickListener
 	}
 	
 	// TODO Add update interval to prefs
+	// TODO Add cache Boolean to screen
 	
 	@Override
 	public void onClick(View v) 
