@@ -15,4 +15,6 @@
     <string name="mgdMarkAllRead">Mark all items in group as read</string>
     <string name="mgdMARb">Mark all read</string>
     <string name="itmShare">Share</string>
+    <string name="itmSave">Save on server</string>
+    <string name="itmSaveShort">Save</string>
 </resources>

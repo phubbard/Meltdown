@@ -3,6 +3,7 @@ package net.phfactor.meltdown;
 import java.util.List;
 
 import android.app.ListActivity;
+import android.app.ProgressDialog;
 import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
@@ -31,8 +32,10 @@ public class GroupsActivity extends ListActivity
      * Custom list adapter that fits our rss data into the list.
      */
     private GroupListAdapter mAdapter;
-	private mBroadcastCatcher catcher;
+	private dBroadcastCatcher catcher;
 	private MeltdownApp app;
+	static final int DIALOG_ID = 271828;
+	ProgressDialog pd;
 	
 	@Override
 	public void onCreate(Bundle savedInstanceState) 
@@ -65,71 +68,41 @@ public class GroupsActivity extends ListActivity
 			return;
 		}
 		
-		catcher = new mBroadcastCatcher();
+		catcher = new dBroadcastCatcher();
 		IntentFilter ifilter = new IntentFilter();
 		ifilter.addAction(Downloader.ACTION_UPDATED_GROUPS);
 		ifilter.addAction(Downloader.ACTION_UPDATED_FEEDS);
 		ifilter.addAction(Downloader.ACTION_UPDATED_ITEMS);
+		ifilter.addAction(Downloader.ACTION_UPDATE_STARTING);
+		ifilter.addAction(Downloader.ACTION_UPDATE_DONE);
 		LocalBroadcastManager.getInstance(this).registerReceiver(catcher, ifilter);
 		
 		doRefresh();
 	}
 
-	
 	public void doRefresh()
 	{
-		class GGTask extends AsyncTask<Void, Void, Void> 
-		{
-			@Override
-			protected void onPreExecute() 
-			{
-				super.onPreExecute();
-				getActionBar().setSubtitle("Updating");
-			}
-			
-			protected Void doInBackground(Void... args) 
-			{
-				while (app.updateInProgress)
-				{
-					try
-					{
-						// Just busy-wait for Downloader to run
-						Thread.sleep(500);
-					} catch (InterruptedException e)
-					{
-						e.printStackTrace();
-					}
-				}
-				return null;
-			}
-			
-			@Override
-			protected void onPostExecute(Void arg) 
-			{
-				getActionBar().setSubtitle(app.getTotalUnread() + " to read");
-				mAdapter = new GroupListAdapter(GroupsActivity.this, app.getUnreadGroups());
-				setListAdapter(mAdapter);
-		        final ListView lv = getListView();
+		getActionBar().setSubtitle(app.getTotalUnread() + " to read");
+		mAdapter = new GroupListAdapter(GroupsActivity.this, app.getUnreadGroups());
+		setListAdapter(mAdapter);
+        final ListView lv = getListView();
 
-		        // TODO Use ActionBar tabs for new/read/saved/sparks/river
-		        lv.setOnItemClickListener(new OnItemClickListener()
-		        {
-		        	@Override
-		        	public void onItemClick(AdapterView<?> arg0, View view, int pos, long id)
-		        	{
-						RssGroup group = (RssGroup) lv.getItemAtPosition(pos);
-						
-						Intent intent = new Intent(GroupsActivity.this, ItemsActivity.class);
-						Bundle bundle = new Bundle();
-						bundle.putString("title", group.title);
-						bundle.putInt("group_id", group.id);
-						intent.putExtras(bundle);
-						startActivity(intent);
-		        	}		        	
-		        });
-			}
-		}
-		new GGTask().execute();		
+        // TODO Use ActionBar tabs for new/read/saved/sparks/river
+        lv.setOnItemClickListener(new OnItemClickListener()
+        {
+        	@Override
+        	public void onItemClick(AdapterView<?> arg0, View view, int pos, long id)
+        	{
+				RssGroup group = (RssGroup) lv.getItemAtPosition(pos);
+				
+				Intent intent = new Intent(GroupsActivity.this, ItemsActivity.class);
+				Bundle bundle = new Bundle();
+				bundle.putString("title", group.title);
+				bundle.putInt("group_id", group.id);
+				intent.putExtras(bundle);
+				startActivity(intent);
+        	}		        	
+        });
 	}
 	
 	/**
@@ -195,16 +168,24 @@ public class GroupsActivity extends ListActivity
 	
     // Catch updates from the Service, update the data adapter. Needs more work.
     // See http://www.intertech.com/Blog/Post/Using-LocalBroadcastManager-in-Service-to-Activity-Communications.aspx
-    private class mBroadcastCatcher extends BroadcastReceiver
+    private class dBroadcastCatcher extends BroadcastReceiver
     {
 		@Override
 		public void onReceive(Context context, Intent intent)
 		{
-			Log.d(TAG, "Got a local broadcast, action: " + intent.getAction());
-			mAdapter = new GroupListAdapter(GroupsActivity.this, app.getUnreadGroups());
-			setListAdapter(mAdapter);
-			
-			//mAdapter.notifyDataSetChanged();
+			if (intent.getAction().equals(Downloader.ACTION_UPDATE_STARTING))
+			{
+				pd = new ProgressDialog(GroupsActivity.this);
+				pd.setTitle("Download starting");
+				pd.show();
+			}
+			else if (intent.getAction().equals(Downloader.ACTION_UPDATE_DONE))
+			{
+				doRefresh();
+				pd.dismiss();
+			}
+			else
+				pd.setMessage(intent.getAction());
 		}
     }
     

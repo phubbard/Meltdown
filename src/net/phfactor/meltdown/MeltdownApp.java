@@ -4,6 +4,8 @@ import java.io.UnsupportedEncodingException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 
 import org.json.JSONArray;
@@ -31,7 +33,6 @@ public class MeltdownApp extends Application
 	private static final String P_URL = "serverUrl";
 	private static final String P_TOKEN = "token";
 	private static final String P_LAST_FETCH = "last_ts";
-	private static final String P_CACHE_ENABLED = "useDiskCache";
 	
 	static final String FIRST_RUN = "first_run";
 	static final int GROUP_UNKNOWN = -1;
@@ -42,7 +43,6 @@ public class MeltdownApp extends Application
 		
 	private int max_read_id;
 	
-	@SuppressWarnings("unused")
 	private long last_refresh_time;
 	
 	private RestClient xcvr;
@@ -104,6 +104,11 @@ public class MeltdownApp extends Application
 	public int getNumItems()
 	{
 		return items.size();
+	}
+	
+	protected long getLast_refresh_time()
+	{
+		return last_refresh_time;
 	}
 	
 	// Simple helper - if items is empty, we are waiting for something. Used by main page as a way
@@ -373,6 +378,7 @@ public class MeltdownApp extends Application
 	 */
 	protected void gimmeANameFool(Boolean first_run)
 	{
+		ArrayList<RssItem> new_items = new ArrayList<RssItem>();
 		List<Integer> newItems = fetchUnreadItemsIDs();
 		Log.d(TAG, newItems.size() + " unread items found on server.");	
 		if (newItems.size() == 0)
@@ -383,27 +389,28 @@ public class MeltdownApp extends Application
 				reloadItemsFromDisk(newItems);				
 		else // Run N
 		{
+			Log.i(TAG, "Sweeping out stale local posts, starting count " + items.size());
 			// Sweep out any posts we have locally that aren't unread on the server.
 			for (int idx = 0; idx < items.size(); idx++)
 			{
 				if (newItems.contains(items.get(idx).id))
-					continue;
-				
-				items.remove(items.get(idx));
+				{
+					// Copy it over
+					new_items.add(items.get(idx));
+				}
 			}
+			items.clear();
+			items.addAll(new_items);
+			Log.i(TAG, "Sweep done, count now " + items.size());			
 		}
+
 		
-		// Remove any on server list that we have locally before we run the fetches
+		// Remove any on server list that we have locally before we run the fetches to avoid excess traffic.
 		List<Integer> unseenItems = new ArrayList<Integer>();
 		
 		for (int idx = 0; idx < newItems.size(); idx++)
 		{
-			if (findPostById(newItems.get(idx)) != null)
-			{
-				// Dup of local cache; skip
-				continue;
-			}
-			else // new to us!
+			if (findPostById(newItems.get(idx)) == null)
 				unseenItems.add(newItems.get(idx));
 		}
 		
@@ -540,6 +547,17 @@ public class MeltdownApp extends Application
 		return haveSetup();
 	}
 	
+	// See http://stackoverflow.com/questions/5815423/sorting-arraylist-in-android-in-alphabetical-order-case-insensitive
+	protected void sortByName()
+	{
+		Collections.sort(groups, new Comparator<RssGroup>() {
+			@Override
+			public int compare(RssGroup r1, RssGroup r2) {
+				return String.CASE_INSENSITIVE_ORDER.compare(r1.title, r2.title);
+			}
+		});		
+	}
+	
 	// Mark an item/post as read, both locally and on the server.
 	public synchronized void markItemRead(int item_id, int group_id)
 	{
@@ -549,6 +567,15 @@ public class MeltdownApp extends Application
 		RssItem item = findPostById(item_id);
 		if (item != null)
 			item.is_read = true;			
+	}
+	
+	public synchronized void markItemSaved(int item_id)
+	{
+		xcvr.markItemSaved(item_id);
+		
+		RssItem item = findPostById(item_id);
+		if (item != null)
+			item.is_saved = true;					
 	}
 	
 	// Mark some thread read in a group matching a given title.
@@ -583,8 +610,7 @@ public class MeltdownApp extends Application
 		return rm_count;
 	}
 	
-	// Iterate over a group, and mark all of the items in it as read.
-	// TODO New API call to do this in one step
+	// Iterate over a group, and mark all of the items in it as read. One API call and then local cleanup.
 	protected synchronized void markGroupRead(int group_id)
 	{
 		RssGroup grp = findGroupById(group_id);
@@ -595,11 +621,17 @@ public class MeltdownApp extends Application
 		}
 	
 		Log.d(TAG, "Starting to mark group " + grp.title + " as read");
+		xcvr.markGroupRead(group_id, last_refresh_time);
+		
 		for (int idx = 0; idx < items.size(); idx++)
 		{
 			int feed_id = items.get(idx).feed_id;
 			if (grp.feed_ids.contains(feed_id))
-				markItemRead(items.get(idx).id, group_id);
+			{
+				RssItem item = findPostById(items.get(idx).id);
+				if (item != null)
+					item.is_read = true;
+			}
 		}
 		
 		sweepReadItems();

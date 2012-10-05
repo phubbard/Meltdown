@@ -18,9 +18,11 @@ public class Downloader extends IntentService
 	private RestClient xcvr;
 	private Long tzero, tend;
 	
-	static final String ACTION_UPDATED_GROUPS = "updatedGroups";
-	static final String ACTION_UPDATED_FEEDS = "updatedFeeds";
-	static final String ACTION_UPDATED_ITEMS = "updatedItems";
+	static final String ACTION_UPDATE_STARTING = "updateStart";
+	static final String ACTION_UPDATED_GROUPS = "Updated group";
+	static final String ACTION_UPDATED_FEEDS = "Updated feeds";
+	static final String ACTION_UPDATED_ITEMS = "Updated items";
+	static final String ACTION_UPDATE_DONE = "updateDone";
 	
 	public Downloader(String name) 
 	{
@@ -55,6 +57,7 @@ public class Downloader extends IntentService
 		tzero = System.currentTimeMillis();
 		Log.i(TAG, "Beginning update...");
 		mapp.download_start();
+		sendLocalBroadcast(ACTION_UPDATE_STARTING);
 		
 		Log.i(TAG, "Getting groups...");
 		mapp.saveGroupsData(xcvr.fetchGroups());
@@ -73,10 +76,14 @@ public class Downloader extends IntentService
 		mapp.updateGroupIndices();
 		sendLocalBroadcast(ACTION_UPDATED_ITEMS);
 	
+		Log.i(TAG, "Sorting...");
+		mapp.sortByName();
+		
 		mapp.download_complete();
 		tend = System.currentTimeMillis();
 		Double elapsed = (tend - tzero) / 1000.0;
 		Log.i(TAG, "Service complete, " + elapsed + " seconds elapsed, "
 		+ mapp.getNumItems() + " items."); 
+		sendLocalBroadcast(ACTION_UPDATE_DONE);
 	}
 }

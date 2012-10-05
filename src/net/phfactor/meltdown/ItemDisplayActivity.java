@@ -2,6 +2,7 @@ package net.phfactor.meltdown;
 
 import android.app.Activity;
 import android.content.Intent;
+import android.graphics.Color;
 import android.net.Uri;
 import android.os.Bundle;
 import android.view.Menu;
@@ -64,7 +65,12 @@ public class ItemDisplayActivity extends Activity
         // Feed title - currently in footer
         RssFeed rgrp = app.findFeedById(rss_item.feed_id);
         tv.setText(rgrp.title);
-        
+
+        // New top-of-screen title - experimental
+        tv = (TextView) findViewById(R.id.itmItemTitle);
+        tv.setText(rss_item.title);     
+        tv.setBackgroundColor(Color.LTGRAY);
+
         // TODO Change action bar icon to feeds' favicon
         WebView wv = (WebView) findViewById(R.id.itemWebView);
         
@@ -133,6 +139,11 @@ public class ItemDisplayActivity extends Activity
 			
 		case R.id.menu_load_page:
 			loadItem();
+			return true;
+			
+		case R.id.itemSave:
+			app.markItemSaved(rss_item.id);
+			nextItem();
 			return true;
 		}
 		return false;

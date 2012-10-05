@@ -4,4 +4,5 @@
     <item android:id="@+id/itemShare" android:title="@string/itmShare"
         android:actionProviderClass="android.widget.ShareActionProvider" 
         android:showAsAction="ifRoom"></item>
+    <item android:id="@+id/itemSave" android:titleCondensed="@string/itmSaveShort" android:title="@string/itmSave"></item>
 </menu>

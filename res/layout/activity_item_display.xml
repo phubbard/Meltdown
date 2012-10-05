@@ -2,17 +2,24 @@
     xmlns:tools="http://schemas.android.com/tools"
     android:id="@+id/container"
     android:layout_width="match_parent"
-    android:layout_height="match_parent"
+    android:layout_height="wrap_content"
     android:orientation="vertical"
     tools:context=".ItemDisplayActivity" >
 
+    <TextView
+        android:id="@+id/itmItemTitle"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_alignParentTop="true"
+        android:text="item title" />
+        
     <WebView
         android:id="@+id/itemWebView"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_above="@+id/itmBtnOpen"
         android:layout_alignParentLeft="true"
-        android:layout_alignParentTop="true" />
+        android:layout_below="@+id/itmItemTitle" />
 
     <Button
         android:id="@+id/itmBtnOpen"
@@ -21,6 +28,7 @@
         android:layout_alignParentBottom="true"
         android:layout_alignParentLeft="true"
         android:text="@string/itmBtnOpen" />
+
     <Button
         android:id="@+id/itmBtnNext"
         android:layout_width="wrap_content"
@@ -36,6 +44,6 @@
         android:layout_alignBaseline="@+id/itmBtnOpen"
         android:layout_alignBottom="@+id/itmBtnOpen"
         android:layout_toRightOf="@+id/itmBtnOpen"
-        android:text="foo" />
+        android:text="Feed Title" />
 
 </RelativeLayout>

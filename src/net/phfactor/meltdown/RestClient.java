@@ -136,6 +136,24 @@ public class RestClient
         return sb.toString();
     }
 	
+	// Async mark a post as saved
+	public void markItemSaved(int item_id)
+	{
+		final String vars = String.format("mark=item&as=saved&id=%d", item_id);
+		
+		class mTask extends AsyncTask<Void, Void, Void> {
+
+			@Override
+			protected Void doInBackground(Void... params) 			
+			{
+				syncPostUrl(vars);
+				return null;
+			}
+		}
+		
+		new mTask().execute();		
+	}
+	
 	// Asynchronously mark a post as read.
 	/*
 	 *  The post args have to be in the body. 
@@ -145,6 +163,22 @@ public class RestClient
 	{
 		final String vars = String.format("mark=item&as=read&id=%d", post_id);
 		
+		class mTask extends AsyncTask<Void, Void, Void> {
+
+			@Override
+			protected Void doInBackground(Void... params) 			
+			{
+				syncPostUrl(vars);
+				return null;
+			}
+		}
+		
+		new mTask().execute();		
+	}
+	
+	public void markGroupRead(int group_id, long last_pull_timestamp)
+	{
+		final String vars = String.format("mark=group&as=read&id=%d&before=%d", group_id, last_pull_timestamp);
 		class mTask extends AsyncTask<Void, Void, Void> {
 
 			@Override
@@ -173,7 +207,7 @@ public class RestClient
 			client = AndroidHttpClient.newInstance("Meltdown");
 			HttpPost post = new HttpPost(mapp.getAPIUrl());
 			
-			//Log.d(TAG, "URL: " + mapp.getAPIUrl() + " vars: " + variables);
+			Log.d(TAG, "URL: " + mapp.getAPIUrl() + " vars: " + variables);
 			 
 			// Tell Apache we'll take gzip; should compress really well.
 			AndroidHttpClient.modifyRequestToAcceptGzipResponse(post);
