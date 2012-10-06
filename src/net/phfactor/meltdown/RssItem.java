@@ -22,7 +22,7 @@ public class RssItem
 	private String html;
 	public String excerpt;
 	public int id;
-	public long created_on_time;
+	public Long created_on_time;
 	public int feed_id;
 	public Boolean is_saved;
 	public String author;

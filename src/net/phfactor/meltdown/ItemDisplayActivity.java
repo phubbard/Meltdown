@@ -57,6 +57,12 @@ public class ItemDisplayActivity extends Activity
     protected void displayItem()
     {
         rss_item = app.findPostById(cur_post);
+        if (rss_item == null)
+        {
+        	finish();
+        	return;
+        }
+        
         getActionBar().setTitle(rss_item.title);
         
         // Lookup feed name and display it between the buttons

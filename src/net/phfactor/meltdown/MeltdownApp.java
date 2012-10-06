@@ -187,9 +187,12 @@ public class MeltdownApp extends Application
 		int rc = 0;
 		for (int idx = 0; idx < plist.size(); idx++)
 		{
-			if (findPostById(plist.get(idx)).is_read)
-				continue;
-			rc++;
+			if (findPostById(plist.get(idx)) != null)
+			{
+				if (findPostById(plist.get(idx)).is_read)
+					continue;
+				rc++;
+			}
 		}
 		
 		return rc;
@@ -209,8 +212,9 @@ public class MeltdownApp extends Application
 		for (int idx = 0; idx < grp.items.size(); idx++)
 		{
 			RssItem item = findPostById(grp.items.get(idx));
-			if (item.is_read == false)
-				rc.add(findPostById(grp.items.get(idx)));
+			if (item != null)
+				if (item.is_read == false)
+					rc.add(findPostById(grp.items.get(idx)));
 		}
 
 		Log.d(TAG, rc.size() + " items for group ID " + group_id + " " + grp.title);
@@ -548,7 +552,7 @@ public class MeltdownApp extends Application
 	}
 	
 	// See http://stackoverflow.com/questions/5815423/sorting-arraylist-in-android-in-alphabetical-order-case-insensitive
-	protected void sortByName()
+	protected void sortGroupsByName()
 	{
 		Collections.sort(groups, new Comparator<RssGroup>() {
 			@Override
@@ -556,6 +560,18 @@ public class MeltdownApp extends Application
 				return String.CASE_INSENSITIVE_ORDER.compare(r1.title, r2.title);
 			}
 		});		
+	}
+	
+	// Newest first - reversed order by comparing 2 to 1
+	// http://stackoverflow.com/questions/5894818/how-to-sort-arraylistlong-in-java-in-decreasing-order
+	protected void sortItemsByDate()
+	{
+		Collections.sort(items, new Comparator<RssItem>() {
+			@Override
+			public int compare(RssItem r1, RssItem r2) {
+				return r2.created_on_time.compareTo(r1.created_on_time);
+			}
+		});
 	}
 	
 	// Mark an item/post as read, both locally and on the server.

@@ -9,7 +9,6 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.graphics.Color;
-import android.os.AsyncTask;
 import android.os.Bundle;
 import android.support.v4.content.LocalBroadcastManager;
 import android.util.Log;
@@ -34,7 +33,6 @@ public class GroupsActivity extends ListActivity
     private GroupListAdapter mAdapter;
 	private dBroadcastCatcher catcher;
 	private MeltdownApp app;
-	static final int DIALOG_ID = 271828;
 	ProgressDialog pd;
 	
 	@Override
@@ -144,6 +142,7 @@ public class GroupsActivity extends ListActivity
                 view = (TwoLineListItem) convertView;
             }
 
+            // FIXME race condition
             RssGroup grp = app.getUnreadGroups().get(position);
 
             // Set the item title and description into the view.
@@ -176,7 +175,7 @@ public class GroupsActivity extends ListActivity
 			if (intent.getAction().equals(Downloader.ACTION_UPDATE_STARTING))
 			{
 				pd = new ProgressDialog(GroupsActivity.this);
-				pd.setTitle("Download starting");
+				pd.setTitle("Sync in progress");
 				pd.show();
 			}
 			else if (intent.getAction().equals(Downloader.ACTION_UPDATE_DONE))

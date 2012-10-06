@@ -77,7 +77,8 @@ public class Downloader extends IntentService
 		sendLocalBroadcast(ACTION_UPDATED_ITEMS);
 	
 		Log.i(TAG, "Sorting...");
-		mapp.sortByName();
+		mapp.sortGroupsByName();
+		mapp.sortItemsByDate();
 		
 		mapp.download_complete();
 		tend = System.currentTimeMillis();

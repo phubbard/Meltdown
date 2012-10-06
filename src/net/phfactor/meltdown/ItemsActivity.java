@@ -189,7 +189,7 @@ public class ItemsActivity extends ListActivity
 
     /*
      * Reload items and the list view adapter - used when contents change.
-     * TODO Research mutable listviews - dynamic possible?
+     * TODO Research mutable listviews - dynamic possible? 
      */
     private void reloadItemsAndView()
     {
