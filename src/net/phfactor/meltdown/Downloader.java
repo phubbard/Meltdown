@@ -35,7 +35,7 @@ public class Downloader extends IntentService
 	}
 	
 	// See http://www.intertech.com/Blog/Post/Using-LocalBroadcastManager-in-Service-to-Activity-Communications.aspx
-	// Local-only async updates to any listening activities
+	// Local-only async updates to any listening activities. Very handy.
 	private void sendLocalBroadcast(String action)
 	{
 		Intent intent = new Intent(action);

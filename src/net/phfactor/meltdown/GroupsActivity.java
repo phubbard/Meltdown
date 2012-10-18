@@ -98,6 +98,9 @@ public class GroupsActivity extends ListActivity
 				bundle.putString("title", group.title);
 				bundle.putInt("group_id", group.id);
 				intent.putExtras(bundle);
+				// TODO Startactivity for result - get callback when done
+				// TODO listview.setSelection to go back to correct display location
+				// http://stackoverflow.com/questions/2628741/listview-and-scroll
 				startActivity(intent);
         	}		        	
         });
