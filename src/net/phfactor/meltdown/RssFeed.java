@@ -1,5 +1,8 @@
 package net.phfactor.meltdown;
 
+import java.util.ArrayList;
+import java.util.List;
+
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -20,6 +23,9 @@ public class RssFeed
 	public  Boolean is_spark;
 	public  long last_updated_on_time;
 	
+	// Derived reverse index
+	public List<Integer> groups;
+	
 	public RssFeed(JSONObject feed)
 	{
 		try
@@ -33,6 +39,7 @@ public class RssFeed
 			this.favicon_id = feed.getInt("favicon_id");
 			this.is_spark = (feed.getInt("is_spark") == 0);
 			this.last_updated_on_time = feed.getLong("last_updated_on_time");			
+			this.groups = new ArrayList<Integer>();
 			
 		}catch (JSONException je)
 		{
