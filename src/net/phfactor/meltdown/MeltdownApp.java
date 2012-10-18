@@ -45,7 +45,7 @@ public class MeltdownApp extends Application
 	
 	private RestClient xcvr;
 	private SharedPreferences prefs;
-	private SharedPreference`s.Editor editor;
+	private SharedPreferences.Editor editor;
 
 	public Boolean updateInProgress;
 
@@ -66,7 +66,6 @@ public class MeltdownApp extends Application
 	
 		this.feeds = new ArrayList<RssFeed>();
 		this.groups = new ArrayList<RssGroup>();
-		this.items = new ArrayList<RssItem>();
 		
 		prefs = getSharedPreferences(TAG, Context.MODE_PRIVATE);
 		xcvr = new RestClient(this);		
@@ -101,19 +100,15 @@ public class MeltdownApp extends Application
 	
 	public int getNumItems()
 	{
-		return items.size();
+		int rc = 0;
+		for (int idx = 0; idx < groups.size(); idx++)
+			rc += groups.get(idx).items.size();
+		return rc;
 	}
 	
 	protected long getLast_refresh_time()
 	{
 		return last_refresh_time;
-	}
-	
-	// Simple helper - if items is empty, we are waiting for something. Used by main page as a way
-	// to keep or dismiss the progress dialog.
-	protected Boolean waiting_for_data()
-	{
-		return (items.size() == 0);
 	}
 	
 	/*
@@ -149,10 +144,13 @@ public class MeltdownApp extends Application
 	
 	protected RssItem findPostById(int post_id)
 	{
-		for (int idx = 0; idx < items.size(); idx++)
+		for (int grp_idx = 0; grp_idx < groups.size(); grp_idx++)
 		{
-			if (items.get(idx).id == post_id)
-				return items.get(idx);
+			for (int idx = 0; idx < groups.get(grp_idx).items.size(); idx++)
+			{
+				if (groups.get(grp_idx).items.get(idx).id == post_id)
+					return groups.get(grp_idx).items.get(idx);
+			}
 		}
 		return null;
 	}
@@ -175,52 +173,34 @@ public class MeltdownApp extends Application
 		if (group == null)
 			return null;
 
-		return group.items;
+		List<Integer>rc = new ArrayList<Integer>();
+		for (int idx = 0; idx < group.items.size(); idx++)
+		{
+			rc.add(group.items.get(idx).id);
+		}
+		return rc;
 	}
 	
 	public int unreadItemCount(int group_id)
 	{
-		
-	}
-	// Unread items count for a given group ID
-	public int unreadItemCount(int group_id)
-	{
-		List<Integer> plist = itemsIDsForGroup(group_id);
-		int rc = 0;
-		for (int idx = 0; idx < plist.size(); idx++)
-		{
-			if (findPostById(plist.get(idx)) != null)
-			{
-				if (findPostById(plist.get(idx)).is_read)
-					continue;
-				rc++;
-			}
-		}
-		
-		return rc;
+		RssGroup group = findGroupById(group_id);
+		if (group == null)
+			return 0;
+
+		// TODO / FIXME - check each item for read status??
+		return group.items.size();
 	}
 	
 	// Return items, with HTML only lazy-loaded at the last minute by the caller.
 	public List<RssItem> getItemsForGroup(int group_id)
 	{
-		ArrayList<RssItem> rc = new ArrayList<RssItem>();
 		RssGroup grp = findGroupById(group_id);
 		if (grp == null)
 		{
 			Log.e(TAG, "Unable to locate group id " + group_id);
 			return null;
 		}
-
-		for (int idx = 0; idx < grp.items.size(); idx++)
-		{
-			RssItem item = findPostById(grp.items.get(idx));
-			if (item != null)
-				if (item.is_read == false)
-					rc.add(findPostById(grp.items.get(idx)));
-		}
-
-		Log.d(TAG, rc.size() + " items for group ID " + group_id + " " + grp.title);
-		return rc;
+		return grp.items;
 	}
 	
 	public List<RssGroup> getUnreadGroups()
@@ -234,45 +214,7 @@ public class MeltdownApp extends Application
 		}
 		return rc;
 	}
-	
-	// Returns all groups, with or without items in them
-	public List<RssGroup> getGroups()
-	{
-		return this.groups;
-	}
-	
-	// After a fetch and GC, build item indices for each group
-	protected void updateGroupIndices()
-	{
-		Log.d(TAG, "Updating group counts and indices....");
-		Long tzero = System.currentTimeMillis();
 		
-		// Clear the old
-		for (int idx = 0; idx < groups.size(); idx++)
-			groups.get(idx).items.clear();
-		
-		for (int idx = 0; idx < items.size(); idx++)
-		{
-			int current_if_id = items.get(idx).feed_id;
-			// Find the group holding this items' feed. May be in more than one group!
-			for (int grp_idx = 0; grp_idx < groups.size(); grp_idx++)
-			{
-				RssGroup cur_grp = groups.get(grp_idx);
-				if (cur_grp.feed_ids.contains(current_if_id))
-				{
-					cur_grp.items.add(items.get(idx).id);
-				}
-			}			
-		}
-		Long tend = System.currentTimeMillis();
-		Log.d(TAG, "Group counts updated in " + (tend - tzero) + " msec");
-	}
-	
-	public int getTotalUnread()
-	{
-		return items.size();
-	}
-	
 	/* ***********************************
 	 * REST callback methods
 	 */
@@ -285,11 +227,11 @@ public class MeltdownApp extends Application
 		{
 			JSONObject cur_grp = fg_arry.getJSONObject(idx);
 			int grp_id = cur_grp.getInt("group_id");
-			for (int grp_idx = 0; grp_idx < groups.size(); grp_idx++)
-			{
-				if (groups.get(grp_idx).id == grp_id)
-					groups.get(grp_idx).feed_ids = parseStrArray(cur_grp.getString("feed_ids"));
-			}
+			RssGroup grp = findGroupById(grp_id);
+			if (grp != null)
+				grp.feed_ids = parseStrArray(cur_grp.getString("feed_ids"));
+			else
+				Log.e(TAG, "Unable to find group ID " + grp_id);
 		}
 	}
 
@@ -384,16 +326,14 @@ public class MeltdownApp extends Application
 		for (int idx = 0; idx < groups.size(); idx++)
 			groups.get(idx).clearItems();
 	}
-	
-	private Boolean havePostById(int item_id)
-	{
-		for (int idx = 0; idx < groups.size(); idx++)
-		{
-			RssGroup grp = groups.get
-		}
-	}
-	
-	protected void doServerSync(Boolean reload_from_disk)
+
+	/* The unread_items_ids returns an N-length array of items that are unread on the server. We have to:
+	 * parse the list
+	 * match what we have locally
+	 * fetch the new items in blocks of 50 or less.
+	 * cull local items not on the list
+	 */	
+	protected void syncUnreadPosts(Boolean reload_from_disk)
 	{
 		List<Integer> unreadItems = fetchUnreadItemsIDs();
 		
@@ -414,78 +354,83 @@ public class MeltdownApp extends Application
 					int item_id = grp.items.get(i).id;
 					if (!unreadItems.contains(item_id))
 					{
+						// FIXME copy instead of remove?
 						grp.items.remove(grp.items.get(i));
 					}
 				}
 			}
 		}
-		
+
+		Log.i(TAG, "Checking for posts I need to pull...");
 		// So stale posts are removed, now pull from server any we don't have locally
 		List<Integer> itemsToGet = new ArrayList<Integer>();
 		for (int idx = 0; idx < unreadItems.size(); idx++)
 		{
-			if havePostById(unreadItems.get(idx))
+			if (findPostById(unreadItems.get(idx)) != null)
 				itemsToGet.add(unreadItems.get(idx));
 		}
 		
-	}
-	
-	
-	/* The unread_items_ids returns an N-length array of items that are unread on the server. We have to:
-	 * parse the list
-	 * match what we have locally
-	 * fetch the new items in blocks of 50 or less.
-	 * cull local items not on the list
-	 */
-	protected void gimmeANameFool(Boolean first_run)
-	{
-		ArrayList<RssItem> new_items = new ArrayList<RssItem>();
-				
-		// If necessary, reload any as-yet-unread-but-downloaded items from disk
-		if (first_run)
-				reloadItemsFromDisk(newItems);				
-		else // Run N
-		{
-			Log.i(TAG, "Sweeping out stale local posts, starting count " + items.size());
-			// Sweep out any posts we have locally that aren't unread on the server.
-			for (int idx = 0; idx < items.size(); idx++)
-			{
-				if (newItems.contains(items.get(idx).id))
-				{
-					// Copy it over
-					new_items.add(items.get(idx));
-				}
-			}
-			items.clear();
-			items.addAll(new_items);
-			Log.i(TAG, "Sweep done, count now " + items.size());			
-		}
-
-		
-		// Remove any on server list that we have locally before we run the fetches to avoid excess traffic.
-		List<Integer> unseenItems = new ArrayList<Integer>();
-		
-		for (int idx = 0; idx < newItems.size(); idx++)
-		{
-			if (findPostById(newItems.get(idx)) == null)
-				unseenItems.add(newItems.get(idx));
-		}
-		
-		Log.d(TAG, unseenItems.size() + " left to fetch.");
-		
+		Log.i(TAG, itemsToGet.size() + " items to retrieve");
 		// Could use size of newItems for progress dialog. Someday. Maybe a 'persistent activity' notification? TODO.
 		final int PER_FETCH = 50;
-		final int num_fetches = (int) Math.ceil(unseenItems.size() / PER_FETCH) + 1;
+		final int num_fetches = (int) Math.ceil(itemsToGet.size() / PER_FETCH) + 1;
 		for (int idx = 0; idx < num_fetches; idx++)
 		{
 			int left_index = idx * PER_FETCH;
-			int right_index = Math.min((idx + 1) * PER_FETCH, unseenItems.size());
-			Log.d(TAG, "On run " + idx + " pulling from " + left_index + " to " + right_index + " of " + unseenItems.size());
+			int right_index = Math.min((idx + 1) * PER_FETCH, itemsToGet.size());
+			Log.d(TAG, "On run " + idx + " pulling from " + left_index + " to " + right_index + " of " + itemsToGet.size());
 			
-			List<Integer> ids = unseenItems.subList(left_index, right_index);
+			List<Integer> ids = itemsToGet.subList(left_index, right_index);
 			String payload = xcvr.fetchListOfItems(ids);
 			saveItemsData(payload);
 		}		
+		
+	}
+		
+	/*
+	 * We have group->feed and item->feed mappings, need to make feed->group
+	 */
+	protected void updateFeedIndices()
+	{
+		for (int idx = 0; idx < feeds.size(); idx++)
+		{
+			RssFeed feed = feeds.get(idx);
+			RssGroup group = findGroupHoldingFeed(feed.id);
+			if (group == null)
+			{
+				Log.e(TAG, "No group found for feed " + feed.title);
+				continue;
+			}
+			// Skip duplicates
+			if (feed.groups.contains(group.id))
+				continue;
+			
+			feed.groups.add(group.id);
+		}
+	}
+	
+	RssGroup findGroupHoldingFeed(int feed_id)
+	{
+		for (int idx = 0; idx < groups.size(); idx++)
+		{
+			if (groups.get(idx).feed_ids.contains(feed_id))
+				return groups.get(idx);
+		}
+		return null;
+	}
+	
+	RssGroup findGroupForItem(RssItem item)
+	{
+		if (item == null)
+			return null;
+		
+		RssFeed feed = findFeedById(item.feed_id);
+		
+		if (item.groups.size() == 0)
+			return null;
+		
+		// FIXME
+		return findGroupById(item.groups.get(0));
 	}
 	
 	// Save RSS items parsed from payload, return number saved.
@@ -493,7 +438,6 @@ public class MeltdownApp extends Application
 	{
 		JSONArray jitems;
 		RssItem this_item;
-		int old_size = items.size();
 		
 		if (payload == null)
 			return 0;
@@ -521,10 +465,9 @@ public class MeltdownApp extends Application
 				
 				// Remove the HTML for later loading if needed
 				this_item.dropHTML();
-				
-				items.add(this_item);
+
+				saveRssItem(this_item);
 			}
-			Log.i(TAG, items.size() - old_size +" items added, " + items.size()	+ " total, ");
 			return jitems.length();
 		} catch (JSONException e) 
 		{
@@ -533,11 +476,17 @@ public class MeltdownApp extends Application
 		return 0;		
 	}
 	
-	// Save an RssItem to group or groups that contain it
-	private int saveItem(RssItem item)
+	private void saveRssItem(RssItem item)
 	{
-		for ()
+		RssGroup group = findGroupForItem(item);
+		if (group == null)
+		{
+			Log.d(TAG, "Orphan item! No group found for post ID " + item.id + " " + item.title);
+		}
+		else
+			group.items.add(item);
 	}
+	
 	
 	// At startup, load all of the items from disk, and reset max_ids before starting download from server.
 	// Called by the Downloader, as this takes minutes for 10k items on a nexus7.
@@ -567,7 +516,7 @@ public class MeltdownApp extends Application
 			if ((post_id > 0) && (new_items.contains(post_id)))
 			{
 				RssItem item = new RssItem(ctx, post_id);
-				items.add(item);
+				saveRssItem(item);
 				fcount++;
 			}
 			else if (post_id > 0)

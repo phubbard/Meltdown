@@ -115,9 +115,9 @@ public class ItemsActivity extends ListActivity
 		super.onResume();
 		catcher = new mBroadcastCatcher();
 		IntentFilter ifilter = new IntentFilter();
-		ifilter.addAction(Downloader.ACTION_UPDATED_GROUPS);
-		ifilter.addAction(Downloader.ACTION_UPDATED_FEEDS);
-		ifilter.addAction(Downloader.ACTION_UPDATED_ITEMS);
+		ifilter.addAction(Downloader.ACTION_UPDATING_GROUPS);
+		ifilter.addAction(Downloader.ACTION_UPDATING_FEEDS);
+		ifilter.addAction(Downloader.ACTION_UPDATING_ITEMS);
 		LocalBroadcastManager.getInstance(this).registerReceiver(catcher, ifilter);
 	}
 	
@@ -252,7 +252,7 @@ public class ItemsActivity extends ListActivity
 		{
 			Log.d(TAG, "Item #" + requestCode + " displayed and marked as read");
 			// This is experimental, to say the least!
-			LocalBroadcastManager.getInstance(this).sendBroadcastSync(new Intent(Downloader.ACTION_UPDATED_ITEMS));
+			LocalBroadcastManager.getInstance(this).sendBroadcastSync(new Intent(Downloader.ACTION_UPDATING_ITEMS));
 			
 			// app.sweepReadItems();
 			

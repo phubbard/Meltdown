@@ -68,9 +68,9 @@ public class GroupsActivity extends ListActivity
 		
 		catcher = new dBroadcastCatcher();
 		IntentFilter ifilter = new IntentFilter();
-		ifilter.addAction(Downloader.ACTION_UPDATED_GROUPS);
-		ifilter.addAction(Downloader.ACTION_UPDATED_FEEDS);
-		ifilter.addAction(Downloader.ACTION_UPDATED_ITEMS);
+		ifilter.addAction(Downloader.ACTION_UPDATING_GROUPS);
+		ifilter.addAction(Downloader.ACTION_UPDATING_FEEDS);
+		ifilter.addAction(Downloader.ACTION_UPDATING_ITEMS);
 		ifilter.addAction(Downloader.ACTION_UPDATE_STARTING);
 		ifilter.addAction(Downloader.ACTION_UPDATE_DONE);
 		LocalBroadcastManager.getInstance(this).registerReceiver(catcher, ifilter);
@@ -80,7 +80,7 @@ public class GroupsActivity extends ListActivity
 
 	public void doRefresh()
 	{
-		getActionBar().setSubtitle(app.getTotalUnread() + " to read");
+		getActionBar().setSubtitle(app.getNumItems() + " to read");
 		mAdapter = new GroupListAdapter(GroupsActivity.this, app.getUnreadGroups());
 		setListAdapter(mAdapter);
         final ListView lv = getListView();

@@ -5,7 +5,6 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.util.List;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -27,12 +26,8 @@ public class RssItem
 	public Boolean is_saved;
 	public String author;
 
-	// Derived locally
-	public List<Integer> groups;	// What group(s) am I in?	
-	
 	private Context ctx;
 	private String html;
-	
 	
     // Take this many chars from the front of the description.
     public static final int SNIPPET_LENGTH = 87;

@@ -19,9 +19,10 @@ public class Downloader extends IntentService
 	private Long tzero, tend;
 	
 	static final String ACTION_UPDATE_STARTING = "updateStart";
-	static final String ACTION_UPDATED_GROUPS = "Updated group";
-	static final String ACTION_UPDATED_FEEDS = "Updated feeds";
-	static final String ACTION_UPDATED_ITEMS = "Updated items";
+	static final String ACTION_UPDATING_GROUPS = "Updating group";
+	static final String ACTION_UPDATING_FEEDS = "Updating feeds";
+	static final String ACTION_UPDATING_ITEMS = "Updating items";
+	static final String ACTION_UPDATING_CACHE = "Updating disk cache";
 	static final String ACTION_UPDATE_DONE = "updateDone";
 	
 	public Downloader(String name) 
@@ -60,31 +61,32 @@ public class Downloader extends IntentService
 		sendLocalBroadcast(ACTION_UPDATE_STARTING);
 		
 		Log.i(TAG, "Getting groups...");
+		sendLocalBroadcast(ACTION_UPDATING_GROUPS);
 		mapp.saveGroupsData(xcvr.fetchGroups());
-		sendLocalBroadcast(ACTION_UPDATED_GROUPS);
 		
 		Log.i(TAG, "Getting feeds....");
+		sendLocalBroadcast(ACTION_UPDATING_FEEDS);
 		mapp.saveFeedsData(xcvr.fetchFeeds());
-		sendLocalBroadcast(ACTION_UPDATED_FEEDS);
+
+		mapp.updateFeedIndices();
 		
 		Log.i(TAG, "Now fetching items...");
-		mapp.gimmeANameFool(intent.getExtras().getBoolean(MeltdownApp.FIRST_RUN));
-		Log.i(TAG, "Culling on-disk storage...");
-		mapp.cullItemFiles();
+		sendLocalBroadcast(ACTION_UPDATING_ITEMS);
+		mapp.syncUnreadPosts(intent.getExtras().getBoolean(MeltdownApp.FIRST_RUN));
 		
-		Log.i(TAG, "Creating index");
-		mapp.updateGroupIndices();
-		sendLocalBroadcast(ACTION_UPDATED_ITEMS);
+		Log.i(TAG, "Culling on-disk storage...");
+		sendLocalBroadcast(ACTION_UPDATING_CACHE);
+		mapp.cullItemFiles();		
 	
 		Log.i(TAG, "Sorting...");
 		mapp.sortGroupsByName();
 		mapp.sortItemsByDate();
 		
 		mapp.download_complete();
+		
 		tend = System.currentTimeMillis();
 		Double elapsed = (tend - tzero) / 1000.0;
-		Log.i(TAG, "Service complete, " + elapsed + " seconds elapsed, "
-		+ mapp.getNumItems() + " items."); 
+		Log.i(TAG, "Service complete, " + elapsed + " seconds elapsed, " + mapp.getNumItems() + " items."); 
 		sendLocalBroadcast(ACTION_UPDATE_DONE);
 	}
 }
