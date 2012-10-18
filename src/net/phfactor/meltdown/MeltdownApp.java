@@ -39,15 +39,13 @@ public class MeltdownApp extends Application
 	
 	private List<RssGroup> groups;
 	private List<RssFeed> feeds;
-	private List<RssItem> items;
 		
-	private int max_read_id;
-	
+	private int max_read_id;	
 	private long last_refresh_time;
 	
 	private RestClient xcvr;
 	private SharedPreferences prefs;
-	private SharedPreferences.Editor editor;
+	private SharedPreference`s.Editor editor;
 
 	public Boolean updateInProgress;
 
@@ -180,6 +178,10 @@ public class MeltdownApp extends Application
 		return group.items;
 	}
 	
+	public int unreadItemCount(int group_id)
+	{
+		
+	}
 	// Unread items count for a given group ID
 	public int unreadItemCount(int group_id)
 	{
@@ -347,6 +349,9 @@ public class MeltdownApp extends Application
 		Log.d(TAG, feeds.size() + " feeds found");
 	}
 
+	/*
+	 * feeds groups and unread item ids are returned as CSV strings; common code to parse same.
+	 */
 	private List<Integer> parseStrArray(String array_str)
 	{
 		String[] nums = array_str.split(",");
@@ -374,6 +379,58 @@ public class MeltdownApp extends Application
 		return rc;
 	}
 	
+	private void clearAllItems()
+	{
+		for (int idx = 0; idx < groups.size(); idx++)
+			groups.get(idx).clearItems();
+	}
+	
+	private Boolean havePostById(int item_id)
+	{
+		for (int idx = 0; idx < groups.size(); idx++)
+		{
+			RssGroup grp = groups.get
+		}
+	}
+	
+	protected void doServerSync(Boolean reload_from_disk)
+	{
+		List<Integer> unreadItems = fetchUnreadItemsIDs();
+		
+		Log.d(TAG, unreadItems.size() + " unread items found on server.");	
+		if (unreadItems.size() == 0)
+			return;
+		
+		if (reload_from_disk)
+			reloadItemsFromDisk(unreadItems);
+		else
+		{
+			Log.i(TAG, "Sweeping out stale posts...");
+			for (int idx = 0; idx < groups.size(); idx++)
+			{
+				RssGroup grp = groups.get(idx);
+				for (int i = 0; i < grp.items.size(); i++)
+				{
+					int item_id = grp.items.get(i).id;
+					if (!unreadItems.contains(item_id))
+					{
+						grp.items.remove(grp.items.get(i));
+					}
+				}
+			}
+		}
+		
+		// So stale posts are removed, now pull from server any we don't have locally
+		List<Integer> itemsToGet = new ArrayList<Integer>();
+		for (int idx = 0; idx < unreadItems.size(); idx++)
+		{
+			if havePostById(unreadItems.get(idx))
+				itemsToGet.add(unreadItems.get(idx));
+		}
+		
+	}
+	
+	
 	/* The unread_items_ids returns an N-length array of items that are unread on the server. We have to:
 	 * parse the list
 	 * match what we have locally
@@ -383,10 +440,6 @@ public class MeltdownApp extends Application
 	protected void gimmeANameFool(Boolean first_run)
 	{
 		ArrayList<RssItem> new_items = new ArrayList<RssItem>();
-		List<Integer> newItems = fetchUnreadItemsIDs();
-		Log.d(TAG, newItems.size() + " unread items found on server.");	
-		if (newItems.size() == 0)
-			return;
 				
 		// If necessary, reload any as-yet-unread-but-downloaded items from disk
 		if (first_run)
@@ -478,6 +531,12 @@ public class MeltdownApp extends Application
 			e.printStackTrace();
 		}			
 		return 0;		
+	}
+	
+	// Save an RssItem to group or groups that contain it
+	private int saveItem(RssItem item)
+	{
+		for ()
 	}
 	
 	// At startup, load all of the items from disk, and reset max_ids before starting download from server.

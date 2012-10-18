@@ -21,7 +21,7 @@ public class RssGroup
 	public List<Integer> feed_ids;
 	
 	// This is derived from walking the data from the server
-	public List<Integer> items;
+	public List<RssItem> items;
 	
 	public RssGroup(JSONObject data, MeltdownApp app)
 	{
@@ -30,12 +30,16 @@ public class RssGroup
 			this.title = data.getString("title");
 			this.id = data.getInt("id");
 			this.feed_ids = new ArrayList<Integer>();
-			this.items = new ArrayList<Integer>();
-			
+			this.items = new ArrayList<RssItem>();
 		} catch (JSONException e) 
 		{
 			Log.e(TAG, "Unable to parse JSON feed!");			
 			e.printStackTrace();
 		}
 	}	
+	
+	public void clearItems()
+	{
+		this.items = new ArrayList<RssItem>();
+	}
 }

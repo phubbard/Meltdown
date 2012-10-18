@@ -5,6 +5,7 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.util.List;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -19,14 +20,19 @@ public class RssItem
 	public Boolean is_read;
 	public String title;
 	public String url;
-	private String html;
 	public String excerpt;
 	public int id;
 	public Long created_on_time;
 	public int feed_id;
 	public Boolean is_saved;
 	public String author;
+
+	// Derived locally
+	public List<Integer> groups;	// What group(s) am I in?	
+	
 	private Context ctx;
+	private String html;
+	
 	
     // Take this many chars from the front of the description.
     public static final int SNIPPET_LENGTH = 87;
@@ -69,6 +75,8 @@ public class RssItem
 			this.feed_id = data.getInt("feed_id");
 			this.is_saved = (data.getInt("is_saved") == 1);
 			this.author = data.getString("author");
+			
+			// FIXME groups
 		} catch (JSONException je)
 		{
 			Log.e(TAG, "Error parsing feed item", je);
@@ -98,7 +106,9 @@ public class RssItem
 			else
 				tmp_str = "0";
 			rc.put("is_saved", tmp_str);
-			rc.put("author", author);			
+			rc.put("author", author);
+			
+			// FIXME groups
 		} catch (JSONException je)
 		{
 			Log.e(TAG,  "Error serializing RssItem");
