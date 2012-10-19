@@ -5,4 +5,5 @@
         android:actionProviderClass="android.widget.ShareActionProvider" 
         android:showAsAction="ifRoom"></item>
     <item android:id="@+id/itemSave" android:titleCondensed="@string/itmSaveShort" android:title="@string/itmSave"></item>
+    <item android:id="@+id/itemAddOneWeek" android:titleCondensed="Next week" android:title="Remind me next week"></item>
 </menu>

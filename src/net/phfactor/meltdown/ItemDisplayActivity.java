@@ -1,10 +1,14 @@
 package net.phfactor.meltdown;
 
+import java.util.Date;
+
 import android.app.Activity;
 import android.content.Intent;
 import android.graphics.Color;
 import android.net.Uri;
 import android.os.Bundle;
+import android.provider.CalendarContract;
+import android.provider.CalendarContract.Events;
 import android.text.format.DateUtils;
 import android.view.Menu;
 import android.view.MenuInflater;
@@ -152,8 +156,25 @@ public class ItemDisplayActivity extends Activity
 		intent.setData(Uri.parse(rss_item.url));
 		startActivity(intent);		
 	}
+
+	// See http://www.vogella.com/articles/AndroidCalendar/article.html
+	// This pops up the calendar entry box, but that's actually good.
+	private void oneWeek()
+	{
+		// TODO Make this a parameter or preference!
+		final Long ONE_WEEK = (7L * 86400L) * 1000L;
+		
+		Intent intent = new Intent(Intent.ACTION_INSERT);
+		intent.setType("vnd.android.cursor.item/event");
+		intent.putExtra(Events.TITLE, rss_item.title + " by " + rss_item.author);
+		intent.putExtra(Events.DESCRIPTION, rss_item.url);
+		
+		Date calDate = new Date(System.currentTimeMillis() + ONE_WEEK);
+		intent.putExtra(CalendarContract.EXTRA_EVENT_ALL_DAY, true);
+		intent.putExtra(CalendarContract.EXTRA_EVENT_BEGIN_TIME, calDate.getTime());
+		startActivity(intent);
+	}
 	
-	@Override
 	public boolean onOptionsItemSelected(MenuItem item) 
 	{
 		switch (item.getItemId())
@@ -169,6 +190,10 @@ public class ItemDisplayActivity extends Activity
 		case R.id.itemSave:
 			app.markItemSaved(rss_item.id);
 			nextItem();
+			return true;
+			
+		case R.id.itemAddOneWeek:
+			oneWeek();
 			return true;
 		}
 		return false;
