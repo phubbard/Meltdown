@@ -1,0 +1,4 @@
+Build 25 v0.4.6 10/19/12 Gotta start a log. Refactored items to be in groups, bugfixes for same.
+Build 26 v0.4.7 10/19/12 Timestamp, added orphan-catching group, fixed LBM bug, need to work on mutex next.
+Build 27 0.4.8 10/19/12 ZoomDensity in webview to fix horizontal image scrolling
+Build 28 10/19/12 Added about activity.

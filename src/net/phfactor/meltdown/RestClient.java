@@ -207,7 +207,7 @@ public class RestClient
 			client = AndroidHttpClient.newInstance("Meltdown");
 			HttpPost post = new HttpPost(mapp.getAPIUrl());
 			
-			Log.d(TAG, "URL: " + mapp.getAPIUrl() + " vars: " + variables);
+			// Log.d(TAG, "URL: " + mapp.getAPIUrl() + " vars: " + variables);
 			 
 			// Tell Apache we'll take gzip; should compress really well.
 			AndroidHttpClient.modifyRequestToAcceptGzipResponse(post);

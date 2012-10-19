@@ -71,7 +71,6 @@ public class RssItem
 			this.is_saved = (data.getInt("is_saved") == 1);
 			this.author = data.getString("author");
 			
-			// FIXME groups
 		} catch (JSONException je)
 		{
 			Log.e(TAG, "Error parsing feed item", je);
@@ -103,7 +102,6 @@ public class RssItem
 			rc.put("is_saved", tmp_str);
 			rc.put("author", author);
 			
-			// FIXME groups
 		} catch (JSONException je)
 		{
 			Log.e(TAG,  "Error serializing RssItem");
@@ -119,7 +117,7 @@ public class RssItem
 	
 	public void deleteDiskFile()
 	{
-		Log.d(TAG, "Removing " + filename());
+		// Log.d(TAG, "Removing " + filename());
 		ctx.deleteFile(filename());
 	}
 	

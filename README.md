@@ -15,9 +15,15 @@ Please [email me](mailto:phubbard@gmail.com) if you want to hack on it; I could 
 * Data is refreshed every 30 minutes by a background intent service, which should also sync if you read on the web, in Reedr, etc.
 
 ## Current bugs and in-progress
-* Startup is slow
-* First run is glacial, takes minutes to pull the initial fetch from the server.
-* Restarts are slow, the reload from disk is 3x faster than HTTP but still too slow.
+* Several thread-safety issues caused by async updates. Working on this.
+
+## Future plans and ideas
+* 'Send this to me in N hours/days/months' - use a cron or webservice to send you items, like a tickler file.
+* Pay for nicer icon (freelancer.com or similar)
+* Use persistent notifications to show background fetches; nice and unobtrusive.
+* About / stats screen
+* More preferences
+* Tabbed interface for unread/read/sparks/kindling/saved
 
 ### Background information, tools and credits
 * [The Fever REST API](http://feedafever.com/api) is elegant, simple and returns either JSON or XML. I can think of no reason to use XML, so JSON it is.
@@ -28,6 +34,6 @@ Please [email me](mailto:phubbard@gmail.com) if you want to hack on it; I could 
 
 ### License and credits
 
-This code is open source under the [CC BY 3.0](http://creativecommons.org/licenses/by/3.0/us/) terms. I'd appreciate a note if you make use of it, please.
+This code is open source under the [CC BY 3.0](http://creativecommons.org/licenses/by/3.0/us/) terms. I'd appreciate a note if you make use of it, please. Other than that, I'd be pleased if you found it useful either whole or in part.
 
 

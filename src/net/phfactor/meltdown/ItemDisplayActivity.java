@@ -5,10 +5,12 @@ import android.content.Intent;
 import android.graphics.Color;
 import android.net.Uri;
 import android.os.Bundle;
+import android.text.format.DateUtils;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
+import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.widget.Button;
 import android.widget.ShareActionProvider;
@@ -63,16 +65,19 @@ public class ItemDisplayActivity extends Activity
         	return;
         }
         
-        getActionBar().setTitle(rss_item.title);
-        
         // Lookup feed name and display it between the buttons
         TextView tv = (TextView) findViewById(R.id.itmFeedTitle);
 
         // Feed title - currently in footer
         RssFeed rgrp = app.findFeedById(rss_item.feed_id);
-        tv.setText(rgrp.title);
+        
+        // Convert timestamp to milliseconds, and display in human-readable style
+        tv.setText(DateUtils.getRelativeTimeSpanString(rss_item.created_on_time * 1000L));
+        
+        // Try feed title in action bar 
+        getActionBar().setTitle(rgrp.title);
 
-        // New top-of-screen title - experimental
+        // New top-of-screen title - need to make this a scrollview TODO
         tv = (TextView) findViewById(R.id.itmItemTitle);
         tv.setText(rss_item.title);     
         tv.setBackgroundColor(Color.LTGRAY);
@@ -80,11 +85,25 @@ public class ItemDisplayActivity extends Activity
         // TODO Change action bar icon to feeds' favicon
         WebView wv = (WebView) findViewById(R.id.itemWebView);
         
-        // Note that the most-basic load from file inserts garbage characters-
-        //wv.loadData(rss_item.getHTML(getApplicationContext()), "text/html", "UTF-8");
+        /*
+         * We want the page to display with no horizontal scrolling on images - I hate that.
+         * The commented-out code didn't do the trick; the ZoomDensity seems to work.
+         * TODO Move ZoomDensity into a preference setting
+         */
+        // See http://stackoverflow.com/a/4700362
+        //wv.setInitialScale(99);
+        WebSettings webSettings = wv.getSettings();
+        //webSettings.setUseWideViewPort(true);        
+        //webSettings.setLayoutAlgorithm(WebSettings.LayoutAlgorithm.NORMAL);
+        //webSettings.setLoadWithOverviewMode(true);
         
-        // See http://stackoverflow.com/questions/3150400/html-list-tag-not-working-in-android-textview-what-can-i-do
-        // This works. Workaround.
+        webSettings.setDefaultZoom(WebSettings.ZoomDensity.FAR);
+        
+        /* Note that the most-basic load from file inserts garbage characters-
+        wv.loadData(rss_item.getHTML(getApplicationContext()), "text/html", "UTF-8");
+        See http://stackoverflow.com/questions/3150400/html-list-tag-not-working-in-android-textview-what-can-i-do
+        This works. Workaround. 
+         */
         wv.loadDataWithBaseURL(null, rss_item.getHTML(getApplicationContext()), "text/html", "utf-8", null);
     }
     

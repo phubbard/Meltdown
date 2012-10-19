@@ -38,6 +38,14 @@ public class RssGroup
 		}
 	}	
 	
+	public RssGroup(String ttl, int id)
+	{
+		this.title = ttl;
+		this.id = id;
+		this.feed_ids = new ArrayList<Integer>();
+		this.items = new ArrayList<RssItem>(); 
+	}
+	
 	public void clearItems()
 	{
 		this.items = new ArrayList<RssItem>();

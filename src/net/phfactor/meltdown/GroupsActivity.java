@@ -8,7 +8,6 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
-import android.graphics.Color;
 import android.os.Bundle;
 import android.support.v4.content.LocalBroadcastManager;
 import android.util.Log;
@@ -35,12 +34,15 @@ public class GroupsActivity extends ListActivity
 	private MeltdownApp app;
 	ProgressDialog pd;
 	
+	private int last_pos;
+	
 	@Override
 	public void onCreate(Bundle savedInstanceState) 
 	{
 		super.onCreate(savedInstanceState);
 		setContentView(R.layout.list);
 		getActionBar().setSubtitle("Starting up...");
+		last_pos = 0;
 	}
 	
 	@Override
@@ -71,6 +73,7 @@ public class GroupsActivity extends ListActivity
 		ifilter.addAction(Downloader.ACTION_UPDATING_GROUPS);
 		ifilter.addAction(Downloader.ACTION_UPDATING_FEEDS);
 		ifilter.addAction(Downloader.ACTION_UPDATING_ITEMS);
+		ifilter.addAction(Downloader.ACTION_UPDATING_CACHE);
 		ifilter.addAction(Downloader.ACTION_UPDATE_STARTING);
 		ifilter.addAction(Downloader.ACTION_UPDATE_DONE);
 		LocalBroadcastManager.getInstance(this).registerReceiver(catcher, ifilter);
@@ -84,6 +87,10 @@ public class GroupsActivity extends ListActivity
 		mAdapter = new GroupListAdapter(GroupsActivity.this, app.getUnreadGroups());
 		setListAdapter(mAdapter);
         final ListView lv = getListView();
+        
+        if (last_pos > 0)
+        	last_pos = Math.min(last_pos, lv.getCount());
+        lv.setSelection(last_pos);
 
         // TODO Use ActionBar tabs for new/read/saved/sparks/river
         lv.setOnItemClickListener(new OnItemClickListener()
@@ -101,6 +108,7 @@ public class GroupsActivity extends ListActivity
 				// TODO Startactivity for result - get callback when done
 				// TODO listview.setSelection to go back to correct display location
 				// http://stackoverflow.com/questions/2628741/listview-and-scroll
+				last_pos = pos;
 				startActivity(intent);
         	}		        	
         });
@@ -161,8 +169,8 @@ public class GroupsActivity extends ListActivity
             view.getText2().setText(descr);
             
             // Simulate zebra-striping - a touch of class. Maybe. Need to consider themes.
-            if (position % 2 == 0)
-            	view.setBackgroundColor(Color.LTGRAY);
+            //if (position % 2 == 0)
+            //	view.setBackgroundColor(Color.LTGRAY);
                         
             return view;
         }
@@ -184,9 +192,10 @@ public class GroupsActivity extends ListActivity
 			else if (intent.getAction().equals(Downloader.ACTION_UPDATE_DONE))
 			{
 				doRefresh();
-				pd.dismiss();
+				if (pd != null)
+					pd.dismiss();
 			}
-			else
+			else if (pd != null)
 				pd.setMessage(intent.getAction());
 		}
     }
@@ -198,11 +207,15 @@ public class GroupsActivity extends ListActivity
 		{
 		case R.id.menu_refresh:
 			Log.d(TAG, "Refreshing...");
+			startService(new Intent(this, Downloader.class));
 			doRefresh();
 			return true;
 		case R.id.menu_settings:
 			Log.d(TAG, "Settings selecected");
 			startActivity(new Intent(this, SetupActivity.class));
+			return true;
+		case R.id.menu_about:
+			startActivity(new Intent(this, AboutActivity.class));
 			return true;
 		}
 		return false;

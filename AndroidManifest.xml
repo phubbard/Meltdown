@@ -1,15 +1,16 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="net.phfactor.meltdown"
-    android:versionCode="23"
-    android:versionName="0.4.5" >
+    android:versionCode="28"
+    android:versionName="0.4.8" >
 
     <uses-sdk
         android:minSdkVersion="14"
         android:targetSdkVersion="15" />
 
     <uses-permission android:name="android.permission.INTERNET" />
-    <uses-permission android:name="android.permission.PERSISTENT_ACTIVITY"></uses-permission>
-    
+    <uses-permission android:name="android.permission.PERSISTENT_ACTIVITY" >
+    </uses-permission>
+
     <application
         android:name=".MeltdownApp"
         android:icon="@drawable/rss"
@@ -38,7 +39,12 @@
                 android:value="android.app.ListActivity" />
         </activity>
         <!-- Services -->
-        <service android:name=".Downloader" android:enabled="true"></service>
+        <service
+            android:name=".Downloader"
+            android:enabled="true" >
+        </service>
+        <activity
+            android:name=".AboutActivity" >
+        </activity>
     </application>
-
 </manifest>

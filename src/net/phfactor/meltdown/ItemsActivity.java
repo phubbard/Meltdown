@@ -9,7 +9,6 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
-import android.graphics.Color;
 import android.os.Bundle;
 import android.support.v4.content.LocalBroadcastManager;
 import android.util.Log;
@@ -180,8 +179,8 @@ public class ItemsActivity extends ListActivity
             view.getText2().setText(item.excerpt);
             
             // FIXME Simulate zebra-striping - a touch of class. Maybe. Need to consider themes.
-            if (position % 2 == 0)
-            	view.setBackgroundColor(Color.LTGRAY);
+            //if (position % 2 == 0)
+           // 	view.setBackgroundColor(Color.LTGRAY);
             
             return view;
         }
@@ -220,6 +219,14 @@ public class ItemsActivity extends ListActivity
 	 */
 	private void showARDialog()
 	{
+		// TODO Move the threshold to preferences
+		if (app.unreadItemCount(group_id) < 10)
+		{
+			app.markGroupRead(group_id);
+			finish();
+			return;			
+		}
+		
 		DialogInterface.OnClickListener dcl = new DialogInterface.OnClickListener(){
 			@Override
 			public void onClick(DialogInterface dialog, int which)
@@ -251,11 +258,6 @@ public class ItemsActivity extends ListActivity
 		if (resultCode == RESULT_OK)
 		{
 			Log.d(TAG, "Item #" + requestCode + " displayed and marked as read");
-			// This is experimental, to say the least!
-			LocalBroadcastManager.getInstance(this).sendBroadcastSync(new Intent(Downloader.ACTION_UPDATING_ITEMS));
-			
-			// app.sweepReadItems();
-			
 			// Out of posts?
 			if (app.unreadItemCount(group_id) == 0)
 			{
@@ -263,7 +265,6 @@ public class ItemsActivity extends ListActivity
 				return;
 			}
 			
-			// FIXME
 			int pos = (last_pos + 1) % items.size();
 			Log.d(TAG, "Next item " + pos + " of " + items.size());
 			viewPost(pos);
@@ -272,6 +273,15 @@ public class ItemsActivity extends ListActivity
 			Log.d(TAG, "Item display cancelled, leaving unread");
 	}
 	
+	// Remove any read items when we stop - browser, cancel, or out of posts.
+	protected void onStop()
+	{
+		super.onStop();
+		// Log.d(TAG, "Cleaning up on listview exit");
+		app.sweepReadItems();
+		mAdapter.notifyDataSetChanged();
+	}
+
 	@Override
 	public boolean onOptionsItemSelected(MenuItem item) 
 	{

@@ -2,6 +2,7 @@ package net.phfactor.meltdown;
 
 import android.app.IntentService;
 import android.content.Intent;
+import android.os.Bundle;
 import android.support.v4.content.LocalBroadcastManager;
 import android.util.Log;
 
@@ -22,6 +23,7 @@ public class Downloader extends IntentService
 	static final String ACTION_UPDATING_GROUPS = "Updating group";
 	static final String ACTION_UPDATING_FEEDS = "Updating feeds";
 	static final String ACTION_UPDATING_ITEMS = "Updating items";
+	static final String ACTION_DISK_READ = "Reloading cache from disk";
 	static final String ACTION_UPDATING_CACHE = "Updating disk cache";
 	static final String ACTION_UPDATE_DONE = "updateDone";
 	
@@ -46,6 +48,13 @@ public class Downloader extends IntentService
 	@Override
 	protected void onHandleIntent(Intent intent) 
 	{
+		Boolean first_run;
+		Bundle bundle = intent.getExtras();
+		if (bundle == null)
+			first_run = false;
+		else
+			first_run = bundle.getBoolean(MeltdownApp.FIRST_RUN, false);
+		
 		mapp = (MeltdownApp) getApplication();
 		xcvr = new RestClient(mapp);
 
@@ -60,6 +69,7 @@ public class Downloader extends IntentService
 		mapp.download_start();
 		sendLocalBroadcast(ACTION_UPDATE_STARTING);
 		
+		// TODO Check last_refreshed_on_time in groups fetch and bail if unchanged
 		Log.i(TAG, "Getting groups...");
 		sendLocalBroadcast(ACTION_UPDATING_GROUPS);
 		mapp.saveGroupsData(xcvr.fetchGroups());
@@ -68,11 +78,12 @@ public class Downloader extends IntentService
 		sendLocalBroadcast(ACTION_UPDATING_FEEDS);
 		mapp.saveFeedsData(xcvr.fetchFeeds());
 
+		Log.i(TAG, "Building indices...");
 		mapp.updateFeedIndices();
 		
 		Log.i(TAG, "Now fetching items...");
 		sendLocalBroadcast(ACTION_UPDATING_ITEMS);
-		mapp.syncUnreadPosts(intent.getExtras().getBoolean(MeltdownApp.FIRST_RUN));
+		mapp.syncUnreadPosts(first_run);
 		
 		Log.i(TAG, "Culling on-disk storage...");
 		sendLocalBroadcast(ACTION_UPDATING_CACHE);

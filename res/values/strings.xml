@@ -17,4 +17,6 @@
     <string name="itmShare">Share</string>
     <string name="itmSave">Save on server</string>
     <string name="itmSaveShort">Save</string>
+    <string name="title_activity_about">About</string>
+    <string name="vanityBlurb">Meltdown is an RSS client for Fever and is written by Paul Hubbard. Please see github.com/phubbard/Meltdown.</string>
 </resources>

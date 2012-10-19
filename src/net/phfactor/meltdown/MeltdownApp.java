@@ -37,6 +37,8 @@ public class MeltdownApp extends Application
 	static final String FIRST_RUN = "first_run";
 	static final int GROUP_UNKNOWN = -1;
 	
+	static final int ORPHAN_ID = 8675309;
+	
 	private List<RssGroup> groups;
 	private List<RssFeed> feeds;
 		
@@ -69,6 +71,10 @@ public class MeltdownApp extends Application
 		
 		prefs = getSharedPreferences(TAG, Context.MODE_PRIVATE);
 		xcvr = new RestClient(this);		
+		
+		RssGroup orphans = new RssGroup("Orphaned feeds", ORPHAN_ID);		
+		this.groups.add(orphans);
+		
 		startUpdates();
 		
 		Log.i(TAG, "App init completed.");
@@ -146,10 +152,11 @@ public class MeltdownApp extends Application
 	{
 		for (int grp_idx = 0; grp_idx < groups.size(); grp_idx++)
 		{
-			for (int idx = 0; idx < groups.get(grp_idx).items.size(); idx++)
+			RssGroup group = groups.get(grp_idx);
+			for (int idx = 0; idx < group.items.size(); idx++)
 			{
-				if (groups.get(grp_idx).items.get(idx).id == post_id)
-					return groups.get(grp_idx).items.get(idx);
+				if (group.items.get(idx).id == post_id)
+					return group.items.get(idx);
 			}
 		}
 		return null;
@@ -187,8 +194,17 @@ public class MeltdownApp extends Application
 		if (group == null)
 			return 0;
 
+		return groupUnreadItems(group);
+	}
+
+	public int groupUnreadItems(RssGroup group)
+	{
 		// TODO / FIXME - check each item for read status??
-		return group.items.size();
+		int count = 0;
+		for (int idx = 0; idx < group.items.size(); idx++)
+			if (group.items.get(idx).is_read == false)
+				count++;
+		return count;		
 	}
 	
 	// Return items, with HTML only lazy-loaded at the last minute by the caller.
@@ -209,7 +225,7 @@ public class MeltdownApp extends Application
 		for (int idx = 0; idx < groups.size(); idx++)
 		{
 			RssGroup thisgrp = groups.get(idx);
-			if (thisgrp.items.size() > 0)
+			if (groupUnreadItems(thisgrp) > 0)
 				rc.add(thisgrp);
 		}
 		return rc;
@@ -241,21 +257,41 @@ public class MeltdownApp extends Application
 	protected void saveGroupsData(String payload)
 	{
 		JSONArray jgroups;		
-		RssGroup this_grp;
+		RssGroup newGroup;
 		
 		if (payload == null)
 			return;
 		
-		this.groups = new ArrayList<RssGroup>();
-
 		try
 		{
 			JSONObject jsonPayload = new JSONObject(payload);			
 			jgroups = jsonPayload.getJSONArray("groups");
 			for (int idx = 0; idx < jgroups.length(); idx++)
 			{
-				this_grp = new RssGroup(jgroups.getJSONObject(idx), this);				
-				groups.add(this_grp);
+				newGroup = new RssGroup(jgroups.getJSONObject(idx), this);
+				
+				// Merge with existing if post-initialization
+				RssGroup oldGroup = findGroupById(newGroup.id);
+				if (oldGroup != null)
+				{
+					Log.d(TAG, "Merging updating group info for " + newGroup.title);
+					if (!newGroup.title.equals(oldGroup.title))
+					{
+						Log.d(TAG, "Title changed, now " + newGroup.title);
+						oldGroup.title = newGroup.title;
+					}
+					
+					if (!oldGroup.feed_ids.containsAll(newGroup.feed_ids))
+					{
+						Log.d(TAG, "Feed IDs have changed");
+						oldGroup.feed_ids = newGroup.feed_ids;
+					}
+				}
+				else
+				{
+					// Log.d(TAG, "Doing initial groups allocation for " + newGroup.title);					
+					groups.add(newGroup);
+				}
 			}			
 			saveFeedsGroupsData(jsonPayload);
 			
@@ -321,12 +357,6 @@ public class MeltdownApp extends Application
 		return rc;
 	}
 	
-	private void clearAllItems()
-	{
-		for (int idx = 0; idx < groups.size(); idx++)
-			groups.get(idx).clearItems();
-	}
-
 	/* The unread_items_ids returns an N-length array of items that are unread on the server. We have to:
 	 * parse the list
 	 * match what we have locally
@@ -349,6 +379,7 @@ public class MeltdownApp extends Application
 			for (int idx = 0; idx < groups.size(); idx++)
 			{
 				RssGroup grp = groups.get(idx);
+				int old_size = grp.items.size();
 				for (int i = 0; i < grp.items.size(); i++)
 				{
 					int item_id = grp.items.get(i).id;
@@ -358,6 +389,9 @@ public class MeltdownApp extends Application
 						grp.items.remove(grp.items.get(i));
 					}
 				}
+				
+				int new_size = grp.items.size();
+				Log.d(TAG, new_size - old_size + " items removed from " + grp.title + ", " + new_size + " remain");
 			}
 		}
 
@@ -366,7 +400,7 @@ public class MeltdownApp extends Application
 		List<Integer> itemsToGet = new ArrayList<Integer>();
 		for (int idx = 0; idx < unreadItems.size(); idx++)
 		{
-			if (findPostById(unreadItems.get(idx)) != null)
+			if (findPostById(unreadItems.get(idx)) == null)
 				itemsToGet.add(unreadItems.get(idx));
 		}
 		
@@ -425,12 +459,16 @@ public class MeltdownApp extends Application
 			return null;
 		
 		RssFeed feed = findFeedById(item.feed_id);
-		
-		if (item.groups.size() == 0)
-			return null;
-		
 		// FIXME
-		return findGroupById(item.groups.get(0));
+		if (feed.groups.size() == 0)
+		{
+			Log.e(TAG, "Feed " + feed.title + " has no group!");
+			return null;
+		}
+		else if (feed.groups.size() > 1)
+			Log.d(TAG, "Feed " + feed.title + " has " + feed.groups.size() + " group(s)");
+		
+		return findGroupById(feed.groups.get(0));
 	}
 	
 	// Save RSS items parsed from payload, return number saved.
@@ -482,9 +520,9 @@ public class MeltdownApp extends Application
 		if (group == null)
 		{
 			Log.d(TAG, "Orphan item! No group found for post ID " + item.id + " " + item.title);
+			group = findGroupById(ORPHAN_ID);
 		}
-		else
-			group.items.add(item);
+		group.items.add(item);
 	}
 	
 	
@@ -534,23 +572,20 @@ public class MeltdownApp extends Application
 	 */
 	protected void sweepReadItems()
 	{
-		Long tzero = System.currentTimeMillis();
-		Log.d(TAG, "Starting sweep of read items...");
-		int item_count = 0;
-
-		for (int idx = 0; idx < items.size(); idx++)
+		for (int gidx = 0; gidx < groups.size(); gidx++)
 		{
-			RssItem item = items.get(idx);
-			if (item.is_read)
+			RssGroup group = groups.get(gidx);
+			for (int idx = 0; idx < group.items.size(); idx++)
 			{
-				item_count++;
-				item.deleteDiskFile();
-				
-				// Is this valid? To remove an entry as we iterate over it?
-				items.remove(item);
+				RssItem item = group.items.get(idx);
+				if (item.is_read)
+				{
+					item.deleteDiskFile();
+					group.items.remove(item);
+				}
 			}
-		}		
-		Log.d(TAG, item_count + " items removed in " + (System.currentTimeMillis() - tzero) + " msec, " + items.size() + " remaining");
+			//Log.d(TAG, group.items.size() + " items left in " + group.title + " after read sweep");
+		}
 	}
 	
 	protected Boolean verifyLogin()
@@ -563,7 +598,6 @@ public class MeltdownApp extends Application
 	protected void sortGroupsByName()
 	{
 		Collections.sort(groups, new Comparator<RssGroup>() {
-			@Override
 			public int compare(RssGroup r1, RssGroup r2) {
 				return String.CASE_INSENSITIVE_ORDER.compare(r1.title, r2.title);
 			}
@@ -574,12 +608,14 @@ public class MeltdownApp extends Application
 	// http://stackoverflow.com/questions/5894818/how-to-sort-arraylistlong-in-java-in-decreasing-order
 	protected void sortItemsByDate()
 	{
-		Collections.sort(items, new Comparator<RssItem>() {
-			@Override
-			public int compare(RssItem r1, RssItem r2) {
-				return r2.created_on_time.compareTo(r1.created_on_time);
-			}
-		});
+		for (int idx = 0; idx < groups.size(); idx++)
+		{
+			Collections.sort(groups.get(idx).items, new Comparator<RssItem>() {
+				public int compare(RssItem r1, RssItem r2) {
+					return r2.created_on_time.compareTo(r1.created_on_time);
+				}
+			});
+		}
 	}
 	
 	// Mark an item/post as read, both locally and on the server.
@@ -614,23 +650,16 @@ public class MeltdownApp extends Application
 			return 0;
 		}
 	
-		Log.d(TAG, "Starting to mark thread '" + title + "' in group " + grp.title + " as read");
-		for (int idx = 0; idx < items.size(); idx++)
+		for (int idx = 0; idx < grp.items.size(); idx++)
 		{
-			int feed_id = items.get(idx).feed_id;
-			if (grp.feed_ids.contains(feed_id))
+			RssItem item = grp.items.get(idx);
+			if (item.title.equals(title))
 			{
-				if (title.equals(items.get(idx).title))
-				{
-					markItemRead(items.get(idx).id, group_id);
-					rm_count++;
-				}
+				item.is_read = true;
+				rm_count++;
 			}
 		}
-		
 		sweepReadItems();
-		
-		Log.d(TAG, "Completed marking group as read, " + rm_count + " removed.");		
 		return rm_count;
 	}
 	
@@ -646,21 +675,12 @@ public class MeltdownApp extends Application
 	
 		Log.d(TAG, "Starting to mark group " + grp.title + " as read");
 		xcvr.markGroupRead(group_id, last_refresh_time);
-		
-		for (int idx = 0; idx < items.size(); idx++)
+	
+		for (int idx = 0; idx < grp.items.size(); idx++)
 		{
-			int feed_id = items.get(idx).feed_id;
-			if (grp.feed_ids.contains(feed_id))
-			{
-				RssItem item = findPostById(items.get(idx).id);
-				if (item != null)
-					item.is_read = true;
-			}
+			grp.items.get(idx).is_read = true;
 		}
-		
 		sweepReadItems();
-		
-		Log.d(TAG, "Completed marking group as read");
 	}
 
 	/*
@@ -686,6 +706,19 @@ public class MeltdownApp extends Application
 		
 		Log.e(TAG, "Unable to parse " + filename);
 		return -1;
+	}
+	
+	// How many cache files present?
+	protected int getFileCount()
+	{
+		int count = 0;
+		String[] filenames = fileList();
+		for (int idx = 0; idx < filenames.length; idx++)
+		{
+			if(filenameToInt(filenames[idx]) > 0)
+				count++;
+		}
+		return count;
 	}
 	
 	/* Sweep disk files and remove any not present in the in-memory items array
