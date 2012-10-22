@@ -89,20 +89,6 @@ public class ItemDisplayActivity extends Activity
         // TODO Change action bar icon to feeds' favicon
         WebView wv = (WebView) findViewById(R.id.itemWebView);
         
-        /*
-         * We want the page to display with no horizontal scrolling on images - I hate that.
-         * The commented-out code didn't do the trick; the ZoomDensity seems to work.
-         * TODO Move ZoomDensity into a preference setting
-         */
-        // See http://stackoverflow.com/a/4700362
-        //wv.setInitialScale(99);
-        WebSettings webSettings = wv.getSettings();
-        //webSettings.setUseWideViewPort(true);        
-        //webSettings.setLayoutAlgorithm(WebSettings.LayoutAlgorithm.NORMAL);
-        //webSettings.setLoadWithOverviewMode(true);
-        
-        webSettings.setDefaultZoom(WebSettings.ZoomDensity.FAR);
-        
         /* Note that the most-basic load from file inserts garbage characters-
         wv.loadData(rss_item.getHTML(getApplicationContext()), "text/html", "UTF-8");
         See http://stackoverflow.com/questions/3150400/html-list-tag-not-working-in-android-textview-what-can-i-do
@@ -124,7 +110,6 @@ public class ItemDisplayActivity extends Activity
     	return shareIntent;
     }
     
-	@Override
 	public boolean onCreateOptionsMenu(Menu menu) 
     {
     	MenuInflater infl = getMenuInflater();
@@ -195,6 +180,12 @@ public class ItemDisplayActivity extends Activity
 		case R.id.itemAddOneWeek:
 			oneWeek();
 			return true;
+			
+		case R.id.itemZoomFar:
+			WebView wv = (WebView) findViewById(R.id.itemWebView);
+	        WebSettings webSettings = wv.getSettings();
+	        webSettings.setDefaultZoom(WebSettings.ZoomDensity.FAR);
+	        return true;
 		}
 		return false;
 	}

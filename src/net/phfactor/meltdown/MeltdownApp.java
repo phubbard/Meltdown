@@ -42,7 +42,6 @@ public class MeltdownApp extends Application
 	private List<RssGroup> groups;
 	private List<RssFeed> feeds;
 		
-	private int max_read_id;	
 	private long last_refresh_time;
 	
 	private RestClient xcvr;
@@ -62,7 +61,6 @@ public class MeltdownApp extends Application
 		super.onCreate();
 
 		Log.i(TAG, "App created, initializing");
-		max_read_id = 0;
 		last_refresh_time = 0L;
 		updateInProgress = false;		
 	
@@ -117,14 +115,6 @@ public class MeltdownApp extends Application
 		return last_refresh_time;
 	}
 	
-	/*
-	 * Max item ID is used as part of the fetch calls, where we we ask for 'new since N'.
-	 */
-	protected int getMaxItemID() 
-	{
-		return max_read_id;
-	}
-
 	/*
 	 *  Reverse index methods - find group, feed or post by numeric ID.
 	 */
@@ -459,7 +449,6 @@ public class MeltdownApp extends Application
 			return null;
 		
 		RssFeed feed = findFeedById(item.feed_id);
-		// FIXME
 		if (feed.groups.size() == 0)
 		{
 			Log.e(TAG, "Feed " + feed.title + " has no group!");
@@ -563,7 +552,6 @@ public class MeltdownApp extends Application
 		}
 		Log.d(TAG, files.length + " files processed, " + fcount + " loaded in " + 
 		((System.currentTimeMillis() - tzero) / 1000L) + " seconds");
-		Log.d(TAG, "Max read ID is now " + max_read_id);
 	}
 	
 	/*

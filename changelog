@@ -3,3 +3,4 @@ Build 26 v0.4.7 10/19/12 Timestamp, added orphan-catching group, fixed LBM bug, 
 Build 27 0.4.8 10/19/12 ZoomDensity in webview to fix horizontal image scrolling
 Build 28 10/19/12 Added about activity.
 Build 29 10/19/12 Added 'remind me in a week' function in item view.
+Build 30 10/12 Move zoomfar to options menu - really needs to move to action bar
