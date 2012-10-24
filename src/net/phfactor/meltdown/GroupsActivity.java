@@ -59,9 +59,8 @@ public class GroupsActivity extends ListActivity
 		super.onResume();
 		app = (MeltdownApp) this.getApplicationContext();
 		
-		// TODO run setup if login errors out?
-		// Check for login, run prefs
-		if (app.haveSetup() == false)
+		// Run setup if login errors out
+		if (app.isAppConfigured() == false)
 		{
 			startActivity(new Intent(this, SetupActivity.class));
 			Toast.makeText(this, "Please configure your server", Toast.LENGTH_SHORT).show();

@@ -11,6 +11,7 @@ import android.widget.Toast;
 public class SetupActivity extends Activity implements OnClickListener 
 {
 	private MeltdownApp mapp;
+	private ConfigFile auth;
 	
 	@Override
 	protected void onCreate(Bundle savedInstanceState) 
@@ -22,15 +23,14 @@ public class SetupActivity extends Activity implements OnClickListener
 		testBtn.setOnClickListener(this);
 		
 		mapp = (MeltdownApp) getApplication();
-		if (mapp.haveSetup())
+		auth = new ConfigFile(this);
+		
+		if (mapp.isAppConfigured())
 		{
 			TextView tv = (TextView) findViewById(R.id.sServerUrl);
-			tv.setText(mapp.getURL());
+			tv.setText(auth.getURL());
 		}
 	}
-	
-	// TODO Add update interval to prefs
-	// TODO Add cache Boolean to screen
 	
 	@Override
 	public void onClick(View v) 
@@ -44,9 +44,9 @@ public class SetupActivity extends Activity implements OnClickListener
 		tv = (TextView) findViewById(R.id.sPass);
 		password = tv.getText().toString();
 		
-		mapp.setConfig(url, email, password);
+		auth.setConfig(url, email, password);
 		
-		if (mapp.verifyLogin())
+		if (mapp.isAppConfigured())
 		{
 			Toast.makeText(SetupActivity.this, "Logged in OK!", Toast.LENGTH_SHORT).show();
 			mapp.startUpdates();

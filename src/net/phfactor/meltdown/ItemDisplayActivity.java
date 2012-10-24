@@ -69,19 +69,20 @@ public class ItemDisplayActivity extends Activity
         	return;
         }
         
-        // Lookup feed name and display it between the buttons
-        TextView tv = (TextView) findViewById(R.id.itmFeedTitle);
-
-        // Feed title - currently in footer
+        // Lookup feed
         RssFeed rgrp = app.findFeedById(rss_item.feed_id);
         
-        // Convert timestamp to milliseconds, and display in human-readable style
-        tv.setText(DateUtils.getRelativeTimeSpanString(rss_item.created_on_time * 1000L));
-        
-        // Try feed title in action bar 
+        // Title is feed title, subtitle is author name
         getActionBar().setTitle(rgrp.title);
+        getActionBar().setSubtitle("by " + rss_item.author);
 
-        // New top-of-screen title - need to make this a scrollview TODO
+		getActionBar().setDisplayHomeAsUpEnabled(true);
+        
+        // This is the lower-center text field - age of post
+        TextView tv = (TextView) findViewById(R.id.itmFeedTitle);
+        tv.setText(DateUtils.getRelativeTimeSpanString(rss_item.created_on_time * 1000L));
+
+        // New top-of-screen post title - need to make this a scrollview TODO
         tv = (TextView) findViewById(R.id.itmItemTitle);
         tv.setText(rss_item.title);     
         tv.setBackgroundColor(Color.LTGRAY);
@@ -130,7 +131,7 @@ public class ItemDisplayActivity extends Activity
 	private void nextItem()
 	{
 		// Mark-as-read is async/background task
-		app.markItemRead(cur_post, MeltdownApp.GROUP_UNKNOWN);
+		app.markItemRead(cur_post);
 		setResult(RESULT_OK);
 		finish();
 	}
@@ -164,6 +165,10 @@ public class ItemDisplayActivity extends Activity
 	{
 		switch (item.getItemId())
 		{
+		case android.R.id.home:
+			finish();
+			return true;
+					
 		case R.id.itemNextArticle:
 			nextItem();
 			return true;

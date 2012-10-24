@@ -24,12 +24,12 @@ public class AboutActivity extends Activity {
     
         String disp_string = "";
         MeltdownApp mapp = (MeltdownApp) getApplication();
+        ConfigFile auth = new ConfigFile(this);
         
         // TODO Formatting and clickable URLs
         disp_string += getString(R.string.vanityBlurb);
-        disp_string += "\n\nServer URL: " + mapp.getURL();
+        disp_string += "\n\nServer URL: " + auth.getURL();
         disp_string += "\nLast refresh " + DateUtils.getRelativeTimeSpanString(1000L * mapp.getLast_refresh_time());
-        disp_string += "\nLast fetch " + DateUtils.getRelativeTimeSpanString(1000L * mapp.getLastFetchTime());
         disp_string += "\n" + mapp.getNumItems() + " unread items in " + (mapp.getUnreadGroups().size()) + " groups";
         disp_string += "\n" + mapp.getFileCount() + " cached posts on disk";
         
@@ -47,6 +47,6 @@ public class AboutActivity extends Activity {
 			e.printStackTrace();
 			return "unknown";
 		}
-		return "Version" + pinfo.versionName + " build " + pinfo.versionCode;
+		return "Version " + pinfo.versionName + " build " + pinfo.versionCode;
 	}
 }

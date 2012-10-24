@@ -28,7 +28,7 @@ import android.widget.TwoLineListItem;
 
 public class ItemsActivity extends ListActivity 
 {
-	static final String TAG = "MeltdownILA";
+	static final String TAG = "MeltdownItemsActivity";
     /**
      * Custom list adapter that fits our rss data into the list.
      */
@@ -39,8 +39,7 @@ public class ItemsActivity extends ListActivity
 	private mBroadcastCatcher catcher;
 	private int group_id;
 	private int last_pos;
-	
-	// TODO Menu item / icon/ button for 'mark all as read'
+		
 	// Cache - list of item IDs we are to display
 	List<RssItem> items;
 
@@ -59,14 +58,10 @@ public class ItemsActivity extends ListActivity
 
 		last_pos = 0;
 		getActionBar().setTitle(group_name);
-		final ListView lv = getListView();		
-        // The above layout contains a list id "android:list"
-        // which ListActivity adopts as its list -- we can
-        // access it with getListView().
-
-		// TODO Refresh on drag down
-		lv.setOverscrollHeader(getWallpaper());
+		getActionBar().setDisplayHomeAsUpEnabled(true);
 		
+		final ListView lv = getListView();		
+
         lv.setOnItemClickListener(new OnItemClickListener()
         {
         	@Override
@@ -84,10 +79,14 @@ public class ItemsActivity extends ListActivity
 					int pos, long id)
 			{
 				RssItem item = (RssItem) getListView().getItemAtPosition(pos);
-				
+
+				String itemText = String.format("ID: %d read: %b", item.id, item.is_read);
+				Toast.makeText(ItemsActivity.this, itemText, Toast.LENGTH_LONG).show();
+				/* Commented out - really should have a confirmation dialog
 				int rm_ct = app.markGroupThreadRead(group_id, item.title);
 				reloadItemsAndView();
 				Toast.makeText(ItemsActivity.this, rm_ct + " item(s) removed", Toast.LENGTH_LONG).show();
+				*/
 				return true;
 			}
 		});
@@ -100,14 +99,6 @@ public class ItemsActivity extends ListActivity
         reloadItemsAndView();
 	}
 	
-	@Override
-	protected void onPause()
-	{
-		super.onPause();
-		// Don't need to update if not active. I think. TODO verify this!
-		LocalBroadcastManager.getInstance(this).unregisterReceiver(catcher);
-	}
-
 	@Override
 	protected void onResume()
 	{
@@ -278,7 +269,8 @@ public class ItemsActivity extends ListActivity
 	{
 		super.onStop();
 		// Log.d(TAG, "Cleaning up on listview exit");
-		app.sweepReadItems();
+		RssGroup group = app.findGroupById(group_id);
+		app.sweepReadFromGroup(group);
 		mAdapter.notifyDataSetChanged();
 	}
 
@@ -287,6 +279,10 @@ public class ItemsActivity extends ListActivity
 	{
 		switch (item.getItemId())
 		{
+		case android.R.id.home:
+			finish();
+			return true;
+			
 		case R.id.itemMGDr:
 			// Mark entire group as read - confirm first
 			// TODO User-set threshold - don't verify if below N items

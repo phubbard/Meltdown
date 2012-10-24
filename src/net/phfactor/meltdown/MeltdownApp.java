@@ -1,8 +1,5 @@
 package net.phfactor.meltdown;
 
-import java.io.UnsupportedEncodingException;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -17,7 +14,6 @@ import android.app.Application;
 import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
-import android.content.SharedPreferences;
 import android.os.SystemClock;
 import android.util.Log;
 
@@ -30,89 +26,118 @@ public class MeltdownApp extends Application
 	static final String C_ID = "_id";
 	static final String C_HTML = "html";
 
-	private static final String P_URL = "serverUrl";
-	private static final String P_TOKEN = "token";
-	private static final String P_LAST_FETCH = "last_ts";
-	
 	static final String FIRST_RUN = "first_run";
-	static final int GROUP_UNKNOWN = -1;
 	
 	static final int ORPHAN_ID = 8675309;
 	
 	private List<RssGroup> groups;
 	private List<RssFeed> feeds;
-		
+	
 	private long last_refresh_time;
+	private Boolean login_verified;
+	public Boolean updateInProgress;
 	
 	private RestClient xcvr;
-	private SharedPreferences prefs;
-	private SharedPreferences.Editor editor;
-
-	public Boolean updateInProgress;
-
+	private ConfigFile configFile;
+	
 	public MeltdownApp()
 	{
 		super();
 	}
-		
-	@Override
-	public void onCreate()
-	{
-		super.onCreate();
-
-		Log.i(TAG, "App created, initializing");
-		last_refresh_time = 0L;
-		updateInProgress = false;		
 	
-		this.feeds = new ArrayList<RssFeed>();
-		this.groups = new ArrayList<RssGroup>();
-		
-		prefs = getSharedPreferences(TAG, Context.MODE_PRIVATE);
-		xcvr = new RestClient(this);		
-		
-		RssGroup orphans = new RssGroup("Orphaned feeds", ORPHAN_ID);		
-		this.groups.add(orphans);
-		
-		startUpdates();
-		
-		Log.i(TAG, "App init completed.");
-	}
-	
-	/*
-	 * Start the Downloader, and add it to twice-hourly (approximate) via alarm service. We use
-	 * inexact to save battery life; the fetches can be off but that's fine.
+	/* Sweep disk files and remove any not present in the in-memory items array
+	 * 
 	 */
-	protected void startUpdates()
+	protected void cullItemFiles()
 	{
-		// Tell downloader that this is the first run, so it should reload the items from disk
-		Intent sIntent = new Intent(this, Downloader.class);
-		sIntent.putExtra(FIRST_RUN, true);
-		startService(sIntent);
+		Log.d(TAG, "Starting cull of on-disk files");
+		Long ftzero = System.currentTimeMillis();
+		int rm_ct = 0;
 		
-		Log.i(TAG, "Setting up periodic updates...");
+		String[] filenames = fileList();
+		for (int idx = 0; idx < filenames.length; idx++)
+		{
+			int fn_idx = filenameToInt(filenames[idx]);
+			if (fn_idx > 0)
+			{
+				if (findPostById(fn_idx) == null)
+				{
+					if (!deleteFile(filenames[idx]))
+						Log.e(TAG, " error removing " + filenames[idx]);
+					else
+						rm_ct++;
+				}
+			}
+			else
+				Log.d(TAG, "Skipping non-post file " + filenames[idx]);
+		}
 		
-    	Context ctx = getApplicationContext();
-		Intent svc_intent = new Intent(ctx, Downloader.class);
-		svc_intent.putExtra("first_run", false);
-		PendingIntent pending_intent = PendingIntent.getService(ctx, 0, svc_intent, PendingIntent.FLAG_UPDATE_CURRENT);
-		AlarmManager am = (AlarmManager) ctx.getSystemService(Context.ALARM_SERVICE);
-		am.setInexactRepeating(AlarmManager.ELAPSED_REALTIME, SystemClock.elapsedRealtime(), 
-				AlarmManager.INTERVAL_FIFTEEN_MINUTES, pending_intent);
-
-		Log.d(TAG, "Score update service scheduled for execution");		
+		Long ftend = System.currentTimeMillis();
+		Log.d(TAG, "Cull of " + filenames.length + " completed in " + (ftend - ftzero) / 1000L + " seconds, " +
+		rm_ct + " removed.");
 	}
 	
-	public int getNumItems()
+	protected void download_complete()
+	{		
+		this.updateInProgress = false;
+	}
+	
+	// Called by Downloader - this cues the creation of old-vs-new lists for post-download GC
+	protected void download_start()
 	{
-		int rc = 0;
-		for (int idx = 0; idx < groups.size(); idx++)
-			rc += groups.get(idx).items.size();
+		this.updateInProgress = true;
+	}
+	
+	//As with the parseFeedsGroups, this is retured as a comma-delimited string we have to parse.
+	private List<Integer> fetchUnreadItemsIDs()
+	{
+		List<Integer> rc= new ArrayList<Integer>();
+		JSONObject jdata;
+		try
+		{
+			jdata = new JSONObject(xcvr.fetchUnreadList());
+			String array_str = jdata.getString("unread_item_ids");
+			return parseStrArray(array_str); 
+		} catch (JSONException je)
+		{
+			Log.e(TAG, "Error parsing list of unread item IDs");
+		}
 		return rc;
 	}
 	
-	protected long getLast_refresh_time()
+	/*
+	 * Given an items' filename in the format "%d.post", return the %d
+	 */
+	private int filenameToInt(String filename)
 	{
-		return last_refresh_time;
+		if (filename == null)
+			return -1;
+		
+		String delims = "[.]";
+		String[] tokens = filename.split(delims);
+		if (tokens.length == 2)
+		{
+			try
+			{
+				return (Integer.parseInt(tokens[0]));				
+			} catch (NumberFormatException nfe)
+			{
+				return -1;
+			}
+		}
+		
+		Log.e(TAG, "Unable to parse " + filename);
+		return -1;
+	}
+	
+	protected RssFeed findFeedById(int feed_id)
+	{
+		for (int idx =0; idx < feeds.size(); idx++)
+		{
+			if (feeds.get(idx).id == feed_id)
+				return feeds.get(idx);
+		}
+		return null;
 	}
 	
 	/*
@@ -128,12 +153,40 @@ public class MeltdownApp extends Application
 		return null;
 	}
 	
-	protected RssFeed findFeedById(int feed_id)
+	// Similar - locate a group object by title string
+	protected RssGroup findGroupByName(String name)
 	{
-		for (int idx =0; idx < feeds.size(); idx++)
+		for (int idx = 0; idx < groups.size(); idx++)
 		{
-			if (feeds.get(idx).id == feed_id)
-				return feeds.get(idx);
+			if (groups.get(idx).title.equals(name))
+				return groups.get(idx);
+		}
+		return null;
+	}
+	
+	RssGroup findGroupForItem(RssItem item)
+	{
+		if (item == null)
+			return null;
+		
+		RssFeed feed = findFeedById(item.feed_id);
+		if (feed.groups.size() == 0)
+		{
+			Log.e(TAG, "Feed " + feed.title + " has no group!");
+			return null;
+		}
+		else if (feed.groups.size() > 1)
+			Log.d(TAG, "Feed " + feed.title + " has " + feed.groups.size() + " group(s)");
+		
+		return findGroupById(feed.groups.get(0));
+	}
+
+	RssGroup findGroupHoldingFeed(int feed_id)
+	{
+		for (int idx = 0; idx < groups.size(); idx++)
+		{
+			if (groups.get(idx).feed_ids.contains(feed_id))
+				return groups.get(idx);
 		}
 		return null;
 	}
@@ -152,18 +205,67 @@ public class MeltdownApp extends Application
 		return null;
 	}
 	
-	// Similar - locate a group object by title string
-	protected RssGroup findGroupByName(String name)
+	// How many cache files present?
+	protected int getFileCount()
 	{
-		for (int idx = 0; idx < groups.size(); idx++)
+		int count = 0;
+		String[] filenames = fileList();
+		for (int idx = 0; idx < filenames.length; idx++)
 		{
-			if (groups.get(idx).title.equals(name))
-				return groups.get(idx);
+			if(filenameToInt(filenames[idx]) > 0)
+				count++;
 		}
-		return null;
+		return count;
+	}
+
+	// Return items, with HTML only lazy-loaded at the last minute by the caller.
+	public List<RssItem> getItemsForGroup(int group_id)
+	{
+		RssGroup grp = findGroupById(group_id);
+		if (grp == null)
+		{
+			Log.e(TAG, "Unable to locate group id " + group_id);
+			return null;
+		}
+		return grp.items;
+	}
+
+	protected long getLast_refresh_time()
+	{
+		return last_refresh_time;
+	}
+
+	public int getNumItems()
+	{
+		int rc = 0;
+		for (int idx = 0; idx < groups.size(); idx++)
+			rc += groups.get(idx).items.size();
+		return rc;
 	}
 	
-	// Reverse index - search all items for those with a feed ID in the current groups' feed list
+
+	public List<RssGroup> getUnreadGroups()
+	{
+		ArrayList<RssGroup> rc = new ArrayList<RssGroup>();
+		for (int idx = 0; idx < groups.size(); idx++)
+		{
+			RssGroup thisgrp = groups.get(idx);
+			if (groupUnreadItems(thisgrp) > 0)
+				rc.add(thisgrp);
+		}
+		return rc;
+	}
+	
+	public int groupUnreadItems(RssGroup group)
+	{
+		int count = 0;
+		for (int idx = 0; idx < group.items.size(); idx++)
+			if (group.items.get(idx).is_read == false)
+				count++;
+		return count;		
+	}
+	
+	// All items in a group
 	public List<Integer> itemsIDsForGroup(int group_id)
 	{
 		RssGroup group = findGroupById(group_id);
@@ -178,52 +280,182 @@ public class MeltdownApp extends Application
 		return rc;
 	}
 	
-	public int unreadItemCount(int group_id)
+	// Is the app setup and verified?
+	public Boolean isAppConfigured()
 	{
-		RssGroup group = findGroupById(group_id);
-		if (group == null)
-			return 0;
-
-		return groupUnreadItems(group);
-	}
-
-	public int groupUnreadItems(RssGroup group)
-	{
-		// TODO / FIXME - check each item for read status??
-		int count = 0;
-		for (int idx = 0; idx < group.items.size(); idx++)
-			if (group.items.get(idx).is_read == false)
-				count++;
-		return count;		
+		if (!configFile.haveConfigInfo())
+			return false;
+		
+		if (login_verified)
+			return true;
+		
+		login_verified = xcvr.verifyLogin();
+		return login_verified;
 	}
 	
-	// Return items, with HTML only lazy-loaded at the last minute by the caller.
-	public List<RssItem> getItemsForGroup(int group_id)
+	// Iterate over a group, and mark all of the items in it as read. One API call and then local cleanup.
+	protected void markGroupRead(int group_id)
 	{
 		RssGroup grp = findGroupById(group_id);
 		if (grp == null)
 		{
-			Log.e(TAG, "Unable to locate group id " + group_id);
-			return null;
+			Log.e(TAG, "Unable to locate group " + group_id);
+			return;
 		}
-		return grp.items;
+	
+		Log.d(TAG, "Starting to mark group " + grp.title + " as read");
+		xcvr.markGroupRead(group_id, last_refresh_time);
+	
+		for (int idx = 0; idx < grp.items.size(); idx++)
+		{
+			grp.items.get(idx).is_read = true;
+		}
+		sweepReadFromGroup(grp);
 	}
 	
-	public List<RssGroup> getUnreadGroups()
+	// Mark some thread read in a group matching a given title.
+	// Use case is long-running threads in RSS feeds from WatchUSeek and similar.
+	protected int markGroupThreadRead(int group_id, String title)
 	{
-		ArrayList<RssGroup> rc = new ArrayList<RssGroup>();
-		for (int idx = 0; idx < groups.size(); idx++)
+		int rm_count = 0;
+		RssGroup grp = findGroupById(group_id);
+		if (grp == null)
 		{
-			RssGroup thisgrp = groups.get(idx);
-			if (groupUnreadItems(thisgrp) > 0)
-				rc.add(thisgrp);
+			Log.e(TAG, "Unable to locate group " + group_id);
+			return 0;
 		}
-		return rc;
+	
+		for (int idx = 0; idx < grp.items.size(); idx++)
+		{
+			RssItem item = grp.items.get(idx);
+			if (item.title.equals(title))
+			{
+				item.is_read = true;
+				rm_count++;
+			}
+		}
+		sweepReadItems();
+		return rm_count;
 	}
+	
+	// Mark an item/post as read, both locally and on the server.
+	public synchronized void markItemRead(int item_id)
+	{
+		// Get the server update running in the background
+		xcvr.markItemRead(item_id);
+
+		RssItem item = findPostById(item_id);
+		if (item != null)
+			item.is_read = true;			
+	}
+	
+	public synchronized void markItemSaved(int item_id)
+	{
+		xcvr.markItemSaved(item_id);
 		
-	/* ***********************************
-	 * REST callback methods
+		RssItem item = findPostById(item_id);
+		if (item != null)
+			item.is_saved = true;					
+	}
+	
+	@Override
+	public void onCreate()
+	{
+		super.onCreate();
+
+		Log.i(TAG, "App created, initializing");
+		last_refresh_time = 0L;
+		updateInProgress = false;
+		login_verified = false;
+	
+		this.feeds = new ArrayList<RssFeed>();
+		this.groups = new ArrayList<RssGroup>();
+		
+		configFile = new ConfigFile(getApplicationContext());
+		xcvr = new RestClient(configFile.getToken(), configFile.getAPIUrl());		
+		
+		RssGroup orphans = new RssGroup("Orphaned feeds", ORPHAN_ID);		
+		this.groups.add(orphans);
+		
+		startUpdates();
+		Log.i(TAG, "App init completed.");
+	}
+	
+	/*
+	 * feeds groups and unread item ids are returned as CSV strings; common code to parse same.
 	 */
+	private List<Integer> parseStrArray(String array_str)
+	{
+		String[] nums = array_str.split(",");
+		List<Integer> rc = new ArrayList<Integer>();
+		
+		for (int idx = 0; idx < nums.length; idx++)
+			rc.add(Integer.valueOf(nums[idx]));
+		return rc;		
+	}
+	
+	// At startup, load all of the items from disk, and reset max_ids before starting download from server.
+	// Called by the Downloader, as this takes minutes for 10k items on a nexus7.
+	private void reloadItemsFromDisk(List<Integer> new_items)
+	{
+		Log.d(TAG, "Starting load of data from disk");
+		Long tzero = System.currentTimeMillis();
+		Long last_printf = System.currentTimeMillis();
+		Long notif_delta = 2000L;
+		
+		String[] files = fileList();
+		int fcount = 0;
+		Context ctx = getApplicationContext();
+		
+		for (int idx = 0; idx < files.length; idx++)
+		{
+			// Polish - display an update every couple seconds
+			if ((System.currentTimeMillis() - last_printf) >= notif_delta)
+			{
+				last_printf = System.currentTimeMillis();
+				Log.d(TAG, " - at " + idx + " of " + files.length + " files");
+			}
+			
+			int post_id = filenameToInt(files[idx]);
+			
+			// Must be a valid ID and as-yet-unread
+			if ((post_id > 0) && (new_items.contains(post_id)))
+			{
+				RssItem item = new RssItem(ctx, post_id);
+				saveRssItem(item);
+				fcount++;
+			}
+			else if (post_id > 0)
+				deleteFile(files[idx]);
+				
+		}
+		Log.d(TAG, files.length + " files processed, " + fcount + " loaded in " + 
+		((System.currentTimeMillis() - tzero) / 1000L) + " seconds");
+	}
+	
+	protected void saveFeedsData(String payload)
+	{
+		JSONArray jfeeds;
+		
+		if (payload == null)
+			return;
+		
+		this.feeds = new ArrayList<RssFeed>();
+		
+		try
+		{
+			JSONObject jpayload = new JSONObject(payload);
+			jfeeds = jpayload.getJSONArray("feeds");
+			this.last_refresh_time = jpayload.getLong("last_refreshed_on_time");
+			for (int idx = 0; idx < jfeeds.length(); idx++)
+				feeds.add(new RssFeed(jfeeds.getJSONObject(idx)));
+			
+		} catch (JSONException e) 
+		{
+			e.printStackTrace();
+		}
+		Log.d(TAG, feeds.size() + " feeds found");
+	}
 	
 	// Feeds groups associate groups with the feeds they contain.
 	private void saveFeedsGroupsData(JSONObject payload) throws JSONException
@@ -292,173 +524,6 @@ public class MeltdownApp extends Application
 		
 		Log.i(TAG, groups.size() + " groups found");
 	}
-
-	protected void saveFeedsData(String payload)
-	{
-		JSONArray jfeeds;
-		
-		if (payload == null)
-			return;
-		
-		this.feeds = new ArrayList<RssFeed>();
-		
-		try
-		{
-			JSONObject jpayload = new JSONObject(payload);
-			jfeeds = jpayload.getJSONArray("feeds");
-			this.last_refresh_time = jpayload.getLong("last_refreshed_on_time");
-			for (int idx = 0; idx < jfeeds.length(); idx++)
-				feeds.add(new RssFeed(jfeeds.getJSONObject(idx)));
-			
-		} catch (JSONException e) 
-		{
-			e.printStackTrace();
-		}
-		Log.d(TAG, feeds.size() + " feeds found");
-	}
-
-	/*
-	 * feeds groups and unread item ids are returned as CSV strings; common code to parse same.
-	 */
-	private List<Integer> parseStrArray(String array_str)
-	{
-		String[] nums = array_str.split(",");
-		List<Integer> rc = new ArrayList<Integer>();
-		
-		for (int idx = 0; idx < nums.length; idx++)
-			rc.add(Integer.valueOf(nums[idx]));
-		return rc;		
-	}
-	
-	//As with the parseFeedsGroups, this is retured as a comma-delimited string we have to parse.
-	private List<Integer> fetchUnreadItemsIDs()
-	{
-		List<Integer> rc= new ArrayList<Integer>();
-		JSONObject jdata;
-		try
-		{
-			jdata = new JSONObject(xcvr.fetchUnreadList());
-			String array_str = jdata.getString("unread_item_ids");
-			return parseStrArray(array_str); 
-		} catch (JSONException je)
-		{
-			Log.e(TAG, "Error parsing list of unread item IDs");
-		}
-		return rc;
-	}
-	
-	/* The unread_items_ids returns an N-length array of items that are unread on the server. We have to:
-	 * parse the list
-	 * match what we have locally
-	 * fetch the new items in blocks of 50 or less.
-	 * cull local items not on the list
-	 */	
-	protected void syncUnreadPosts(Boolean reload_from_disk)
-	{
-		List<Integer> unreadItems = fetchUnreadItemsIDs();
-		
-		Log.d(TAG, unreadItems.size() + " unread items found on server.");	
-		if (unreadItems.size() == 0)
-			return;
-		
-		if (reload_from_disk)
-			reloadItemsFromDisk(unreadItems);
-		else
-		{
-			Log.i(TAG, "Sweeping out stale posts...");
-			for (int idx = 0; idx < groups.size(); idx++)
-			{
-				RssGroup grp = groups.get(idx);
-				int old_size = grp.items.size();
-				for (int i = 0; i < grp.items.size(); i++)
-				{
-					int item_id = grp.items.get(i).id;
-					if (!unreadItems.contains(item_id))
-					{
-						// FIXME copy instead of remove?
-						grp.items.remove(grp.items.get(i));
-					}
-				}
-				
-				int new_size = grp.items.size();
-				Log.d(TAG, new_size - old_size + " items removed from " + grp.title + ", " + new_size + " remain");
-			}
-		}
-
-		Log.i(TAG, "Checking for posts I need to pull...");
-		// So stale posts are removed, now pull from server any we don't have locally
-		List<Integer> itemsToGet = new ArrayList<Integer>();
-		for (int idx = 0; idx < unreadItems.size(); idx++)
-		{
-			if (findPostById(unreadItems.get(idx)) == null)
-				itemsToGet.add(unreadItems.get(idx));
-		}
-		
-		Log.i(TAG, itemsToGet.size() + " items to retrieve");
-		// Could use size of newItems for progress dialog. Someday. Maybe a 'persistent activity' notification? TODO.
-		final int PER_FETCH = 50;
-		final int num_fetches = (int) Math.ceil(itemsToGet.size() / PER_FETCH) + 1;
-		for (int idx = 0; idx < num_fetches; idx++)
-		{
-			int left_index = idx * PER_FETCH;
-			int right_index = Math.min((idx + 1) * PER_FETCH, itemsToGet.size());
-			Log.d(TAG, "On run " + idx + " pulling from " + left_index + " to " + right_index + " of " + itemsToGet.size());
-			
-			List<Integer> ids = itemsToGet.subList(left_index, right_index);
-			String payload = xcvr.fetchListOfItems(ids);
-			saveItemsData(payload);
-		}		
-		
-	}
-		
-	/*
-	 * We have group->feed and item->feed mappings, need to make feed->group
-	 */
-	protected void updateFeedIndices()
-	{
-		for (int idx = 0; idx < feeds.size(); idx++)
-		{
-			RssFeed feed = feeds.get(idx);
-			RssGroup group = findGroupHoldingFeed(feed.id);
-			if (group == null)
-			{
-				Log.e(TAG, "No group found for feed " + feed.title);
-				continue;
-			}
-			// Skip duplicates
-			if (feed.groups.contains(group.id))
-				continue;
-			
-			feed.groups.add(group.id);
-		}
-	}
-	
-	RssGroup findGroupHoldingFeed(int feed_id)
-	{
-		for (int idx = 0; idx < groups.size(); idx++)
-		{
-			if (groups.get(idx).feed_ids.contains(feed_id))
-				return groups.get(idx);
-		}
-		return null;
-	}
-	
-	RssGroup findGroupForItem(RssItem item)
-	{
-		if (item == null)
-			return null;
-		
-		RssFeed feed = findFeedById(item.feed_id);
-		if (feed.groups.size() == 0)
-		{
-			Log.e(TAG, "Feed " + feed.title + " has no group!");
-			return null;
-		}
-		else if (feed.groups.size() > 1)
-			Log.d(TAG, "Feed " + feed.title + " has " + feed.groups.size() + " group(s)");
-		
-		return findGroupById(feed.groups.get(0));
-	}
 	
 	// Save RSS items parsed from payload, return number saved.
 	public int saveItemsData(String payload)
@@ -514,74 +579,6 @@ public class MeltdownApp extends Application
 		group.items.add(item);
 	}
 	
-	
-	// At startup, load all of the items from disk, and reset max_ids before starting download from server.
-	// Called by the Downloader, as this takes minutes for 10k items on a nexus7.
-	private void reloadItemsFromDisk(List<Integer> new_items)
-	{
-		Log.d(TAG, "Starting load of data from disk");
-		Long tzero = System.currentTimeMillis();
-		Long last_printf = System.currentTimeMillis();
-		Long notif_delta = 2000L;
-		
-		String[] files = fileList();
-		int fcount = 0;
-		Context ctx = getApplicationContext();
-		
-		for (int idx = 0; idx < files.length; idx++)
-		{
-			// Polish - display an update every couple seconds
-			if ((System.currentTimeMillis() - last_printf) >= notif_delta)
-			{
-				last_printf = System.currentTimeMillis();
-				Log.d(TAG, " - at " + idx + " of " + files.length + " files");
-			}
-			
-			int post_id = filenameToInt(files[idx]);
-			
-			// Must be a valid ID and as-yet-unread
-			if ((post_id > 0) && (new_items.contains(post_id)))
-			{
-				RssItem item = new RssItem(ctx, post_id);
-				saveRssItem(item);
-				fcount++;
-			}
-			else if (post_id > 0)
-				deleteFile(files[idx]);
-				
-		}
-		Log.d(TAG, files.length + " files processed, " + fcount + " loaded in " + 
-		((System.currentTimeMillis() - tzero) / 1000L) + " seconds");
-	}
-	
-	/*
-	 * Iterate over the items, remove any that are marked read. GC, called by Downloader 
-	 * and when exiting a group view. Mark and sweep GC, very basic.
-	 */
-	protected void sweepReadItems()
-	{
-		for (int gidx = 0; gidx < groups.size(); gidx++)
-		{
-			RssGroup group = groups.get(gidx);
-			for (int idx = 0; idx < group.items.size(); idx++)
-			{
-				RssItem item = group.items.get(idx);
-				if (item.is_read)
-				{
-					item.deleteDiskFile();
-					group.items.remove(item);
-				}
-			}
-			//Log.d(TAG, group.items.size() + " items left in " + group.title + " after read sweep");
-		}
-	}
-	
-	protected Boolean verifyLogin()
-	{
-		// FIXME Async login check
-		return haveSetup();
-	}
-	
 	// See http://stackoverflow.com/questions/5815423/sorting-arraylist-in-android-in-alphabetical-order-case-insensitive
 	protected void sortGroupsByName()
 	{
@@ -590,7 +587,7 @@ public class MeltdownApp extends Application
 				return String.CASE_INSENSITIVE_ORDER.compare(r1.title, r2.title);
 			}
 		});		
-	}
+	}	
 	
 	// Newest first - reversed order by comparing 2 to 1
 	// http://stackoverflow.com/questions/5894818/how-to-sort-arraylistlong-in-java-in-decreasing-order
@@ -606,238 +603,155 @@ public class MeltdownApp extends Application
 		}
 	}
 	
-	// Mark an item/post as read, both locally and on the server.
-	public synchronized void markItemRead(int item_id, int group_id)
-	{
-		// Get the server update running in the background
-		xcvr.markItemRead(item_id);
-
-		RssItem item = findPostById(item_id);
-		if (item != null)
-			item.is_read = true;			
-	}
-	
-	public synchronized void markItemSaved(int item_id)
-	{
-		xcvr.markItemSaved(item_id);
-		
-		RssItem item = findPostById(item_id);
-		if (item != null)
-			item.is_saved = true;					
-	}
-	
-	// Mark some thread read in a group matching a given title.
-	// Use case is long-running threads in RSS feeds from WatchUSeek and similar.
-	protected int markGroupThreadRead(int group_id, String title)
-	{
-		int rm_count = 0;
-		RssGroup grp = findGroupById(group_id);
-		if (grp == null)
-		{
-			Log.e(TAG, "Unable to locate group " + group_id);
-			return 0;
-		}
-	
-		for (int idx = 0; idx < grp.items.size(); idx++)
-		{
-			RssItem item = grp.items.get(idx);
-			if (item.title.equals(title))
-			{
-				item.is_read = true;
-				rm_count++;
-			}
-		}
-		sweepReadItems();
-		return rm_count;
-	}
-	
-	// Iterate over a group, and mark all of the items in it as read. One API call and then local cleanup.
-	protected synchronized void markGroupRead(int group_id)
-	{
-		RssGroup grp = findGroupById(group_id);
-		if (grp == null)
-		{
-			Log.e(TAG, "Unable to locate group " + group_id);
-			return;
-		}
-	
-		Log.d(TAG, "Starting to mark group " + grp.title + " as read");
-		xcvr.markGroupRead(group_id, last_refresh_time);
-	
-		for (int idx = 0; idx < grp.items.size(); idx++)
-		{
-			grp.items.get(idx).is_read = true;
-		}
-		sweepReadItems();
-	}
-
 	/*
-	 * Given an items' filename in the format "%d.post", return the %d
+	 * Start the Downloader, and add it to twice-hourly (approximate) via alarm service. We use
+	 * inexact to save battery life; the fetches can be off but that's fine.
 	 */
-	private int filenameToInt(String filename)
+	protected void startUpdates()
 	{
-		if (filename == null)
-			return -1;
+		// Tell downloader that this is the first run, so it should reload the items from disk
+		Intent sIntent = new Intent(this, Downloader.class);
+		sIntent.putExtra(FIRST_RUN, true);
+		startService(sIntent);
 		
-		String delims = "[.]";
-		String[] tokens = filename.split(delims);
-		if (tokens.length == 2)
+		Log.i(TAG, "Setting up periodic updates...");
+		
+    	Context ctx = getApplicationContext();
+		Intent svc_intent = new Intent(ctx, Downloader.class);
+		svc_intent.putExtra("first_run", false);
+		PendingIntent pending_intent = PendingIntent.getService(ctx, 0, svc_intent, PendingIntent.FLAG_UPDATE_CURRENT);
+		AlarmManager am = (AlarmManager) ctx.getSystemService(Context.ALARM_SERVICE);
+		am.setInexactRepeating(AlarmManager.ELAPSED_REALTIME, SystemClock.elapsedRealtime(), 
+				AlarmManager.INTERVAL_FIFTEEN_MINUTES, pending_intent);
+
+		Log.d(TAG, "Score update service scheduled for execution");		
+	}
+	
+	protected void sweepReadFromGroup(RssGroup group)
+	{
+		if (group == null)
+			return;
+		
+		for (int idx = 0; idx < group.items.size(); idx++)
 		{
-			try
+			RssItem item = group.items.get(idx);
+			if (item.is_read)
 			{
-				return (Integer.parseInt(tokens[0]));				
-			} catch (NumberFormatException nfe)
-			{
-				return -1;
+				item.deleteDiskFile();
+				group.items.remove(item);
 			}
 		}
 		
-		Log.e(TAG, "Unable to parse " + filename);
-		return -1;
-	}
-	
-	// How many cache files present?
-	protected int getFileCount()
-	{
-		int count = 0;
-		String[] filenames = fileList();
-		for (int idx = 0; idx < filenames.length; idx++)
+		// DDT
+		for (int idx = 0; idx < group.items.size(); idx++)
 		{
-			if(filenameToInt(filenames[idx]) > 0)
-				count++;
+			RssItem item = group.items.get(idx);
+			if (item.is_read)
+				Log.e(TAG, "Item not removed properly!!!! " + item.toString());
 		}
-		return count;
+		//Log.d(TAG, group.items.size() + " items left in " + group.title + " after read sweep");		
 	}
 	
-	/* Sweep disk files and remove any not present in the in-memory items array
-	 * 
+	/*
+	 * Iterate over the items, remove any that are marked read. GC, called by Downloader 
+	 * and when exiting a group view. Mark and sweep GC, very basic.
 	 */
-	protected void cullItemFiles()
+	protected void sweepReadItems()
 	{
-		Log.d(TAG, "Starting cull of on-disk files");
-		Long ftzero = System.currentTimeMillis();
-		int rm_ct = 0;
+		for (int gidx = 0; gidx < groups.size(); gidx++)
+			sweepReadFromGroup(groups.get(gidx));
+	}
 		
-		String[] filenames = fileList();
-		for (int idx = 0; idx < filenames.length; idx++)
+	/* The unread_items_ids returns an N-length array of items that are unread on the server. We have to:
+	 * parse the list
+	 * match what we have locally
+	 * fetch the new items in blocks of 50 or less.
+	 * cull local items not on the list
+	 */	
+	protected void syncUnreadPosts(Boolean reload_from_disk)
+	{
+		List<Integer> serverItemIDs = fetchUnreadItemsIDs();
+		
+		Log.d(TAG, serverItemIDs.size() + " unread items found on server.");	
+		if (serverItemIDs.size() == 0)
+			return;
+		
+		if (reload_from_disk)
+			reloadItemsFromDisk(serverItemIDs);
+		else
 		{
-			int fn_idx = filenameToInt(filenames[idx]);
-			if (fn_idx > 0)
+			Log.i(TAG, "Sweeping out stale posts...");
+			for (int idx = 0; idx < groups.size(); idx++)
 			{
-				if (findPostById(fn_idx) == null)
+				RssGroup grp = groups.get(idx);
+				
+				// This pass removes local items that are gone from the server - read elsewhere, most likely.
+				for (int i = 0; i < grp.items.size(); i++)
 				{
-					if (!deleteFile(filenames[idx]))
-						Log.e(TAG, " error removing " + filenames[idx]);
-					else
-						rm_ct++;
+					int post_id = grp.items.get(i).id;
+					if (!serverItemIDs.contains(post_id))
+						findPostById(post_id).is_read = true;
 				}
+
+				// Now they're marked as read, remove from memory and disk
+				sweepReadFromGroup(grp);
 			}
-			else
-				Log.d(TAG, "Skipping non-post file " + filenames[idx]);
 		}
-		
-		Long ftend = System.currentTimeMillis();
-		Log.d(TAG, "Cull of " + filenames.length + " completed in " + (ftend - ftzero) / 1000L + " seconds, " +
-		rm_ct + " removed.");
-	}
-	
-	// Called by Downloader - this cues the creation of old-vs-new lists for post-download GC
-	protected void download_start()
-	{
-		this.updateInProgress = true;
-	}
-	
-	protected void download_complete()
-	{		
-		this.updateInProgress = false;
-	}
-	
-	// Prefs currently used for storing and retrieving server/email/password
-	// *****************************************************************************
-	//! @see http://stackoverflow.com/questions/8700744/md5-with-android-and-php
-	// Used for creating the dev token
-	private static final String md5(final String s) 
-	{
-		try 
+
+		// Now we're looking for posts on the server we *don't* have yet.
+		List<Integer> itemsToGet = new ArrayList<Integer>();
+
+		for (int idx = 0; idx < serverItemIDs.size(); idx++)
 		{
-			// Create MD5 Hash
-			MessageDigest digest = java.security.MessageDigest.getInstance("MD5");
-			try 
-			{
-				digest.update(s.getBytes("UTF-8"));
-			} catch (UnsupportedEncodingException e) 
-			{
-				Log.e(TAG, "Error encoding into UTF-8!", e);
-				e.printStackTrace();
-			}
-			byte messageDigest[] = digest.digest();
-
-			// Create Hex String
-			StringBuffer hexString = new StringBuffer();
-			for (int i = 0; i < messageDigest.length; i++) {
-				String h = Integer.toHexString(0xFF & messageDigest[i]);
-				while (h.length() < 2)
-					h = "0" + h;
-				hexString.append(h);
-			}
-			return hexString.toString();
-
-		} catch (NoSuchAlgorithmException e) {
-			e.printStackTrace();
+			if (findPostById(serverItemIDs.get(idx)) == null)
+				itemsToGet.add(serverItemIDs.get(idx));
 		}
-		return "";
-	}	
-	
-	public void setConfig(String url, String email, String password)
-	{
-		editor = prefs.edit();
-		editor.putString(P_URL, url);
-		editor.putString(P_TOKEN, makeAuthToken(email, password));
-		editor.commit();
-	}
-	
-	protected String getURL()
-	{
-		return prefs.getString(P_URL, null);
-	}
-	
-	protected String getToken()
-	{
-		return prefs.getString(P_TOKEN, null);
-	}
-	
-	protected String getAPIUrl()
-	{
-		return getURL() + "/?api";
-	}
 		
-	protected void updateTimestamp()
-	{
-		editor = prefs.edit();
-		editor.putLong(P_LAST_FETCH, System.currentTimeMillis() / 1000L);
-		editor.commit();
+		Log.i(TAG, itemsToGet.size() + " items to retrieve");
+		// Could use size of newItems for progress dialog. Someday. Maybe a 'persistent activity' notification? TODO.
+		final int PER_FETCH = 50;
+		final int num_fetches = (int) Math.ceil(itemsToGet.size() / PER_FETCH) + 1;
+		for (int idx = 0; idx < num_fetches; idx++)
+		{
+			int left_index = idx * PER_FETCH;
+			int right_index = Math.min((idx + 1) * PER_FETCH, itemsToGet.size());
+			Log.d(TAG, "On run " + idx + " pulling from " + left_index + " to " + (right_index - 1) + " of " + itemsToGet.size());
+			
+			List<Integer> ids = itemsToGet.subList(left_index, right_index);
+			String payload = xcvr.fetchListOfItems(ids);
+			saveItemsData(payload);
+		}				
 	}
 	
-	public long getLastFetchTime()
+	public int unreadItemCount(int group_id)
 	{
-		return prefs.getLong(P_LAST_FETCH, 0L);
+		RssGroup group = findGroupById(group_id);
+		if (group == null)
+			return 0;
+
+		return groupUnreadItems(group);
 	}
 	
-	public Boolean haveSetup()
+	/*
+	 * We have group->feed and item->feed mappings, need to make feed->group
+	 */
+	protected void updateFeedIndices()
 	{
-		if (prefs.getString(P_URL, null) == null)
-			return false;
-		if (prefs.getString(P_TOKEN, null) == null)
-			return false;
-		
-		return true;
+		for (int idx = 0; idx < feeds.size(); idx++)
+		{
+			RssFeed feed = feeds.get(idx);
+			RssGroup group = findGroupHoldingFeed(feed.id);
+			if (group == null)
+			{
+				Log.e(TAG, "No group found for feed " + feed.title);
+				continue;
+			}
+			// Skip duplicates
+			if (feed.groups.contains(group.id))
+				continue;
+			
+			feed.groups.add(group.id);
+		}
 	}
-	
-	protected String makeAuthToken(String email, String pass)
-	{
-		String pre = String.format("%s:%s", email, pass);
-		return md5(pre);
-	}
-	
 }
  

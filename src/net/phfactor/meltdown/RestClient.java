@@ -18,6 +18,7 @@ import org.json.JSONObject;
 
 import android.net.http.AndroidHttpClient;
 import android.os.AsyncTask;
+import android.os.ConditionVariable;
 import android.util.Log;
 
 /*!
@@ -36,20 +37,52 @@ public class RestClient
 {
 	static final String TAG = "MeltdownRestClient";
 	
-	private MeltdownApp mapp;
 	private String auth_token;
+	private String api_url;
 	
 	public String last_result;
 	
-	public RestClient(MeltdownApp g_app)
+	protected Boolean login_ok;
+	ConditionVariable condv;
+	
+	public RestClient(String token, String url)
 	{
-		mapp = g_app;
-		auth_token = g_app.getToken();
+		auth_token = token;
+		api_url = url;
 	}
 	
-	public Boolean checkAuth()
+	// callback from login checker, saves result and unlocks condition variable
+	protected void setLoginResult(Boolean result)
 	{
-		String payload = syncGetUrl(mapp.getAPIUrl());
+		login_ok = result;
+		condv.open();
+	}
+	
+	// Verify that our credentials are correct by opening the API URL. If they are, 
+	// we'll get 'auth:1' in the result.
+	public Boolean verifyLogin()
+	{
+		login_ok = false;
+		condv = new ConditionVariable();
+
+		class ltask extends AsyncTask<Void, Void, Void>
+		{
+			protected Void doInBackground(Void... params)
+			{
+				setLoginResult(checkAuth());
+				return null;
+			}
+		}
+		new ltask().execute();
+		
+		if (!condv.block(10000L))
+			Log.w(TAG, "Timed out on login check!");
+		return login_ok;
+	}
+	
+	private Boolean checkAuth()
+	{
+		String payload = syncGetUrl(api_url);
 		JSONObject jsonObj;
 		
 		try 
@@ -68,30 +101,25 @@ public class RestClient
 
 	public String fetchGroups()
 	{
-		String url = String.format(mapp.getAPIUrl() + "&groups");
-		String content = syncGetUrl(url);
-		if (content != null)
-			mapp.updateTimestamp();
-		
-		return content;
+		String url = String.format(api_url + "&groups");
+		return syncGetUrl(url);
 	}
 	
 	public String fetchFeeds()
 	{
-		String url = String.format(mapp.getAPIUrl() + "&feeds");
-		return(syncGetUrl(url));
+		String url = String.format(api_url + "&feeds");
+		return syncGetUrl(url);
 	}
 	
 	public String fetchUnreadList()
 	{
-		String url = String.format(mapp.getAPIUrl() + "&unread_item_ids");
-		return(syncGetUrl(url));	
+		String url = String.format(api_url + "&unread_item_ids");
+		return syncGetUrl(url);	
 	}
 	
-	// TODO Write Me!
 	private String makeItemListURL(List<Integer> ids)
 	{
-		String idstr = mapp.getAPIUrl() + "&items&with_ids=";
+		String idstr = api_url + "&items&with_ids=";
 		for (int idx = 0; idx < ids.size(); idx++)
 			idstr += String.format("%d,", ids.get(idx));
 		
@@ -104,6 +132,7 @@ public class RestClient
 		if (ids.size() == 0)
 			return null;
 		
+		Log.d(TAG, "Fetching " + ids.size() + " items from server");
 		String url = makeItemListURL(ids);
 		return (syncGetUrl(url));
 	}
@@ -205,9 +234,9 @@ public class RestClient
 		try 
 		{
 			client = AndroidHttpClient.newInstance("Meltdown");
-			HttpPost post = new HttpPost(mapp.getAPIUrl());
+			HttpPost post = new HttpPost(api_url);
 			
-			// Log.d(TAG, "URL: " + mapp.getAPIUrl() + " vars: " + variables);
+			// Log.d(TAG, "URL: " + api_url + " vars: " + variables);
 			 
 			// Tell Apache we'll take gzip; should compress really well.
 			AndroidHttpClient.modifyRequestToAcceptGzipResponse(post);

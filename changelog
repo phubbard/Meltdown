@@ -4,3 +4,7 @@ Build 27 0.4.8 10/19/12 ZoomDensity in webview to fix horizontal image scrolling
 Build 28 10/19/12 Added about activity.
 Build 29 10/19/12 Added 'remind me in a week' function in item view.
 Build 30 10/12 Move zoomfar to options menu - really needs to move to action bar
+Build 33 10/23/12 Bugfix in server sync - trying to fix duplicate items bug.
+Build 34 10/24/12 Added async check-login that does a quick token verification
+Build 35 v0.5.1 10/24 New sync old-vs-new logic, rearrange item display a bit, add author. Added up navigation, fixed some bugs.
+

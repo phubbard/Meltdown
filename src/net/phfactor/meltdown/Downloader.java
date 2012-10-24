@@ -56,9 +56,10 @@ public class Downloader extends IntentService
 			first_run = bundle.getBoolean(MeltdownApp.FIRST_RUN, false);
 		
 		mapp = (MeltdownApp) getApplication();
-		xcvr = new RestClient(mapp);
+		ConfigFile config = new ConfigFile(getApplicationContext());
+		xcvr = new RestClient(config.getToken(), config.getAPIUrl());
 
-		if (!mapp.haveSetup())
+		if (!mapp.isAppConfigured())
 		{
 			Log.w(TAG, "Setup incomplete, cannot download");
 			return;
@@ -69,7 +70,6 @@ public class Downloader extends IntentService
 		mapp.download_start();
 		sendLocalBroadcast(ACTION_UPDATE_STARTING);
 		
-		// TODO Check last_refreshed_on_time in groups fetch and bail if unchanged
 		Log.i(TAG, "Getting groups...");
 		sendLocalBroadcast(ACTION_UPDATING_GROUPS);
 		mapp.saveGroupsData(xcvr.fetchGroups());
