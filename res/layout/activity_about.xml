@@ -32,13 +32,23 @@
         android:textAppearance="?android:attr/textAppearanceSmall" />
 
     <TextView
-        android:id="@+id/tvVerbiage"
+        android:id="@+id/tvVanity"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_alignParentLeft="true"
         android:layout_below="@+id/imageView1"
         android:layout_marginTop="20dp"
-        android:text="Stats and such here"
+        android:text="Me and the app"
+        android:textAppearance="?android:attr/textAppearanceSmall" />
+
+    <TextView
+        android:id="@+id/tvVerbiage"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentLeft="true"
+        android:layout_below="@+id/tvVanity"
+        android:layout_marginTop="16dp"
+        android:text="Stats and configuration"
         android:textAppearance="?android:attr/textAppearanceSmall" />
 
 </RelativeLayout>

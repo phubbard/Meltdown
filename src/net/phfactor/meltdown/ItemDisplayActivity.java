@@ -2,6 +2,7 @@ package net.phfactor.meltdown;
 
 import java.util.Date;
 
+import android.app.ActionBar;
 import android.app.Activity;
 import android.content.Intent;
 import android.graphics.Color;
@@ -73,10 +74,13 @@ public class ItemDisplayActivity extends Activity
         RssFeed rgrp = app.findFeedById(rss_item.feed_id);
         
         // Title is feed title, subtitle is author name
-        getActionBar().setTitle(rgrp.title);
-        getActionBar().setSubtitle("by " + rss_item.author);
-
-		getActionBar().setDisplayHomeAsUpEnabled(true);
+        ActionBar bar = getActionBar();
+        
+        bar.setTitle(rgrp.title);
+        bar.setSubtitle("by " + rss_item.author);
+		bar.setDisplayHomeAsUpEnabled(true);
+		if (rgrp.icon != null)
+			bar.setIcon(rgrp.icon.icon);
         
         // This is the lower-center text field - age of post
         TextView tv = (TextView) findViewById(R.id.itmFeedTitle);

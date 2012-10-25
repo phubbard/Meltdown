@@ -22,6 +22,7 @@ public class RssFeed
 	public  int favicon_id;
 	public  Boolean is_spark;
 	public  long last_updated_on_time;
+	public Favicon icon;
 	
 	// Derived reverse index
 	public List<Integer> groups;
@@ -31,6 +32,7 @@ public class RssFeed
 		try
 		{
 			//Log.d(TAG, feed.toString());
+			this.icon = null;
 			
 			this.site_url = feed.getString("site_url");
 			this.url = feed.getString("url");

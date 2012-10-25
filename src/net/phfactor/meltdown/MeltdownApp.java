@@ -14,6 +14,8 @@ import android.app.Application;
 import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
+import android.content.pm.PackageInfo;
+import android.content.pm.PackageManager.NameNotFoundException;
 import android.os.SystemClock;
 import android.util.Log;
 
@@ -32,6 +34,7 @@ public class MeltdownApp extends Application
 	
 	private List<RssGroup> groups;
 	private List<RssFeed> feeds;
+	private List<Favicon> icons;
 	
 	private long last_refresh_time;
 	private Boolean login_verified;
@@ -86,6 +89,19 @@ public class MeltdownApp extends Application
 	protected void download_start()
 	{
 		this.updateInProgress = true;
+	}
+	
+	public String getAppVersion()
+	{
+		PackageInfo pinfo;
+		try {
+			pinfo = getPackageManager().getPackageInfo(getPackageName(), 0);
+		} catch (NameNotFoundException e) 
+		{
+			e.printStackTrace();
+			return "unknown";
+		}
+		return "Version " + pinfo.versionName + " build " + pinfo.versionCode;
 	}
 	
 	//As with the parseFeedsGroups, this is retured as a comma-delimited string we have to parse.
@@ -239,10 +255,9 @@ public class MeltdownApp extends Application
 	{
 		int rc = 0;
 		for (int idx = 0; idx < groups.size(); idx++)
-			rc += groups.get(idx).items.size();
+			rc += groupUnreadItems(groups.get(idx));
 		return rc;
-	}
-	
+	}	
 
 	public List<RssGroup> getUnreadGroups()
 	{
@@ -343,7 +358,7 @@ public class MeltdownApp extends Application
 	{
 		// Get the server update running in the background
 		xcvr.markItemRead(item_id);
-
+		
 		RssItem item = findPostById(item_id);
 		if (item != null)
 			item.is_read = true;			
@@ -370,6 +385,7 @@ public class MeltdownApp extends Application
 	
 		this.feeds = new ArrayList<RssFeed>();
 		this.groups = new ArrayList<RssGroup>();
+		this.icons = new ArrayList<Favicon>();
 		
 		configFile = new ConfigFile(getApplicationContext());
 		xcvr = new RestClient(configFile.getToken(), configFile.getAPIUrl());		
@@ -440,6 +456,7 @@ public class MeltdownApp extends Application
 		if (payload == null)
 			return;
 		
+		// Erase the old feeds array and rebuild it with the servers' list
 		this.feeds = new ArrayList<RssFeed>();
 		
 		try
@@ -579,6 +596,45 @@ public class MeltdownApp extends Application
 		group.items.add(item);
 	}
 	
+	public void saveFavicons(String payload)
+	{
+		JSONArray jitems;
+		Favicon this_item;
+		
+		if (payload == null)
+			return;
+		
+		try
+		{
+			JSONObject jdata = new JSONObject(payload);
+			
+			jitems = jdata.getJSONArray("favicons");
+			// Check ending condition(s)
+			if (jitems.length() == 0)
+			{
+				Log.i(TAG, "No icons found!");
+				return;
+			}
+			
+			for (int idx = 0; idx < jitems.length(); idx++)
+			{
+				this_item = new Favicon(jitems.getString(idx));
+				icons.add(this_item);
+			}
+		} catch (JSONException e) 
+		{
+			e.printStackTrace();
+		}			
+		
+		// Now link feeds with icons
+		for (int idx = 0; idx < icons.size(); idx++)
+		{
+			RssFeed feed = findFeedById(icons.get(idx).id);
+			if (feed != null)
+				feed.icon = icons.get(idx);
+		}
+	}
+	
 	// See http://stackoverflow.com/questions/5815423/sorting-arraylist-in-android-in-alphabetical-order-case-insensitive
 	protected void sortGroupsByName()
 	{
@@ -647,7 +703,7 @@ public class MeltdownApp extends Application
 		{
 			RssItem item = group.items.get(idx);
 			if (item.is_read)
-				Log.e(TAG, "Item not removed properly!!!! " + item.toString());
+				Log.e(TAG, "Item not removed properly!!!! " + item.title);
 		}
 		//Log.d(TAG, group.items.size() + " items left in " + group.title + " after read sweep");		
 	}

@@ -2,6 +2,7 @@ package net.phfactor.meltdown;
 
 import java.util.List;
 
+import android.app.ActionBar;
 import android.app.AlertDialog;
 import android.app.ListActivity;
 import android.content.BroadcastReceiver;
@@ -38,7 +39,7 @@ public class ItemsActivity extends ListActivity
 	private String group_name;
 	private mBroadcastCatcher catcher;
 	private int group_id;
-	private int last_pos;
+	private int last_item_id;
 		
 	// Cache - list of item IDs we are to display
 	List<RssItem> items;
@@ -56,9 +57,10 @@ public class ItemsActivity extends ListActivity
 		group_name = getIntent().getExtras().getString("title");
 		group_id = getIntent().getExtras().getInt("group_id");
 
-		last_pos = 0;
-		getActionBar().setTitle(group_name);
-		getActionBar().setDisplayHomeAsUpEnabled(true);
+		last_item_id = 0;
+		ActionBar bar = getActionBar();
+		bar.setTitle(group_name);
+		bar.setDisplayHomeAsUpEnabled(true);		
 		
 		final ListView lv = getListView();		
 
@@ -80,6 +82,9 @@ public class ItemsActivity extends ListActivity
 			{
 				RssItem item = (RssItem) getListView().getItemAtPosition(pos);
 
+				if (item == null)
+					return true;
+				
 				String itemText = String.format("ID: %d read: %b", item.id, item.is_read);
 				Toast.makeText(ItemsActivity.this, itemText, Toast.LENGTH_LONG).show();
 				/* Commented out - really should have a confirmation dialog
@@ -123,6 +128,15 @@ public class ItemsActivity extends ListActivity
 		}
     }
 
+    private int figureNextPos()
+    {
+		for (int idx = 0; idx < items.size(); idx++)
+			if (items.get(idx).id == last_item_id)
+				return ((idx + 1) % items.size());
+		
+		// Not found... odd. Just in case.
+		return 0;
+    }
     /**
      * ArrayAdapter encapsulates a java.util.List of T, for presentation in a
      * ListView. This subclass specializes it to hold RssItems and display
@@ -179,7 +193,6 @@ public class ItemsActivity extends ListActivity
 
     /*
      * Reload items and the list view adapter - used when contents change.
-     * TODO Research mutable listviews - dynamic possible? 
      */
     private void reloadItemsAndView()
     {
@@ -194,12 +207,18 @@ public class ItemsActivity extends ListActivity
 	{
 		RssItem item = (RssItem) getListView().getItemAtPosition(position);
 		
+		if (item == null)
+		{
+			finish();
+			return;
+		}
+		
 		Intent intent = new Intent(ItemsActivity.this, ItemDisplayActivity.class);
 		Bundle bundle = new Bundle();
 		bundle.putInt("post_id", item.id);
 		intent.putExtras(bundle);
 		
-		last_pos = position;
+		last_item_id = item.id;
 		// http://developer.android.com/training/basics/intents/result.html
 		startActivityForResult(intent, item.id);						
 	}
@@ -256,7 +275,7 @@ public class ItemsActivity extends ListActivity
 				return;
 			}
 			
-			int pos = (last_pos + 1) % items.size();
+			int pos = figureNextPos();
 			Log.d(TAG, "Next item " + pos + " of " + items.size());
 			viewPost(pos);
 		}
@@ -285,7 +304,6 @@ public class ItemsActivity extends ListActivity
 			
 		case R.id.itemMGDr:
 			// Mark entire group as read - confirm first
-			// TODO User-set threshold - don't verify if below N items
 			showARDialog();
 			return true;
 		}

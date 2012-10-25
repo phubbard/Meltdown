@@ -23,6 +23,7 @@ public class Downloader extends IntentService
 	static final String ACTION_UPDATING_GROUPS = "Updating group";
 	static final String ACTION_UPDATING_FEEDS = "Updating feeds";
 	static final String ACTION_UPDATING_ITEMS = "Updating items";
+	static final String ACTION_UPDATING_ICONS = "Updating favicons";
 	static final String ACTION_DISK_READ = "Reloading cache from disk";
 	static final String ACTION_UPDATING_CACHE = "Updating disk cache";
 	static final String ACTION_UPDATE_DONE = "updateDone";
@@ -66,7 +67,7 @@ public class Downloader extends IntentService
 		}
 		
 		tzero = System.currentTimeMillis();
-		Log.i(TAG, "Beginning update...");
+		Log.i(TAG, mapp.getAppVersion() + " beginning update...");
 		mapp.download_start();
 		sendLocalBroadcast(ACTION_UPDATE_STARTING);
 		
@@ -78,6 +79,10 @@ public class Downloader extends IntentService
 		sendLocalBroadcast(ACTION_UPDATING_FEEDS);
 		mapp.saveFeedsData(xcvr.fetchFeeds());
 
+		Log.i(TAG, "Getting icons...");
+		sendLocalBroadcast(ACTION_UPDATING_ICONS);
+		mapp.saveFavicons(xcvr.fetchFavicons());
+		
 		Log.i(TAG, "Building indices...");
 		mapp.updateFeedIndices();
 		

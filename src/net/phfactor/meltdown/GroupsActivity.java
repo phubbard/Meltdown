@@ -72,6 +72,7 @@ public class GroupsActivity extends ListActivity
 		ifilter.addAction(Downloader.ACTION_UPDATING_GROUPS);
 		ifilter.addAction(Downloader.ACTION_UPDATING_FEEDS);
 		ifilter.addAction(Downloader.ACTION_UPDATING_ITEMS);
+		ifilter.addAction(Downloader.ACTION_UPDATING_ICONS);
 		ifilter.addAction(Downloader.ACTION_UPDATING_CACHE);
 		ifilter.addAction(Downloader.ACTION_UPDATE_STARTING);
 		ifilter.addAction(Downloader.ACTION_UPDATE_DONE);

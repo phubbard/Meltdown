@@ -111,6 +111,12 @@ public class RestClient
 		return syncGetUrl(url);
 	}
 	
+	public String fetchFavicons()
+	{
+		String url = String.format(api_url + "&favicons");
+		return syncGetUrl(url);
+	}
+	
 	public String fetchUnreadList()
 	{
 		String url = String.format(api_url + "&unread_item_ids");
@@ -201,10 +207,9 @@ public class RestClient
 				return null;
 			}
 		}
-		
 		new mTask().execute();		
 	}
-	
+
 	public void markGroupRead(int group_id, long last_pull_timestamp)
 	{
 		final String vars = String.format("mark=group&as=read&id=%d&before=%d", group_id, last_pull_timestamp);
