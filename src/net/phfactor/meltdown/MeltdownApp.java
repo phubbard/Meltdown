@@ -53,7 +53,6 @@ public class MeltdownApp extends Application
 	 */
 	protected void cullItemFiles()
 	{
-		Log.d(TAG, "Starting cull of on-disk files");
 		Long ftzero = System.currentTimeMillis();
 		int rm_ct = 0;
 		
@@ -71,13 +70,11 @@ public class MeltdownApp extends Application
 						rm_ct++;
 				}
 			}
-			else
-				Log.d(TAG, "Skipping non-post file " + filenames[idx]);
 		}
 		
-		Long ftend = System.currentTimeMillis();
-		Log.d(TAG, "Cull of " + filenames.length + " completed in " + (ftend - ftzero) / 1000L + " seconds, " +
-		rm_ct + " removed.");
+//		Long ftend = System.currentTimeMillis();
+//		Log.d(TAG, "Cull of " + filenames.length + " completed in " + (ftend - ftzero) / 1000L + " seconds, " +
+//		rm_ct + " removed.");
 	}
 	
 	protected void download_complete()
@@ -593,6 +590,16 @@ public class MeltdownApp extends Application
 			Log.d(TAG, "Orphan item! No group found for post ID " + item.id + " " + item.title);
 			group = findGroupById(ORPHAN_ID);
 		}
+		
+		// DDT
+		for (int idx = 0; idx < group.items.size(); idx++)
+		{
+			if (group.items.get(idx).id == item.id)
+			{
+				Log.e(TAG, "Refusing to save duplicate ID " + item.id + " in group " + group.title);
+				return;
+			}
+		}
 		group.items.add(item);
 	}
 	
@@ -688,24 +695,45 @@ public class MeltdownApp extends Application
 		if (group == null)
 			return;
 		
+		List<RssItem> trimmedList = new ArrayList<RssItem>();
 		for (int idx = 0; idx < group.items.size(); idx++)
 		{
 			RssItem item = group.items.get(idx);
 			if (item.is_read)
-			{
 				item.deleteDiskFile();
-				group.items.remove(item);
-			}
+			else
+				trimmedList.add(item);
 		}
+		
+		group.items = trimmedList;
 		
 		// DDT
 		for (int idx = 0; idx < group.items.size(); idx++)
 		{
 			RssItem item = group.items.get(idx);
 			if (item.is_read)
-				Log.e(TAG, "Item not removed properly!!!! " + item.title);
+				Log.e(TAG, "ERROR Item not removed properly!!!! " + item.title);
 		}
 		//Log.d(TAG, group.items.size() + " items left in " + group.title + " after read sweep");		
+	}
+	
+	protected void checkForDuplicates()
+	{
+		for (int gidx = 0; gidx < groups.size(); gidx++)
+		{
+			RssGroup grp = groups.get(gidx);
+			List<Integer> ids = new ArrayList<Integer>();
+			for (int idx = 0; idx < grp.items.size(); idx++)
+			{
+				RssItem item = grp.items.get(idx);
+				if (ids.contains(item.id))
+				{
+					Log.e(TAG, "Error: Group " + grp.title + " duplicate post ID " + item.id + " title " + item.title);
+				}
+				else
+					ids.add(item.id);
+			}
+		}
 	}
 	
 	/*
@@ -732,6 +760,9 @@ public class MeltdownApp extends Application
 		if (serverItemIDs.size() == 0)
 			return;
 		
+		// DDT
+		checkForDuplicates();
+		
 		if (reload_from_disk)
 			reloadItemsFromDisk(serverItemIDs);
 		else
@@ -754,6 +785,9 @@ public class MeltdownApp extends Application
 			}
 		}
 
+		// DDT
+		checkForDuplicates();
+		
 		// Now we're looking for posts on the server we *don't* have yet.
 		List<Integer> itemsToGet = new ArrayList<Integer>();
 
@@ -764,6 +798,9 @@ public class MeltdownApp extends Application
 		}
 		
 		Log.i(TAG, itemsToGet.size() + " items to retrieve");
+		if (itemsToGet.size() == 0)
+			return;
+		
 		// Could use size of newItems for progress dialog. Someday. Maybe a 'persistent activity' notification? TODO.
 		final int PER_FETCH = 50;
 		final int num_fetches = (int) Math.ceil(itemsToGet.size() / PER_FETCH) + 1;
@@ -776,7 +813,10 @@ public class MeltdownApp extends Application
 			List<Integer> ids = itemsToGet.subList(left_index, right_index);
 			String payload = xcvr.fetchListOfItems(ids);
 			saveItemsData(payload);
-		}				
+		}
+		
+		// DDT
+		checkForDuplicates();		
 	}
 	
 	public int unreadItemCount(int group_id)

@@ -26,7 +26,8 @@ public class AboutActivity extends Activity {
         tv = (TextView) findViewById(R.id.tvVanity);
         tv.setText(Html.fromHtml(getString(R.string.vanityBlurb)));
         tv.setClickable(true);
-
+        // FIXME URLs not clickable! D'oh!
+        
         String disp_string = "";
         ConfigFile conf = new ConfigFile(this);
         

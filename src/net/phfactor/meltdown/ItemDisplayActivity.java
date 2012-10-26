@@ -75,11 +75,15 @@ public class ItemDisplayActivity extends Activity
         
         // Title is feed title, subtitle is author name
         ActionBar bar = getActionBar();
+		bar.setDisplayHomeAsUpEnabled(true);
         
         bar.setTitle(rgrp.title);
-        bar.setSubtitle("by " + rss_item.author);
-		bar.setDisplayHomeAsUpEnabled(true);
-		if (rgrp.icon != null)
+        if (!rss_item.author.isEmpty())
+        	bar.setSubtitle("by " + rss_item.author);
+
+       bar.setIcon(null);
+       
+        if (rgrp.icon != null)
 			bar.setIcon(rgrp.icon.icon);
         
         // This is the lower-center text field - age of post

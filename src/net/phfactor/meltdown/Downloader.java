@@ -79,15 +79,23 @@ public class Downloader extends IntentService
 		sendLocalBroadcast(ACTION_UPDATING_FEEDS);
 		mapp.saveFeedsData(xcvr.fetchFeeds());
 
-		Log.i(TAG, "Getting icons...");
-		sendLocalBroadcast(ACTION_UPDATING_ICONS);
-		mapp.saveFavicons(xcvr.fetchFavicons());
+//		Log.i(TAG, "Getting icons...");
+//		sendLocalBroadcast(ACTION_UPDATING_ICONS);
+//		mapp.saveFavicons(xcvr.fetchFavicons());
 		
 		Log.i(TAG, "Building indices...");
 		mapp.updateFeedIndices();
 		
-		Log.i(TAG, "Now fetching items...");
-		sendLocalBroadcast(ACTION_UPDATING_ITEMS);
+		if (first_run)
+		{
+			Log.i(TAG, "Loading from disk and fetching items...");
+			sendLocalBroadcast(ACTION_DISK_READ);
+		}
+		else
+		{
+			Log.i(TAG, "Now fetching items...");
+			sendLocalBroadcast(ACTION_UPDATING_ITEMS);
+		}
 		mapp.syncUnreadPosts(first_run);
 		
 		Log.i(TAG, "Culling on-disk storage...");
