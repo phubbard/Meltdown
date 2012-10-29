@@ -19,6 +19,13 @@ public class Downloader extends IntentService
 	private RestClient xcvr;
 	private Long tzero, tend;
 	
+	/*
+	 * We use local broadcasts for the (asynchronously running) IntentService to tell the GroupsActivity 
+	 * and ItemsActivity that we're updating the data, and if they're running to update their respective 
+	 * list views and progress dialogs. Simple, fast, efficient; I quite like it.
+	 * 
+	 * TODO Collapse these down to action + extras in human-readable format
+	 */
 	static final String ACTION_UPDATE_STARTING = "updateStart";
 	static final String ACTION_UPDATING_GROUPS = "Updating group";
 	static final String ACTION_UPDATING_FEEDS = "Updating feeds";
@@ -39,7 +46,6 @@ public class Downloader extends IntentService
 	}
 	
 	// See http://www.intertech.com/Blog/Post/Using-LocalBroadcastManager-in-Service-to-Activity-Communications.aspx
-	// Local-only async updates to any listening activities. Very handy.
 	private void sendLocalBroadcast(String action)
 	{
 		Intent intent = new Intent(action);
@@ -68,7 +74,6 @@ public class Downloader extends IntentService
 		
 		tzero = System.currentTimeMillis();
 		Log.i(TAG, mapp.getAppVersion() + " beginning update...");
-		mapp.download_start();
 		sendLocalBroadcast(ACTION_UPDATE_STARTING);
 		
 		Log.i(TAG, "Getting groups...");
@@ -79,6 +84,7 @@ public class Downloader extends IntentService
 		sendLocalBroadcast(ACTION_UPDATING_FEEDS);
 		mapp.saveFeedsData(xcvr.fetchFeeds());
 
+		// Favicons commented out until I build a new listview for items and use them there. Code works though.
 //		Log.i(TAG, "Getting icons...");
 //		sendLocalBroadcast(ACTION_UPDATING_ICONS);
 //		mapp.saveFavicons(xcvr.fetchFavicons());
@@ -100,17 +106,15 @@ public class Downloader extends IntentService
 		
 		Log.i(TAG, "Culling on-disk storage...");
 		sendLocalBroadcast(ACTION_UPDATING_CACHE);
-		mapp.cullItemFiles();		
+		mapp.sweepDiskCache();		
 	
 		Log.i(TAG, "Sorting...");
 		mapp.sortGroupsByName();
 		mapp.sortItemsByDate();
 		
-		mapp.download_complete();
-		
 		tend = System.currentTimeMillis();
 		Double elapsed = (tend - tzero) / 1000.0;
-		Log.i(TAG, "Service complete, " + elapsed + " seconds elapsed, " + mapp.getNumItems() + " items."); 
+		Log.i(TAG, "Service complete, " + elapsed + " seconds elapsed, " + mapp.totalUnreadItems() + " items."); 
 		sendLocalBroadcast(ACTION_UPDATE_DONE);
 	}
 }

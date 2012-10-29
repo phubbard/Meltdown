@@ -1,13 +1,17 @@
 package net.phfactor.meltdown;
 
 import android.app.Activity;
+import android.content.Intent;
+import android.net.Uri;
 import android.os.Bundle;
 import android.text.Html;
 import android.text.format.DateUtils;
+import android.view.View;
+import android.view.View.OnClickListener;
 import android.widget.TextView;
 
-public class AboutActivity extends Activity {
-
+public class AboutActivity extends Activity implements OnClickListener 
+{
     public void onCreate(Bundle savedInstanceState) 
     {
         super.onCreate(savedInstanceState);
@@ -15,7 +19,7 @@ public class AboutActivity extends Activity {
 
         fillInFields();
     }
-
+    
     private void fillInFields()
     {        
         MeltdownApp mapp = (MeltdownApp) getApplication();
@@ -24,19 +28,30 @@ public class AboutActivity extends Activity {
     
         // Parse the URLs, make 'em clickable. It's only polite.
         tv = (TextView) findViewById(R.id.tvVanity);
-        tv.setText(Html.fromHtml(getString(R.string.vanityBlurb)));
+        tv.setText(Html.fromHtml(getString(R.string.vanityBlurb)));        
         tv.setClickable(true);
-        // FIXME URLs not clickable! D'oh!
+        tv.setOnClickListener(this);
         
         String disp_string = "";
         ConfigFile conf = new ConfigFile(this);
         
         disp_string += "Server URL: " + conf.getURL();
-        disp_string += "\nLast refresh " + DateUtils.getRelativeTimeSpanString(1000L * mapp.getLast_refresh_time());
-        disp_string += "\n" + mapp.getNumItems() + " unread items in " + (mapp.getUnreadGroups().size()) + " groups";
+        disp_string += "\nLast refresh " + DateUtils.getRelativeTimeSpanString(1000L * mapp.get_last_refresh_time());
+        disp_string += "\n" + mapp.totalUnreadItems() + " unread items in " + (mapp.getUnreadGroups().size()) + " groups";
         disp_string += "\n" + mapp.getFileCount() + " cached posts on disk";
         
         tv = (TextView) findViewById(R.id.tvVerbiage);
         tv.setText(disp_string);
     }
+
+
+	@Override
+	public void onClick(View v)
+	{
+		// This is a minor sin - send every click to Github project page. 
+		// TODO FIXME you schlub!
+		Intent intent = new Intent(Intent.ACTION_VIEW);
+		intent.setData(Uri.parse("http://github.com/phubbard/Meltdown"));
+		startActivity(intent);				
+	}
 }

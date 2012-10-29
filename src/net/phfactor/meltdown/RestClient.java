@@ -59,7 +59,7 @@ public class RestClient
 	}
 	
 	// Verify that our credentials are correct by opening the API URL. If they are, 
-	// we'll get 'auth:1' in the result.
+	// we'll get 'auth:1' in the result. We also check for the min API version (3).
 	public Boolean verifyLogin()
 	{
 		login_ok = false;
@@ -80,6 +80,7 @@ public class RestClient
 		return login_ok;
 	}
 	
+	// Validate that the auth token is correct and that we have at least API level 3.
 	private Boolean checkAuth()
 	{
 		String payload = syncGetUrl(api_url);
@@ -90,7 +91,8 @@ public class RestClient
 			jsonObj = new JSONObject(payload);
 
 			if (jsonObj.getInt("auth") == 1)
-				return true;
+				if (jsonObj.getInt("api_version") >= 3)
+					return true;
 
 		} catch (JSONException e) 
 		{
@@ -171,7 +173,7 @@ public class RestClient
         return sb.toString();
     }
 	
-	// Async mark a post as saved
+	// Asynchronously mark a post as saved
 	public void markItemSaved(int item_id)
 	{
 		final String vars = String.format("mark=item&as=saved&id=%d", item_id);
@@ -210,6 +212,9 @@ public class RestClient
 		new mTask().execute();		
 	}
 
+	/* Mark a group as read. Note that, because are required to include your last-fetch timestamp
+	 * in the request, some items may escape being marked as read. Sort of a race condition.
+	 */
 	public void markGroupRead(int group_id, long last_pull_timestamp)
 	{
 		final String vars = String.format("mark=group&as=read&id=%d&before=%d", group_id, last_pull_timestamp);
@@ -288,7 +293,8 @@ public class RestClient
 		return null;		
 	}
 	
-	// This took forever to get working. Change with great caution if at all.
+	// This took forever to get working. Change with great caution if at all. Adds the mandatory
+	// access token to the HTTP header.
 	protected HttpPost addAuth(HttpPost post_request) throws UnsupportedEncodingException
 	{
 		post_request.setHeader("Content-Type", "application/x-www-form-urlencoded");

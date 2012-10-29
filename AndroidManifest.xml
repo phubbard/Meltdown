@@ -1,7 +1,7 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="net.phfactor.meltdown"
-    android:versionCode="38"
-    android:versionName="0.5.2" >
+    android:versionCode="40"
+    android:versionName="0.6.0" >
 
     <uses-sdk
         android:minSdkVersion="14"
@@ -26,7 +26,7 @@
             </intent-filter>
         </activity>
         <activity
-            android:name=".SetupActivity"
+            android:name=".SetupServerActivity"
             android:label="Setup" />
         <activity
             android:name=".ItemsActivity"

@@ -43,29 +43,6 @@ public class GroupsActivity extends ListActivity
 		setContentView(R.layout.list);
 		getActionBar().setSubtitle("Starting up...");
 		last_pos = 0;
-	}
-	
-	@Override
-	protected void onPause()
-	{
-		super.onPause();
-		// Don't need to update if not active. I think. TODO verify this!
-		LocalBroadcastManager.getInstance(this).unregisterReceiver(catcher);
-	}
-
-	@Override
-	protected void onResume()
-	{
-		super.onResume();
-		app = (MeltdownApp) this.getApplicationContext();
-		
-		// Run setup if login errors out
-		if (app.isAppConfigured() == false)
-		{
-			startActivity(new Intent(this, SetupActivity.class));
-			Toast.makeText(this, "Please configure your server", Toast.LENGTH_SHORT).show();
-			return;
-		}
 		
 		catcher = new dBroadcastCatcher();
 		IntentFilter ifilter = new IntentFilter();
@@ -78,22 +55,46 @@ public class GroupsActivity extends ListActivity
 		ifilter.addAction(Downloader.ACTION_UPDATE_STARTING);
 		ifilter.addAction(Downloader.ACTION_UPDATE_DONE);
 		LocalBroadcastManager.getInstance(this).registerReceiver(catcher, ifilter);
+	}
+	
+	@Override
+	protected void onPause()
+	{
+		super.onPause();
+		Log.d(TAG, "Groups just got paused, doing GC sweep of items");
+		app.sweepReadItems();
+	}
+
+	@Override
+	protected void onResume()
+	{
+		super.onResume();
+		app = (MeltdownApp) getApplication();
 		
+		// Run setup if login errors out
+		if (app.isAppConfigured() == false)
+		{
+			startActivity(new Intent(this, SetupServerActivity.class));
+			Toast.makeText(this, "Please configure your server", Toast.LENGTH_SHORT).show();
+			return;
+		}
+		
+		app.sweepReadItems();
 		doRefresh();
 	}
 
 	public void doRefresh()
 	{
-		getActionBar().setSubtitle(app.getNumItems() + " to read");
+		getActionBar().setSubtitle(app.totalUnreadItems() + " to read");
 		mAdapter = new GroupListAdapter(GroupsActivity.this, app.getUnreadGroups());
 		setListAdapter(mAdapter);
         final ListView lv = getListView();
         
+        // FIXME As in the ItemsActivity, figure out the next group to read and position _there_
         if (last_pos > 0)
         	last_pos = Math.min(last_pos, lv.getCount());
         lv.setSelection(last_pos);
 
-        // TODO Use ActionBar tabs for new/read/saved/sparks/river
         lv.setOnItemClickListener(new OnItemClickListener()
         {
         	@Override
@@ -159,7 +160,7 @@ public class GroupsActivity extends ListActivity
 
             // Set the item title and description into the view.
             view.getText1().setText(grp.title);
-            int unread_count = app.unreadItemCount(grp.id);
+            int unread_count = app.groupUnreadItems(grp.id);
             String descr = "";
             if (unread_count == 0)
             	descr = " -- No unread items --";
@@ -213,7 +214,7 @@ public class GroupsActivity extends ListActivity
 			return true;
 		case R.id.menu_settings:
 			Log.d(TAG, "Settings selecected");
-			startActivity(new Intent(this, SetupActivity.class));
+			startActivity(new Intent(this, SetupServerActivity.class));
 			return true;
 		case R.id.menu_about:
 			startActivity(new Intent(this, AboutActivity.class));

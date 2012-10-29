@@ -10,3 +10,5 @@ Build 35 v0.5.1 10/24 New sync old-vs-new logic, rearrange item display a bit, a
 Build 36 v0.5.2 10/25 Adding favicons, fetch, parse and display in item view.
 Build 37 10/25 Fix for calculating next index in items view for when data is updated on the fly. HTML-ized about page.
 Build 38 10/26 Disabled favicons for now - works but meh. Debugging duplicate items.
+Build 39 10/27 b38 is stable and no duplicates, so now back to features - clean up items list only when all done, so I can add a 'previous' button
+Build 40 v0.6.0 10/28/12 Cleaning up code for Google Play release; counts and duplicates both fixed. Comment and code cleanups. About page->github. 

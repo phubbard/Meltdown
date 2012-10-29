@@ -21,6 +21,7 @@ import android.widget.Button;
 import android.widget.ShareActionProvider;
 import android.widget.TextView;
 
+// Display a single RSS item, mostly wrappers around the webview of its content.
 public class ItemDisplayActivity extends Activity 
 {
     private MeltdownApp app;
@@ -109,6 +110,9 @@ public class ItemDisplayActivity extends Activity
     // See http://android-developers.blogspot.com/2012/02/share-with-intents.html
     private Intent createShareIntent()
     {
+    	if (rss_item == null)
+    		return null;
+    	
     	Intent shareIntent = new Intent(Intent.ACTION_SEND);
     	shareIntent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_WHEN_TASK_RESET);
     	shareIntent.setType("text/plain");

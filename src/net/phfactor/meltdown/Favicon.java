@@ -9,7 +9,8 @@ import android.graphics.drawable.Drawable;
 import android.util.Base64;
 import android.util.Log;
 
-// Class to handle feed favicons
+// Class to handle feed favicons. Note that this is in-memory, so we might need to adapt the cache code
+// from RssItem.java to save and load from disk.
 public class Favicon
 {
 	static final String TAG = "MeltdownFavicon";
@@ -28,6 +29,8 @@ public class Favicon
 		} catch (JSONException je)
 		{
 			Log.e(TAG, "Error parsing icon data!");
+			this.id = -1;
+			this.icon = null;
 			return;
 		}
 	}
@@ -38,8 +41,7 @@ public class Favicon
 		id = -1;
 	}
 	
-	// Adapted from 
-	// http://stackoverflow.com/questions/10586953/base64-image-and-html-fromhtml-android
+	// Adapted from http://stackoverflow.com/questions/10586953/base64-image-and-html-fromhtml-android
 	public void save(String encoded_icon)
 	{
 		// Strings have a prefix that confuses the parser 'image/png;base64,' that we need to strip off

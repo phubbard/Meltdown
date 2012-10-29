@@ -38,7 +38,8 @@ public class MeltdownApp extends Application
 	
 	private long last_refresh_time;
 	private Boolean login_verified;
-	public Boolean updateInProgress;
+	
+	private PendingIntent pendingIntent;
 	
 	private RestClient xcvr;
 	private ConfigFile configFile;
@@ -51,11 +52,8 @@ public class MeltdownApp extends Application
 	/* Sweep disk files and remove any not present in the in-memory items array
 	 * 
 	 */
-	protected void cullItemFiles()
-	{
-		Long ftzero = System.currentTimeMillis();
-		int rm_ct = 0;
-		
+	protected void sweepDiskCache()
+	{		
 		String[] filenames = fileList();
 		for (int idx = 0; idx < filenames.length; idx++)
 		{
@@ -66,26 +64,9 @@ public class MeltdownApp extends Application
 				{
 					if (!deleteFile(filenames[idx]))
 						Log.e(TAG, " error removing " + filenames[idx]);
-					else
-						rm_ct++;
 				}
 			}
 		}
-		
-//		Long ftend = System.currentTimeMillis();
-//		Log.d(TAG, "Cull of " + filenames.length + " completed in " + (ftend - ftzero) / 1000L + " seconds, " +
-//		rm_ct + " removed.");
-	}
-	
-	protected void download_complete()
-	{		
-		this.updateInProgress = false;
-	}
-	
-	// Called by Downloader - this cues the creation of old-vs-new lists for post-download GC
-	protected void download_start()
-	{
-		this.updateInProgress = true;
 	}
 	
 	public String getAppVersion()
@@ -218,7 +199,7 @@ public class MeltdownApp extends Application
 		return null;
 	}
 	
-	// How many cache files present?
+	// How many cache files are present? Just used by about page.
 	protected int getFileCount()
 	{
 		int count = 0;
@@ -243,12 +224,12 @@ public class MeltdownApp extends Application
 		return grp.items;
 	}
 
-	protected long getLast_refresh_time()
+	protected long get_last_refresh_time()
 	{
 		return last_refresh_time;
 	}
 
-	public int getNumItems()
+	public int totalUnreadItems()
 	{
 		int rc = 0;
 		for (int idx = 0; idx < groups.size(); idx++)
@@ -277,21 +258,15 @@ public class MeltdownApp extends Application
 		return count;		
 	}
 	
-	// All items in a group
-	public List<Integer> itemsIDsForGroup(int group_id)
+	public int groupUnreadItems(int group_id)
 	{
 		RssGroup group = findGroupById(group_id);
 		if (group == null)
-			return null;
+			return 0;
 
-		List<Integer>rc = new ArrayList<Integer>();
-		for (int idx = 0; idx < group.items.size(); idx++)
-		{
-			rc.add(group.items.get(idx).id);
-		}
-		return rc;
+		return groupUnreadItems(group);
 	}
-	
+		
 	// Is the app setup and verified?
 	public Boolean isAppConfigured()
 	{
@@ -377,7 +352,6 @@ public class MeltdownApp extends Application
 
 		Log.i(TAG, "App created, initializing");
 		last_refresh_time = 0L;
-		updateInProgress = false;
 		login_verified = false;
 	
 		this.feeds = new ArrayList<RssFeed>();
@@ -403,7 +377,15 @@ public class MeltdownApp extends Application
 		List<Integer> rc = new ArrayList<Integer>();
 		
 		for (int idx = 0; idx < nums.length; idx++)
-			rc.add(Integer.valueOf(nums[idx]));
+		{
+			try {
+				rc.add(Integer.valueOf(nums[idx]));
+			}
+			catch (NumberFormatException nfe)
+			{
+				Log.e(TAG, "Parse error, ignoring");
+			}
+		}
 		return rc;		
 	}
 	
@@ -446,6 +428,8 @@ public class MeltdownApp extends Application
 		((System.currentTimeMillis() - tzero) / 1000L) + " seconds");
 	}
 	
+	// Parse the results of the get-the-feeds API call into our simple array. 
+	// Note - overwrites the old without checking!
 	protected void saveFeedsData(String payload)
 	{
 		JSONArray jfeeds;
@@ -471,7 +455,8 @@ public class MeltdownApp extends Application
 		Log.d(TAG, feeds.size() + " feeds found");
 	}
 	
-	// Feeds groups associate groups with the feeds they contain.
+	// Feeds groups associate groups with the feeds they contain, so you can populate a group with feeds 
+	// and thence actual items.
 	private void saveFeedsGroupsData(JSONObject payload) throws JSONException
 	{
 		JSONArray fg_arry = payload.getJSONArray("feeds_groups");
@@ -487,9 +472,7 @@ public class MeltdownApp extends Application
 		}
 	}
 
-	/*!
-	 *  Take the data returned from a groups fetch, parse and save into data model.
-	 */
+	// Take the data returned from a groups fetch, parse and save into data model.
 	protected void saveGroupsData(String payload)
 	{
 		JSONArray jgroups;		
@@ -510,7 +493,7 @@ public class MeltdownApp extends Application
 				RssGroup oldGroup = findGroupById(newGroup.id);
 				if (oldGroup != null)
 				{
-					Log.d(TAG, "Merging updating group info for " + newGroup.title);
+					// Log.d(TAG, "Merging updating group info for " + newGroup.title);
 					if (!newGroup.title.equals(oldGroup.title))
 					{
 						Log.d(TAG, "Title changed, now " + newGroup.title);
@@ -582,6 +565,11 @@ public class MeltdownApp extends Application
 		return 0;		
 	}
 	
+	/* 
+	 * Save a story (aka item) into our data structures and cache file. Needs to lookup which 
+	 * group should hold the item, but we do that only once, and might look it up via group many 
+	 * times, so sorting it an ingress seems reasonable.
+	 */
 	private void saveRssItem(RssItem item)
 	{
 		RssGroup group = findGroupForItem(item);
@@ -603,6 +591,11 @@ public class MeltdownApp extends Application
 		group.items.add(item);
 	}
 	
+	/*
+	 * I tried using the favicons as ActionBar headers, but there's scaling needed and I wasn't impressed. The 
+	 * code is idle for now, but I think next I'll try a tweaked listview of items, with the favicon center left
+	 * on each story. Might look good and provide a visual cue as to source/author.
+	 */
 	public void saveFavicons(String payload)
 	{
 		JSONArray jitems;
@@ -616,7 +609,6 @@ public class MeltdownApp extends Application
 			JSONObject jdata = new JSONObject(payload);
 			
 			jitems = jdata.getJSONArray("favicons");
-			// Check ending condition(s)
 			if (jitems.length() == 0)
 			{
 				Log.i(TAG, "No icons found!");
@@ -625,6 +617,7 @@ public class MeltdownApp extends Application
 			
 			for (int idx = 0; idx < jitems.length(); idx++)
 			{
+				// Constructor does all the hard work for us.
 				this_item = new Favicon(jitems.getString(idx));
 				icons.add(this_item);
 			}
@@ -642,6 +635,7 @@ public class MeltdownApp extends Application
 		}
 	}
 	
+	// We display the groups in alphabetical order. Seems a sensible default.
 	// See http://stackoverflow.com/questions/5815423/sorting-arraylist-in-android-in-alphabetical-order-case-insensitive
 	protected void sortGroupsByName()
 	{
@@ -667,7 +661,7 @@ public class MeltdownApp extends Application
 	}
 	
 	/*
-	 * Start the Downloader, and add it to twice-hourly (approximate) via alarm service. We use
+	 * Start the Downloader, and add it to  (approximate) via alarm service. We use
 	 * inexact to save battery life; the fetches can be off but that's fine.
 	 */
 	protected void startUpdates()
@@ -682,10 +676,10 @@ public class MeltdownApp extends Application
     	Context ctx = getApplicationContext();
 		Intent svc_intent = new Intent(ctx, Downloader.class);
 		svc_intent.putExtra("first_run", false);
-		PendingIntent pending_intent = PendingIntent.getService(ctx, 0, svc_intent, PendingIntent.FLAG_UPDATE_CURRENT);
+		pendingIntent = PendingIntent.getService(ctx, 0, svc_intent, PendingIntent.FLAG_UPDATE_CURRENT);
 		AlarmManager am = (AlarmManager) ctx.getSystemService(Context.ALARM_SERVICE);
 		am.setInexactRepeating(AlarmManager.ELAPSED_REALTIME, SystemClock.elapsedRealtime(), 
-				AlarmManager.INTERVAL_FIFTEEN_MINUTES, pending_intent);
+				AlarmManager.INTERVAL_FIFTEEN_MINUTES, pendingIntent);
 
 		Log.d(TAG, "Score update service scheduled for execution");		
 	}
@@ -717,6 +711,7 @@ public class MeltdownApp extends Application
 		//Log.d(TAG, group.items.size() + " items left in " + group.title + " after read sweep");		
 	}
 	
+	// TODO remove me before release!
 	protected void checkForDuplicates()
 	{
 		for (int gidx = 0; gidx < groups.size(); gidx++)
@@ -751,6 +746,8 @@ public class MeltdownApp extends Application
 	 * match what we have locally
 	 * fetch the new items in blocks of 50 or less.
 	 * cull local items not on the list
+	 * 
+	 * This routine is the heart of Meltdown's synchronization with the server.
 	 */	
 	protected void syncUnreadPosts(Boolean reload_from_disk)
 	{
@@ -817,15 +814,6 @@ public class MeltdownApp extends Application
 		
 		// DDT
 		checkForDuplicates();		
-	}
-	
-	public int unreadItemCount(int group_id)
-	{
-		RssGroup group = findGroupById(group_id);
-		if (group == null)
-			return 0;
-
-		return groupUnreadItems(group);
 	}
 	
 	/*

@@ -27,6 +27,7 @@ import android.widget.ListView;
 import android.widget.Toast;
 import android.widget.TwoLineListItem;
 
+// Display a list of RSS items from a selected group.
 public class ItemsActivity extends ListActivity 
 {
 	static final String TAG = "MeltdownItemsActivity";
@@ -61,9 +62,18 @@ public class ItemsActivity extends ListActivity
 		ActionBar bar = getActionBar();
 		bar.setTitle(group_name);
 		bar.setDisplayHomeAsUpEnabled(true);		
-		
+
+		// Hook into data-updated broadcasts from Downloader
+		catcher = new mBroadcastCatcher();
+		IntentFilter ifilter = new IntentFilter();
+		ifilter.addAction(Downloader.ACTION_UPDATING_GROUPS);
+		ifilter.addAction(Downloader.ACTION_UPDATING_FEEDS);
+		ifilter.addAction(Downloader.ACTION_UPDATING_ITEMS);
+		LocalBroadcastManager.getInstance(this).registerReceiver(catcher, ifilter);
+				
 		final ListView lv = getListView();		
 
+		// Click loads and item, long click currently shows debug info. Heh.
         lv.setOnItemClickListener(new OnItemClickListener()
         {
         	@Override
@@ -73,6 +83,7 @@ public class ItemsActivity extends ListActivity
         	}
         });
         
+        // TOOD Popup a choice dialog - remove thread, mark as read/saved, load in browser....
         lv.setOnItemLongClickListener(new OnItemLongClickListener()
 		{
 
@@ -96,24 +107,13 @@ public class ItemsActivity extends ListActivity
 			}
 		});
         
+		// Setup and populate the listview
         // Install our custom RSSListAdapter.		
 		items = app.getItemsForGroup(group_id);        
         mAdapter = new RSSListAdapter(this, items);
         getListView().setAdapter(mAdapter);    	
         
         reloadItemsAndView();
-	}
-	
-	@Override
-	protected void onResume()
-	{
-		super.onResume();
-		catcher = new mBroadcastCatcher();
-		IntentFilter ifilter = new IntentFilter();
-		ifilter.addAction(Downloader.ACTION_UPDATING_GROUPS);
-		ifilter.addAction(Downloader.ACTION_UPDATING_FEEDS);
-		ifilter.addAction(Downloader.ACTION_UPDATING_ITEMS);
-		LocalBroadcastManager.getInstance(this).registerReceiver(catcher, ifilter);
 	}
 	
     // Catch updates from the Service, update the data adapter. Needs more work.
@@ -134,7 +134,7 @@ public class ItemsActivity extends ListActivity
 			if (items.get(idx).id == last_item_id)
 				return ((idx + 1) % items.size());
 		
-		// Not found... odd. Just in case.
+		// Just in case.
 		return 0;
     }
     /**
@@ -183,10 +183,6 @@ public class ItemsActivity extends ListActivity
             view.getText1().setText(item.title);
             view.getText2().setText(item.excerpt);
             
-            // FIXME Simulate zebra-striping - a touch of class. Maybe. Need to consider themes.
-            //if (position % 2 == 0)
-           // 	view.setBackgroundColor(Color.LTGRAY);
-            
             return view;
         }
     }
@@ -230,7 +226,7 @@ public class ItemsActivity extends ListActivity
 	private void showARDialog()
 	{
 		// TODO Move the threshold to preferences
-		if (app.unreadItemCount(group_id) < 10)
+		if (app.groupUnreadItems(group_id) < 10)
 		{
 			app.markGroupRead(group_id);
 			finish();
@@ -255,7 +251,7 @@ public class ItemsActivity extends ListActivity
 		
 		AlertDialog.Builder builder = new AlertDialog.Builder(this);
 		builder.setMessage(String.format("Do you want to mark %d items as read in group %s?", 
-				app.unreadItemCount(group_id), group_name));
+				app.groupUnreadItems(group_id), group_name));
 		builder.setPositiveButton("Yes", dcl);
 		builder.setNegativeButton("No", dcl);
 		builder.show();
@@ -269,7 +265,7 @@ public class ItemsActivity extends ListActivity
 		{
 			Log.d(TAG, "Item #" + requestCode + " displayed and marked as read");
 			// Out of posts?
-			if (app.unreadItemCount(group_id) == 0)
+			if (app.groupUnreadItems(group_id) == 0)
 			{
 				finish();
 				return;
@@ -283,16 +279,19 @@ public class ItemsActivity extends ListActivity
 			Log.d(TAG, "Item display cancelled, leaving unread");
 	}
 	
-	// Remove any read items when we stop - browser, cancel, or out of posts.
-	protected void onStop()
+	protected void onPause()
 	{
-		super.onStop();
-		// Log.d(TAG, "Cleaning up on listview exit");
-		RssGroup group = app.findGroupById(group_id);
-		app.sweepReadFromGroup(group);
-		mAdapter.notifyDataSetChanged();
+		super.onPause();
 	}
 
+	@Override
+	protected void onResume()
+	{
+		super.onResume();
+		// Just in case...
+		mAdapter.notifyDataSetChanged();
+	}
+		
 	@Override
 	public boolean onOptionsItemSelected(MenuItem item) 
 	{

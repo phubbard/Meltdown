@@ -8,7 +8,7 @@ import android.widget.Button;
 import android.widget.TextView;
 import android.widget.Toast;
 
-public class SetupActivity extends Activity implements OnClickListener 
+public class SetupServerActivity extends Activity implements OnClickListener 
 {
 	private MeltdownApp mapp;
 	private ConfigFile auth;
@@ -18,7 +18,7 @@ public class SetupActivity extends Activity implements OnClickListener
 	{
 		super.onCreate(savedInstanceState);
 		
-		setContentView(R.layout.setup);
+		setContentView(R.layout.setup_server);
 		Button testBtn = (Button) findViewById(R.id.sbTest);
 		testBtn.setOnClickListener(this);
 		
@@ -48,11 +48,11 @@ public class SetupActivity extends Activity implements OnClickListener
 		
 		if (mapp.isAppConfigured())
 		{
-			Toast.makeText(SetupActivity.this, "Logged in OK!", Toast.LENGTH_SHORT).show();
+			Toast.makeText(SetupServerActivity.this, "Logged in OK!", Toast.LENGTH_SHORT).show();
 			mapp.startUpdates();
-			SetupActivity.this.finish();			
+			SetupServerActivity.this.finish();			
 		}
 		else
-			Toast.makeText(SetupActivity.this, "Login error, please correct data", Toast.LENGTH_LONG).show();			
+			Toast.makeText(SetupServerActivity.this, "Login error, please correct data", Toast.LENGTH_LONG).show();			
 	}
 }
