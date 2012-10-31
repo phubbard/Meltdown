@@ -12,3 +12,4 @@ Build 37 10/25 Fix for calculating next index in items view for when data is upd
 Build 38 10/26 Disabled favicons for now - works but meh. Debugging duplicate items.
 Build 39 10/27 b38 is stable and no duplicates, so now back to features - clean up items list only when all done, so I can add a 'previous' button
 Build 40 v0.6.0 10/28/12 Cleaning up code for Google Play release; counts and duplicates both fixed. Comment and code cleanups. About page->github. 
+Build 41 v0.6.1 10/31/12 Fixing login bug reported by Mike Kuketz.

@@ -86,6 +86,9 @@ public class RestClient
 		String payload = syncGetUrl(api_url);
 		JSONObject jsonObj;
 		
+		if (payload == null)
+			return false;
+		
 		try 
 		{
 			jsonObj = new JSONObject(payload);

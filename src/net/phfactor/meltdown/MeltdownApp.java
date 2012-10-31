@@ -276,6 +276,9 @@ public class MeltdownApp extends Application
 		if (login_verified)
 			return true;
 		
+		// Need to recreate the RestClient, as it caches the API URL.
+		xcvr = new RestClient(configFile.getToken(), configFile.getAPIUrl());
+		
 		login_verified = xcvr.verifyLogin();
 		return login_verified;
 	}
