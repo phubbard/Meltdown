@@ -39,6 +39,7 @@ public class ItemsActivity extends ListActivity
     private MeltdownApp app;
 	private String group_name;
 	private mBroadcastCatcher catcher;
+	private IntentFilter ifilter;
 	private int group_id;
 	private int last_item_id;
 		
@@ -65,11 +66,10 @@ public class ItemsActivity extends ListActivity
 
 		// Hook into data-updated broadcasts from Downloader
 		catcher = new mBroadcastCatcher();
-		IntentFilter ifilter = new IntentFilter();
+		ifilter = new IntentFilter();
 		ifilter.addAction(Downloader.ACTION_UPDATING_GROUPS);
 		ifilter.addAction(Downloader.ACTION_UPDATING_FEEDS);
 		ifilter.addAction(Downloader.ACTION_UPDATING_ITEMS);
-		LocalBroadcastManager.getInstance(this).registerReceiver(catcher, ifilter);
 				
 		final ListView lv = getListView();		
 
@@ -109,7 +109,10 @@ public class ItemsActivity extends ListActivity
         
 		// Setup and populate the listview
         // Install our custom RSSListAdapter.		
-		items = app.getItemsForGroup(group_id);        
+		items = app.getItemsForGroup(group_id);
+		if (items == null)
+			finish();
+		
         mAdapter = new RSSListAdapter(this, items);
         getListView().setAdapter(mAdapter);    	
         
@@ -282,12 +285,17 @@ public class ItemsActivity extends ListActivity
 	protected void onPause()
 	{
 		super.onPause();
+		LocalBroadcastManager.getInstance(this).unregisterReceiver(catcher);
+		
 	}
 
 	@Override
 	protected void onResume()
 	{
 		super.onResume();
+		
+		LocalBroadcastManager.getInstance(this).registerReceiver(catcher, ifilter);
+		
 		// Just in case...
 		mAdapter.notifyDataSetChanged();
 	}

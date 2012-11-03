@@ -31,6 +31,7 @@ public class GroupsActivity extends ListActivity
      */
     private GroupListAdapter mAdapter;
 	private dBroadcastCatcher catcher;
+	private IntentFilter ifilter;
 	private MeltdownApp app;
 	ProgressDialog pd;
 	
@@ -45,7 +46,7 @@ public class GroupsActivity extends ListActivity
 		last_pos = 0;
 		
 		catcher = new dBroadcastCatcher();
-		IntentFilter ifilter = new IntentFilter();
+		ifilter = new IntentFilter();
 		ifilter.addAction(Downloader.ACTION_UPDATING_GROUPS);
 		ifilter.addAction(Downloader.ACTION_UPDATING_FEEDS);
 		ifilter.addAction(Downloader.ACTION_UPDATING_ITEMS);
@@ -54,13 +55,13 @@ public class GroupsActivity extends ListActivity
 		ifilter.addAction(Downloader.ACTION_UPDATING_CACHE);
 		ifilter.addAction(Downloader.ACTION_UPDATE_STARTING);
 		ifilter.addAction(Downloader.ACTION_UPDATE_DONE);
-		LocalBroadcastManager.getInstance(this).registerReceiver(catcher, ifilter);
 	}
 	
 	@Override
 	protected void onPause()
 	{
 		super.onPause();
+		LocalBroadcastManager.getInstance(this).unregisterReceiver(catcher);		
 		Log.d(TAG, "Groups just got paused, doing GC sweep of items");
 		app.sweepReadItems();
 	}
@@ -80,6 +81,8 @@ public class GroupsActivity extends ListActivity
 		}
 		
 		app.sweepReadItems();
+		LocalBroadcastManager.getInstance(this).registerReceiver(catcher, ifilter);
+	
 		doRefresh();
 	}
 

@@ -3,36 +3,45 @@ Meltdown (provisional name) is an open-source Android client for [Fever RSS](htt
 
 To use it, you **must have an installed copy of [Fever server](http://feedafever.com/).** This is *just a client*.
 
-Please [email me](mailto:phubbard@gmail.com) if you want to hack on it; I could really use some help as my time is limited.
+Please [email me](mailto:phubbard@gmail.com) if you want to hack on it; I can always use help as my time is limited.
+
+## Current Features
+* **Speed**. In-memory data structures, with on-disk JSON files for entries; nice and fast. No excess graphical crap, just fast text and listview display. Designed for high-volume consumers of RSS like myself. **My #1 goal was to make this super fast.**
+* Low battery usage - uses Alarm service and background process to refresh the lists every fifteen minutes, using the 'inexact repeating' mode to avoid excess wakeups.
+* Compressed downloads - if your Apache is configured, it'll transfer the data using gzip compression to save time and bytes.
+* Local cache - all items are encoded as JSON and written to disk, so if you reboot or kill the app it won't need to re-pull everything again.
+* Asynchronous mark-as-read and mark-as-saved using AsyncTask - when you hit 'Next' it's done in the background.
+* In the Item view, in addition to the ususal sharing menu I've also added a tickler-file function. This lets you set a calendar entry to remind yourself in a week (or whenever). I use this to do things like 'Remind me to check this out in a couple weeks when it's due to ship.' Very handy! 
+* Mark group as read - also runs in background.
+* Uses efficient and secure LocalBroadcastManager to communicate between the background service and the foreground views.
+* **No excessive permissions** Requires only Internet and 'run in background' permissions, does not use or need any data or other apps. Inspect the code and build it yourself if you like!
+* **No phone-home BS**. I hate that. So should you. At no time will it ever contact anything other than the server you designate.
+* Read in multiple places - the next sync will remove anything you've already seen, or you can hit refresh manually at any time.
+* Does not have group management or feed management. The Fever API has not added these, and I tend to think they're better done via the Fever web app anyway.
+* Simple flow-oriented interface - Feed title and author at the top of the screen, followed by title and content. The bottom of the screen has the 'load URL' button, the timestamp (using human-readable relative-time strings such as '2 hours ago') and the 'Next' button. Two buttons! Everything else is in the share menu and options menu.
 
 ## Current status
-* As of build 12 (9/21/12), basic functionality is in place and working well. Groups, feeds, webview, local caching, garbage collection. Tested on over 9000 items from 800 feeds. (There's a reason I wrote this, I adore my RSS!)
-* Next item does a neat async mark-as-read in the background
-* Load URL works
-* Added the sharing button to the action bar in group view - send via whatever mechanism you like.
-* Redid the http code after re-reading [the Android docs](http://developer.android.com/guide/components/processes-and-threads.html) again.
-* After testing SQLite to hold the HTML,the write rate was piss poor and I now just store the entire item on disk in JSON. Total abuse of the filesystem, but even 5000 items takes around 25MB of disk and it's fast. More tuning needed here.
-* Data is refreshed every 30 minutes by a background intent service, which should also sync if you read on the web, in Reedr, etc.
+* Working code! 
 
 ## Current bugs and in-progress
-* Several thread-safety issues caused by async updates. Working on this.
+* Preparing for release to google app store.
+
 
 ## Future plans and ideas
-* 'Send this to me in N hours/days/months' - use a cron or webservice to send you items, like a tickler file.
-* Pay for nicer icon (freelancer.com or similar)
+* SSL is not supported. Doing this with self-signed certs in a correct way will require some work.
+* The ListViews work fine on my nexus7 tablet, and present an info-dense display, but I'd like to try fragments and a landscape-mode, two-column display there. Especially now that the nexus 10 is out.* Pay for nicer icon (freelancer.com or similar)
 * Use persistent notifications to show background fetches; nice and unobtrusive.
-* About / stats screen
 * More preferences
 * Tabbed interface for unread/read/sparks/kindling/saved
 
 ### Background information, tools and credits
 * [The Fever REST API](http://feedafever.com/api) is elegant, simple and returns either JSON or XML. I can think of no reason to use XML, so JSON it is.
 * The [API widget](https://github.com/phubbard/Meltdown/blob/master/scripts/api-widget.html) is really helpful for poking at the API and responses. I'm also using this [graphical http client](http://httpclient.uservoice.com/) as well, which helped me sort out the header needed to get authentication working. The scripts directory has a copy of the widget for convenience.
-* Since I'm developing for the Galaxy Nexus and Nexus 7, the current target API is 4.0, but it could probably run on older devices.
+* Since I'm developing for the Galaxy Nexus and Nexus 7, the current target API is 4.0, but it could probably run on older devices. I also develop and test on my Galaxy S3 (Verizon).
 * The RSS icon is from [the iDroid S](http://iiro.eu/idroids/) icon set, for which I am thankful.
 * The code from RssReader.java is copyright 2007 by the Android Open Source Project under the [Apache 2.0 license](http://www.apache.org/licenses/LICENSE-2.0) for which I am grateful. The ListItem stuff is poorly documented, so this was a big help. 
 
-### License and credits
+### License
 
 This code is open source under the [CC BY 3.0](http://creativecommons.org/licenses/by/3.0/us/) terms. I'd appreciate a note if you make use of it, please. Other than that, I'd be pleased if you found it useful either whole or in part.
 
