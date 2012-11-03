@@ -14,3 +14,4 @@ Build 39 10/27 b38 is stable and no duplicates, so now back to features - clean 
 Build 40 v0.6.0 10/28/12 Cleaning up code for Google Play release; counts and duplicates both fixed. Comment and code cleanups. About page->github. 
 Build 41 v0.6.1 10/31/12 Fixing login bug reported by Mike Kuketz.
 Build 42 v0.6.2 11/2/12 Bugfix for resume when group is all read.
+Build 42 v0.7.0 11/3/12 New icon, temporary while iconfactory order is delivered.

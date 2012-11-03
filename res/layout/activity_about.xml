@@ -11,7 +11,7 @@
         android:layout_alignParentTop="true"
         android:layout_marginLeft="20dp"
         android:layout_marginTop="20dp"
-        android:src="@drawable/rss" />
+        android:src="@drawable/ic_launcher" />
 
     <TextView
         android:id="@+id/tvAppName"
