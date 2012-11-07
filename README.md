@@ -33,7 +33,6 @@ Please [email me](mailto:phubbard@gmail.com) if you want to hack on it; I can al
 * SSL is not supported. Doing this with self-signed certs in a correct way will require some work.
 * The ListViews work fine on my nexus7 tablet, and present an info-dense display, but I'd like to try fragments and a landscape-mode, two-column display there. Especially now that the nexus 10 is out.
 * Add favicons to item list - I wrote the code to download the favicons, but am still trying to figure out where they add utility.
-* Pay for nicer icon (freelancer.com or similar)
 * Use persistent notifications to show background fetches; nice and unobtrusive.
 * More preferences
 * Tabbed interface for unread/read/sparks/kindling/saved
@@ -42,7 +41,7 @@ Please [email me](mailto:phubbard@gmail.com) if you want to hack on it; I can al
 * [The Fever REST API](http://feedafever.com/api) is elegant, simple and returns either JSON or XML. I can think of no reason to use XML, so JSON it is.
 * The [API widget](https://github.com/phubbard/Meltdown/blob/master/scripts/api-widget.html) is really helpful for poking at the API and responses. I'm also using this [graphical http client](http://httpclient.uservoice.com/) as well, which helped me sort out the header needed to get authentication working. The scripts directory has a copy of the widget for convenience.
 * Since I'm developing for the Galaxy Nexus and Nexus 7, the current target API is 4.0, but it could probably run on older devices. I also develop and test on my Galaxy S3 (Verizon).
-* Icons from the [the iDroid S](http://iiro.eu/idroids/) icon set, high-res RSS icon from [findicons.com](http://findicons.com/icon/46967/feeds?width=512). I have an order pending with the IconFactory for a final version.
+* Icon is commercial from the Icon Factory Renaissance collection. **Please do not re-use it**, you need to buy your own copy!
 * The code from RssReader.java is copyright 2007 by the Android Open Source Project under the [Apache 2.0 license](http://www.apache.org/licenses/LICENSE-2.0) for which I am grateful. The ListItem stuff is poorly documented, so that code was a big help. I used their ListView and excerpt code nearly verbatim.
 
 ### License
