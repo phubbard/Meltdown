@@ -164,6 +164,9 @@ public class MeltdownApp extends Application
 			return null;
 		
 		RssFeed feed = findFeedById(item.feed_id);
+		if (feed == null)
+			return null;
+		
 		if (feed.groups.size() == 0)
 		{
 			Log.e(TAG, "Feed " + feed.title + " has no group!");
@@ -210,6 +213,12 @@ public class MeltdownApp extends Application
 				count++;
 		}
 		return count;
+	}
+	
+	// How many feeds?
+	protected int getFeedCount()
+	{
+		return feeds.size();
 	}
 
 	// Return items, with HTML only lazy-loaded at the last minute by the caller.

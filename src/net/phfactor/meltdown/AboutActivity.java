@@ -38,6 +38,7 @@ public class AboutActivity extends Activity implements OnClickListener
         disp_string += "Server URL: " + conf.getURL();
         disp_string += "\nLast refresh " + DateUtils.getRelativeTimeSpanString(1000L * mapp.get_last_refresh_time());
         disp_string += "\n" + mapp.totalUnreadItems() + " unread items in " + (mapp.getUnreadGroups().size()) + " groups";
+        disp_string += " and " + mapp.getFeedCount() + " feeds";
         disp_string += "\n" + mapp.getFileCount() + " cached posts on disk";
         
         tv = (TextView) findViewById(R.id.tvVerbiage);

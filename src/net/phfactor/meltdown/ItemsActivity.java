@@ -10,8 +10,10 @@ import android.content.Context;
 import android.content.DialogInterface;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.graphics.Color;
 import android.os.Bundle;
 import android.support.v4.content.LocalBroadcastManager;
+import android.text.format.DateUtils;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.Menu;
@@ -24,8 +26,8 @@ import android.widget.AdapterView.OnItemClickListener;
 import android.widget.AdapterView.OnItemLongClickListener;
 import android.widget.ArrayAdapter;
 import android.widget.ListView;
+import android.widget.TextView;
 import android.widget.Toast;
-import android.widget.TwoLineListItem;
 
 // Display a list of RSS items from a selected group.
 public class ItemsActivity extends ListActivity 
@@ -148,44 +150,54 @@ public class ItemsActivity extends ListActivity
     private class RSSListAdapter extends ArrayAdapter<RssItem> 
     {
         private LayoutInflater mInflater;
-
+        private boolean viewReused = false;
         public RSSListAdapter(Context context, List<RssItem> objects) 
         {
             super(context, 0, objects);
             mInflater = (LayoutInflater)context.getSystemService(Context.LAYOUT_INFLATER_SERVICE);
         }
 
-        /**
-         * This is called to render a particular item for the on screen list.
-         * Uses an off-the-shelf TwoLineListItem view, which contains text1 and
-         * text2 TextViews. We pull data from the RssItem and set it into the
-         * view. The convertView is the view from a previous getView(), so
-         * we can re-use it.
-         * 
-         * @see ArrayAdapter#getView
-         */
         @Override
         public View getView(int position, View convertView, ViewGroup parent)
         {
-            TwoLineListItem view;
-
+            View view;
+            TextView tv;
+            
             // Here view may be passed in for re-use, or we make a new one.
             if (convertView == null) {
-                view = (TwoLineListItem) mInflater.inflate(android.R.layout.simple_list_item_2,
-                        null);
+                view = mInflater.inflate(R.layout.itemrow, null);
+                viewReused = true;
             } else {
-                view = (TwoLineListItem) convertView;
+                view = convertView;
             }
 
             RssItem item = this.getItem(position);
+            RssFeed feed = app.findFeedById(item.feed_id);
+            if (feed == null)
+            	return null;
 
             // Set the item title and description into the view.
             // This example does not render real HTML, so as a hack to make
             // the description look better, we strip out the
             // tags and take just the first SNIPPET_LENGTH chars.
-            view.getText1().setText(item.title);
-            view.getText2().setText(item.excerpt);
             
+            tv = (TextView) view.findViewById(R.id.item_title);
+            tv.setText(item.title);
+            tv = (TextView) view.findViewById(R.id.item_subtitle);
+            tv.setText(item.excerpt);
+            
+            // 11/9/12, experimenting
+            tv = (TextView) view.findViewById(R.id.item_feed);
+            tv.setText(feed.title);
+            tv = (TextView) view.findViewById(R.id.item_timestamp);
+            tv.setText(DateUtils.getRelativeTimeSpanString(item.created_on_time * 1000L));
+            
+            // TODO How to query and reset?
+            if (viewReused)
+            	view.setBackgroundColor(Color.WHITE);
+            
+            if (item.is_read)
+            	view.setBackgroundColor(Color.LTGRAY);
             return view;
         }
     }

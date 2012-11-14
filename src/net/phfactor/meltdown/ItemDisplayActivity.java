@@ -82,8 +82,6 @@ public class ItemDisplayActivity extends Activity
         if (!rss_item.author.isEmpty())
         	bar.setSubtitle("by " + rss_item.author);
 
-       bar.setIcon(null);
-       
         if (rgrp.icon != null)
 			bar.setIcon(rgrp.icon.icon);
         
@@ -136,7 +134,6 @@ public class ItemDisplayActivity extends Activity
         // Attach an intent to this ShareActionProvider.  You can update this at any time,
         // like when the user selects a new piece of data they might like to share.
         mShareActionProvider.setShareIntent(createShareIntent());
-    	
     	return true;
 	}
     

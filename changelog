@@ -17,3 +17,6 @@ Build 42 v0.6.2 11/2/12 Bugfix for resume when group is all read.
 Build 42 v0.7.0 11/3/12 New icon, temporary while iconfactory order is delivered.
 Build 44 v0.7.1 11/5/12 Icon from IconFactory, not sure it'll look better but I've already paid, sigh.
 Build 45 v0.7.2 11/7/12 New icon from http://icongal.com/gallery/icon/1549/128/feed_rss
+Build 46 v0.7.3 11/8/12 Collapse sharing menu
+Build 48 v0.7.5 11/14/12 Added new items view - red source and timestamp, grey-colored for read items.
+Build 49 v0.7.6 11/14/12 Fix for crash report dated 11/10/12.
