@@ -27,7 +27,6 @@ import android.widget.AdapterView.OnItemLongClickListener;
 import android.widget.ArrayAdapter;
 import android.widget.ListView;
 import android.widget.TextView;
-import android.widget.Toast;
 
 // Display a list of RSS items from a selected group.
 public class ItemsActivity extends ListActivity 
@@ -98,8 +97,7 @@ public class ItemsActivity extends ListActivity
 				if (item == null)
 					return true;
 				
-				String itemText = String.format("ID: %d read: %b", item.id, item.is_read);
-				Toast.makeText(ItemsActivity.this, itemText, Toast.LENGTH_LONG).show();
+//				Toast.makeText(ItemsActivity.this, itemText, Toast.LENGTH_LONG).show();
 				/* Commented out - really should have a confirmation dialog
 				int rm_ct = app.markGroupThreadRead(group_id, item.title);
 				reloadItemsAndView();
@@ -133,15 +131,6 @@ public class ItemsActivity extends ListActivity
 		}
     }
 
-    private int figureNextPos()
-    {
-		for (int idx = 0; idx < items.size(); idx++)
-			if (items.get(idx).id == last_item_id)
-				return ((idx + 1) % items.size());
-		
-		// Just in case.
-		return 0;
-    }
     /**
      * ArrayAdapter encapsulates a java.util.List of T, for presentation in a
      * ListView. This subclass specializes it to hold RssItems and display
@@ -272,6 +261,41 @@ public class ItemsActivity extends ListActivity
 		builder.show();
 	}
 	
+	private int unreadCount()
+	{
+		int ct = 0;
+		if (items == null)
+			return 0;
+		
+		for (int idx = 0; idx < items.size(); idx++)
+		{
+			if (items.get(idx).is_read == false)
+				ct++;
+		}
+		return ct;
+	}
+	
+	private int figureNextPost(int cur_post)
+	{
+		int icount = items.size();
+		int idx = cur_post;
+		int ct = 0;
+		Boolean done = false;
+		while ((ct < icount) && (!done))
+		{
+			ct++;
+			idx = (idx + 1) % icount;
+			if (items.get(idx).is_read == true)
+				continue;
+			
+			done = true;
+		}
+		if (!done)
+			return -1;
+		
+		return idx;
+	}
+	
 	// Item viewer returns RESULT_OK if the user hit next, in which case we mark it as read and move to next.
 	@Override
 	protected void onActivityResult(int requestCode, int resultCode, Intent data) 
@@ -280,13 +304,18 @@ public class ItemsActivity extends ListActivity
 		{
 			Log.d(TAG, "Item #" + requestCode + " displayed and marked as read");
 			// Out of posts?
-			if (app.groupUnreadItems(group_id) == 0)
+			if (unreadCount() == 0)
 			{
 				finish();
 				return;
 			}
 			
-			int pos = figureNextPos();
+			int pos = figureNextPost(last_item_id);
+			if (pos < 0)
+			{
+				finish();
+				return;
+			}
 			Log.d(TAG, "Next item " + pos + " of " + items.size());
 			viewPost(pos);
 		}

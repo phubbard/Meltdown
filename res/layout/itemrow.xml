@@ -12,14 +12,14 @@
     android:layout_height="wrap_content" 
     android:textAppearance="?android:attr/textAppearanceMedium"
     android:padding="2dp"
-    android:textSize="20dp" />
+    android:textSize="20sp" />
     <TextView  
     android:id="@+id/item_subtitle"
     android:text="subtitle"
     android:layout_width="fill_parent" 
     android:layout_height="wrap_content" 
     android:padding="2dp"
-    android:textSize="13dp" />
+    android:textSize="13sp" />
  <LinearLayout 
     android:orientation="horizontal"
     android:id="@+id/ivFeedTS"
@@ -31,6 +31,7 @@
          android:layout_width="wrap_content"
          android:layout_height="wrap_content"
          android:text="source"
+         android:ellipsize="end"
          android:textColor="@android:color/holo_red_light"/>
 
      <TextView

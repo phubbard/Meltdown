@@ -277,6 +277,7 @@ public class MeltdownApp extends Application
 	}
 		
 	// Is the app setup and verified?
+	// FIXME distinguish offline from unconfigured ya moron!!
 	public Boolean isAppConfigured()
 	{
 		if (!configFile.haveConfigInfo())
