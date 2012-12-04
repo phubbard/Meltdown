@@ -293,6 +293,12 @@ public class MeltdownApp extends Application
 		return login_verified;
 	}
 	
+	// Call the users' post hook
+	protected void callUserURL(String url)
+	{
+		xcvr.callUserURL(url);
+	}
+	
 	// Iterate over a group, and mark all of the items in it as read. One API call and then local cleanup.
 	protected void markGroupRead(int group_id)
 	{

@@ -5,6 +5,7 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.util.Locale;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -112,12 +113,11 @@ public class RssItem
 	
 	public void dropHTML()
 	{
-		this.html = "Need to lazy load me";
+		this.html = null;
 	}
 	
 	public void deleteDiskFile()
 	{
-		// Log.d(TAG, "Removing " + filename());
 		ctx.deleteFile(filename());
 	}
 	
@@ -150,12 +150,12 @@ public class RssItem
 	
     private String filename()
     {
-    	return String.format("%d.post", id);
+    	return String.format(Locale.ENGLISH, "%d.post", id);
     }
     
     private String filename(int post_id)
     {
-    	return String.format("%d.post", post_id);
+    	return String.format(Locale.ENGLISH, "%d.post", post_id);
     }
     
     /*

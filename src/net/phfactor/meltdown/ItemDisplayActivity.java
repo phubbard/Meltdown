@@ -1,6 +1,9 @@
 package net.phfactor.meltdown;
 
+import java.net.URLEncoder;
 import java.util.Date;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import android.app.ActionBar;
 import android.app.Activity;
@@ -11,6 +14,7 @@ import android.os.Bundle;
 import android.provider.CalendarContract;
 import android.provider.CalendarContract.Events;
 import android.text.format.DateUtils;
+import android.util.Log;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
@@ -20,13 +24,23 @@ import android.webkit.WebView;
 import android.widget.Button;
 import android.widget.ShareActionProvider;
 import android.widget.TextView;
+import android.widget.Toast;
 
 // Display a single RSS item, mostly wrappers around the webview of its content.
 public class ItemDisplayActivity extends Activity 
 {
+	private String TAG = "MeltdownIDA";
     private MeltdownApp app;
     private int cur_post;
     private RssItem rss_item;
+    
+    // URL rewriting keywords
+    static final String LFT_BRACE = "\\$\\{";
+    static final String RT_BRACE = "\\}";
+    static final String SOURCE = LFT_BRACE + "source" + RT_BRACE;
+    static final String TITLE = LFT_BRACE + "title" + RT_BRACE;
+    static final String URL = LFT_BRACE + "url" + RT_BRACE;
+    static final String SHORT_URL = LFT_BRACE + "short-url" + RT_BRACE;
     
     @Override
     public void onCreate(Bundle savedInstanceState) 
@@ -170,6 +184,58 @@ public class ItemDisplayActivity extends Activity
 		startActivity(intent);
 	}
 	
+	/*
+	 * Here is the users' hook, allowing them to invoke an arbitrary URL with some parameter substitution.
+	 * The idea was copied from google reader, and as a first pass has source, title and URL filled in 
+	 * if specified.
+	 * 
+	 * I have no idea how useful this'll be. But I want it, so there it is.
+	 * See http://www.java2s.com/Code/Java/Regular-Expressions/QuickdemoofRegularExpressionssubstitution.htm
+	 * See http://developer.android.com/reference/java/net/URLEncoder.html
+	 */
+	private void postItem()
+	{
+		Pattern p;
+		Matcher m;
+		String url = "";
+		
+		Log.d(TAG, "Post hook invoked");
+		ConfigFile cfg = new ConfigFile(this);
+		String baseURL = cfg.getUserPostURL();
+		if (baseURL == null)
+		{
+			Toast.makeText(this, getString(R.string.warnNoPost), Toast.LENGTH_SHORT).show();
+			startActivity(new Intent(this, SetupPostURL.class));
+			return;
+		}
+		
+
+		p = Pattern.compile(SOURCE);
+		m = p.matcher(baseURL);
+		
+		if (rss_item.author.isEmpty())
+			url = m.replaceAll(getString(R.string.unknown));
+		else
+			url = m.replaceAll(URLEncoder.encode(rss_item.author));
+		
+		p = Pattern.compile(TITLE);
+		m = p.matcher(url);		
+		url = m.replaceAll(URLEncoder.encode(rss_item.title));
+		
+		p = Pattern.compile(URL);
+		m = p.matcher(url);		
+		url = m.replaceAll(URLEncoder.encode(rss_item.url));
+		
+		p = Pattern.compile(SHORT_URL);
+		m = p.matcher(url);		
+		url = m.replaceAll(URLEncoder.encode(rss_item.url));
+		
+		// TODO Remove this once debugged
+		Log.d(TAG, url);
+		app.callUserURL(url);
+		Toast.makeText(this, getString(R.string.postToast),	Toast.LENGTH_SHORT).show();
+	}
+	
 	public boolean onOptionsItemSelected(MenuItem item) 
 	{
 		switch (item.getItemId())
@@ -178,14 +244,6 @@ public class ItemDisplayActivity extends Activity
 			finish();
 			return true;
 					
-		case R.id.itemNextArticle:
-			nextItem();
-			return true;
-			
-		case R.id.menu_load_page:
-			loadItem();
-			return true;
-			
 		case R.id.itemSave:
 			app.markItemSaved(rss_item.id);
 			nextItem();
@@ -193,6 +251,10 @@ public class ItemDisplayActivity extends Activity
 			
 		case R.id.itemAddOneWeek:
 			oneWeek();
+			return true;
+			
+		case R.id.itemPost:
+			postItem();
 			return true;
 			
 		case R.id.itemZoomFar:

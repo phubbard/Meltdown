@@ -1,6 +1,8 @@
 <menu xmlns:android="http://schemas.android.com/apk/res/android">
     <item android:id="@+id/menu_settings"
         android:title="@string/menu_settings"/>
+    
     <item android:id="@+id/menu_refresh" android:title="@string/menu_refresh"></item>
-    <item android:id="@+id/menu_about" android:title="About"></item>
+    <item android:id="@+id/menu_about" android:title="@string/menu_about"></item>
+    <item android:id="@+id/menu_setup_post" android:title="@string/title_activity_setup_post_url"></item>
 </menu>

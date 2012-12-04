@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:padding="5dp"    
+    android:layout_height="match_parent" >
+
+    <TextView
+        android:id="@+id/lvTitle"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentTop="true"
+        android:padding="2dp"
+        android:textSize="20sp"        
+        android:text="@string/viTitle"
+        android:textAppearance="?android:attr/textAppearanceMedium" />
+
+    <TextView
+        android:id="@+id/lvSubtitle"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentLeft="true"
+        android:layout_below="@+id/lvTitle"
+        android:padding="2dp"
+        android:text="@string/viSubtitle" />
+
+    <TextView
+        android:id="@+id/lvTimestamp"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentRight="true"
+        android:layout_below="@+id/lvSubtitle"
+        android:padding="2dp"
+        android:text="@string/viTime"
+        android:textAppearance="?android:attr/textAppearanceSmall"
+        android:textColor="@android:color/holo_red_light" />
+
+    <TextView
+        android:id="@+id/lvSource"
+        android:padding="2dp"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignBaseline="@+id/lvTimestamp"
+        android:layout_alignBottom="@+id/lvTimestamp"
+        android:layout_alignParentLeft="true"
+        android:layout_toLeftOf="@+id/lvTimestamp"
+        android:ellipsize="end"
+        android:maxLines="@integer/one_line"
+        android:text="@string/viSource"
+        android:textAppearance="?android:attr/textAppearanceSmall"
+        android:textColor="@android:color/holo_red_light" />
+
+</RelativeLayout>

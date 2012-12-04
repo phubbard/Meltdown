@@ -11,6 +11,7 @@ import java.util.List;
 import org.apache.http.HttpResponse;
 import org.apache.http.client.ClientProtocolException;
 import org.apache.http.client.HttpClient;
+import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.StringEntity;
 import org.json.JSONException;
@@ -104,6 +105,7 @@ public class RestClient
 		return false;
 	}
 
+	// Sync methods - only called from the IntentService, so OK to block.
 	public String fetchGroups()
 	{
 		String url = String.format(api_url + "&groups");
@@ -192,6 +194,34 @@ public class RestClient
 		}
 		
 		new mTask().execute();		
+	}
+	
+	// Call the users' hook URL, async. Ignore response and/or errors.
+	protected void callUserURL(final String user_url)
+	{
+		class mTask extends AsyncTask<Void, Void, Void> {
+
+			@Override
+			protected Void doInBackground(Void... params)
+			{
+				try 
+				{
+					HttpClient client = AndroidHttpClient.newInstance("Meltdown");
+					HttpGet get = new HttpGet(user_url);
+					client.execute(get);
+					AndroidHttpClient fcc = (AndroidHttpClient) client;
+					fcc.close();
+					return null;
+				} catch (ClientProtocolException e)
+				{
+				} catch (IOException e)
+				{
+				}
+				return null;
+			}			
+		}
+		
+		new mTask().execute();
 	}
 	
 	// Asynchronously mark a post as read.

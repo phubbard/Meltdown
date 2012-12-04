@@ -154,7 +154,7 @@ public class ItemsActivity extends ListActivity
             
             // Here view may be passed in for re-use, or we make a new one.
             if (convertView == null) {
-                view = mInflater.inflate(R.layout.itemrow, null);
+                view = mInflater.inflate(R.layout.item_list_item, null);
                 viewReused = true;
             } else {
                 view = convertView;
@@ -170,16 +170,23 @@ public class ItemsActivity extends ListActivity
             // the description look better, we strip out the
             // tags and take just the first SNIPPET_LENGTH chars.
             
-            tv = (TextView) view.findViewById(R.id.item_title);
+            tv = (TextView) view.findViewById(R.id.lvTitle);
             tv.setText(item.title);
-            tv = (TextView) view.findViewById(R.id.item_subtitle);
+            tv = (TextView) view.findViewById(R.id.lvSubtitle);
             tv.setText(item.excerpt);
             
-            // 11/9/12, experimenting
-            tv = (TextView) view.findViewById(R.id.item_feed);
+            tv = (TextView) view.findViewById(R.id.lvSource);
             tv.setText(feed.title);
-            tv = (TextView) view.findViewById(R.id.item_timestamp);
+            tv = (TextView) view.findViewById(R.id.lvTimestamp);
             tv.setText(DateUtils.getRelativeTimeSpanString(item.created_on_time * 1000L));
+
+//            if (feed.icon != null)
+//            {
+//            	ImageView favicon = (ImageView) view.findViewById(R.id.lvFavicon);
+//            	favicon.setImageDrawable(feed.icon.icon);
+//            }
+//            else
+//            	Log.d(TAG, "No icon for " + feed.title);
             
             // TODO How to query and reset?
             if (viewReused)
@@ -230,7 +237,7 @@ public class ItemsActivity extends ListActivity
 	private void showARDialog()
 	{
 		// TODO Move the threshold to preferences
-		if (app.groupUnreadItems(group_id) < 10)
+		if (app.groupUnreadItems(group_id) <= 10)
 		{
 			app.markGroupRead(group_id);
 			finish();
@@ -275,20 +282,35 @@ public class ItemsActivity extends ListActivity
 		return ct;
 	}
 	
-	private int figureNextPost(int cur_post)
+	private int figureNextPost(int cur_post_id)
 	{
 		int icount = items.size();
-		int idx = cur_post;
+		int idx = -1;
+		
+		// We have post ID, need to reverse-lookup that into the index into the array. Fugly. Needs a refactor.
+		for (int i = 0; i < icount; i++)
+		{
+			if (items.get(i).id == cur_post_id)
+			{
+				idx = items.get(i).id;
+				break;
+			}
+		}
+
+		if (idx < 0)
+		{
+			Log.e(TAG, "Unable to find post by ID!");
+			return idx;
+		}
+		
 		int ct = 0;
 		Boolean done = false;
 		while ((ct < icount) && (!done))
 		{
 			ct++;
 			idx = (idx + 1) % icount;
-			if (items.get(idx).is_read == true)
-				continue;
-			
-			done = true;
+			if (items.get(idx).is_read == false)
+				done = true;
 		}
 		if (!done)
 			return -1;
@@ -302,7 +324,7 @@ public class ItemsActivity extends ListActivity
 	{
 		if (resultCode == RESULT_OK)
 		{
-			Log.d(TAG, "Item #" + requestCode + " displayed and marked as read");
+			//Log.d(TAG, "Item #" + requestCode + " displayed and marked as read");
 			// Out of posts?
 			if (unreadCount() == 0)
 			{
@@ -316,18 +338,15 @@ public class ItemsActivity extends ListActivity
 				finish();
 				return;
 			}
-			Log.d(TAG, "Next item " + pos + " of " + items.size());
+			//Log.d(TAG, "Next item " + pos + " of " + items.size());
 			viewPost(pos);
 		}
-		else
-			Log.d(TAG, "Item display cancelled, leaving unread");
 	}
 	
 	protected void onPause()
 	{
 		super.onPause();
 		LocalBroadcastManager.getInstance(this).unregisterReceiver(catcher);
-		
 	}
 
 	@Override

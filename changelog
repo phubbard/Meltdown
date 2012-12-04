@@ -21,5 +21,4 @@ Build 46 v0.7.3 11/8/12 Collapse sharing menu
 Build 48 v0.7.5 11/14/12 Added new items view - red source and timestamp, grey-colored for read items.
 Build 49 v0.7.6 11/14/12 Fix for crash report dated 11/10/12.
 Build 50 v0.8.0 11/26/12 Fix for itemsdisplay - bug when data updated in service, bad indexing. Adding 'ellipsize' to items. Bump target api. allow backups.
-
-
+Build 51 v0.8.1 12/3/12 Adding postItem with URL rewriting. Fix next-item bugs. Brand new item list layout. 

@@ -26,11 +26,13 @@ Please [email me](mailto:phubbard@gmail.com) if you want to hack on it; I can al
 * Working code! 
 
 ## Current bugs and in-progress
-* [Available on the Google App Store](https://play.google.com/store/apps/details?id=net.phfactor.meltdown&feature=search_result#?t=W251bGwsMSwyLDEsIm5ldC5waGZhY3Rvci5tZWx0ZG93biJd) and submitted to the Amazon App Store.
+* [Available on the Google App Store](https://play.google.com/store/apps/details?id=net.phfactor.meltdown&feature=search_result#?t=W251bGwsMSwyLDEsIm5ldC5waGZhY3Rvci5tZWx0ZG93biJd) and  [Amazon App Store.](http://www.amazon.com/gp/product/B00A1CUBCY). 
+* If you want to try it in your browser, [try AppSurfer here](http://www.appsurfer.com/apps/16475-meltdown) and it should work.
 
 
 ## Future plans and ideas
 * SSL is not supported. Doing this with self-signed certs in a correct way will require some work.
+* Swipe gestures - left for save, right for mark-as-read (ideas from Tomas Varil)
 * The ListViews work fine on my nexus7 tablet, and present an info-dense display, but I'd like to try fragments and a landscape-mode, two-column display there. Especially now that the nexus 10 is out.
 * Add favicons to item list - I wrote the code to download the favicons, but am still trying to figure out where they add utility.
 * Use persistent notifications to show background fetches; nice and unobtrusive.

@@ -1,10 +1,9 @@
 <menu xmlns:android="http://schemas.android.com/apk/res/android">
-    <item android:id="@+id/itemNextArticle" android:title="@string/next_item"></item>
-    <item android:id="@+id/menu_load_page" android:title="@string/menu_load_page"></item>
     <item android:id="@+id/itemShare" android:title="@string/itmShare"
         android:actionProviderClass="android.widget.ShareActionProvider" 
         android:showAsAction="collapseActionView"></item>
+    <item android:id="@+id/itemZoomFar" android:title="@string/mnuZoomOut"></item>
     <item android:id="@+id/itemSave" android:titleCondensed="@string/itmSaveShort" android:title="@string/itmSave"></item>
-    <item android:id="@+id/itemAddOneWeek" android:titleCondensed="Next week" android:title="Remind me next week"></item>
-    <item android:id="@+id/itemZoomFar" android:title="Zoom out"></item>
+    <item android:id="@+id/itemAddOneWeek" android:titleCondensed="@string/mnuCondsNW" android:title="@string/mnuAddOneWeek"></item>
+    <item android:id="@+id/itemPost" android:title="@string/mnuPost"></item>
 </menu>

@@ -7,40 +7,40 @@
     >
 <TextView  
     android:id="@+id/item_title"
-    android:text="title"
+    android:text="@string/viTitle"
     android:layout_width="fill_parent" 
     android:layout_height="wrap_content" 
     android:textAppearance="?android:attr/textAppearanceMedium"
     android:padding="2dp"
-    android:textSize="20sp" />
+    android:textSize="16sp" />
     <TextView  
     android:id="@+id/item_subtitle"
-    android:text="subtitle"
+    android:text="@string/viSubtitle"
     android:layout_width="fill_parent" 
     android:layout_height="wrap_content" 
     android:padding="2dp"
-    android:textSize="13sp" />
+    android:textSize="12sp" />
  <LinearLayout 
-    android:orientation="horizontal"
+    android:orientation="vertical"
     android:id="@+id/ivFeedTS"
     android:layout_width="fill_parent"
     android:layout_height="wrap_content">
  
-     <TextView 
+     <TextView
          android:id="@+id/item_feed"
          android:layout_width="wrap_content"
          android:layout_height="wrap_content"
-         android:text="source"
          android:ellipsize="end"
-         android:textColor="@android:color/holo_red_light"/>
+         android:maxLines="@integer/one_line"
+         android:text="@string/viSource"
+         android:textColor="@android:color/holo_red_light" />
 
      <TextView
          android:id="@+id/item_timestamp"
          android:layout_width="match_parent"
          android:layout_height="wrap_content"
          android:layout_gravity="right"
-         android:layout_marginLeft="5dp"
-         android:text="time"
+         android:text="@string/viTime"
          android:textColor="@android:color/holo_red_light" />
 
  </LinearLayout>    

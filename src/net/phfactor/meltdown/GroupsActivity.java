@@ -1,6 +1,7 @@
 package net.phfactor.meltdown;
 
 import java.util.List;
+import java.util.Locale;
 
 import android.app.ListActivity;
 import android.app.ProgressDialog;
@@ -161,6 +162,7 @@ public class GroupsActivity extends ListActivity
             // FIXME race condition
             RssGroup grp = app.getUnreadGroups().get(position);
 
+            // TODO Move strings into strings.xml
             // Set the item title and description into the view.
             view.getText1().setText(grp.title);
             int unread_count = app.groupUnreadItems(grp.id);
@@ -170,7 +172,7 @@ public class GroupsActivity extends ListActivity
             else if (unread_count == 1)
             	descr = "One unread item";
             else
-            	descr = String.format("%d unread items", unread_count);
+            	descr = String.format(Locale.ENGLISH, "%d unread items", unread_count);
             view.getText2().setText(descr);
             
             // Simulate zebra-striping - a touch of class. Maybe. Need to consider themes.
@@ -215,6 +217,10 @@ public class GroupsActivity extends ListActivity
 			startService(new Intent(this, Downloader.class));
 			doRefresh();
 			return true;
+		case R.id.menu_setup_post:
+			Log.d(TAG, "Post URL setup time");
+			startActivity(new Intent(this, SetupPostURL.class));
+			return true;			
 		case R.id.menu_settings:
 			Log.d(TAG, "Settings selecected");
 			startActivity(new Intent(this, SetupServerActivity.class));

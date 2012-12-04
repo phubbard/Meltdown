@@ -15,6 +15,8 @@ public class ConfigFile
 	
 	private static final String P_URL = "serverUrl";
 	private static final String P_TOKEN = "token";
+	private static final String P_POST_URL = "postUrl";
+	
 	private SharedPreferences prefs;
 	private SharedPreferences.Editor editor;
 	
@@ -60,6 +62,18 @@ public class ConfigFile
 	public String getURL()
 	{
 		return prefs.getString(P_URL, null);
+	}
+	
+	public String getUserPostURL()
+	{
+		return prefs.getString(P_POST_URL, null);
+	}
+	
+	protected void setUserPostURL(String user_url)
+	{
+		editor = prefs.edit();
+		editor.putString(P_POST_URL, user_url);
+		editor.commit();
 	}
 	
 	//! @see http://stackoverflow.com/questions/8700744/md5-with-android-and-php

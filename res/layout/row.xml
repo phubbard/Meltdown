@@ -3,7 +3,7 @@
     android:orientation="vertical"
     android:layout_width="fill_parent"
     android:layout_height="fill_parent"
-    android:padding="7dp"
+    android:padding="5dp"
     >
 <TextView  
     android:id="@+id/group_title"
@@ -11,11 +11,11 @@
     android:layout_height="wrap_content" 
     android:textAppearance="?android:attr/textAppearanceMedium"
     android:padding="2dp"
-    android:textSize="20dp" />
+    android:textSize="20sp" />
     <TextView  
     android:id="@+id/group_subtitle"
     android:layout_width="fill_parent" 
     android:layout_height="wrap_content" 
     android:padding="2dp"
-    android:textSize="13dp" />
+    android:textSize="13sp" />
 </LinearLayout>
