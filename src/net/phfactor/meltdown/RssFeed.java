@@ -8,13 +8,13 @@ import org.json.JSONObject;
 
 import android.util.Log;
 
-/*
+/**
  * Simple representation of an RSS feed.
  */
-public class RssFeed 
+public class RssFeed
 {
 	static final String TAG = "MeltdownRssFeed";
-	
+
 	public  String site_url;
 	public  String url;
 	public  String title;
@@ -23,29 +23,29 @@ public class RssFeed
 	public  Boolean is_spark;
 	public  long last_updated_on_time;
 	public Favicon icon;
-	
+
 	// Derived reverse index
 	public List<Integer> groups;
-	
+
 	public RssFeed(JSONObject feed)
 	{
 		try
 		{
 			//Log.d(TAG, feed.toString());
 			this.icon = null;
-			
+
 			this.site_url = feed.getString("site_url");
 			this.url = feed.getString("url");
 			this.title = feed.getString("title");
 			this.id = feed.getInt("id");
 			this.favicon_id = feed.getInt("favicon_id");
-			this.is_spark = (feed.getInt("is_spark") == 0);
-			this.last_updated_on_time = feed.getLong("last_updated_on_time");			
+			this.is_spark = (feed.getInt("is_spark") != 0);
+			this.last_updated_on_time = feed.getLong("last_updated_on_time");
 			this.groups = new ArrayList<Integer>();
-			
-		}catch (JSONException je)
+
+		} catch (JSONException je)
 		{
-			Log.e(TAG, "Unable to parse JSON feed!", je);			
+			Log.e(TAG, "Unable to parse JSON feed!", je);
 		}
 	}
 }
