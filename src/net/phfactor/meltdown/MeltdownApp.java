@@ -31,6 +31,7 @@ public class MeltdownApp extends Application
 	static final String FIRST_RUN = "first_run";
 	
 	static final int ORPHAN_ID = 8675309;
+	static final int SPARKS_ID = 8675310;
 	
 	private List<RssGroup> groups;
 	private List<RssFeed> feeds;
@@ -382,6 +383,8 @@ public class MeltdownApp extends Application
 		
 		RssGroup orphans = new RssGroup("Orphaned feeds", ORPHAN_ID);		
 		this.groups.add(orphans);
+		RssGroup sparks = new RssGroup("Sparks", SPARKS_ID);		
+		this.groups.add(sparks);
 		
 		startUpdates();
 		Log.i(TAG, "App init completed.");
@@ -594,8 +597,14 @@ public class MeltdownApp extends Application
 		RssGroup group = findGroupForItem(item);
 		if (group == null)
 		{
-			Log.d(TAG, "Orphan item! No group found for post ID " + item.id + " " + item.title);
-			group = findGroupById(ORPHAN_ID);
+			RssFeed feed = findFeedById(item.feed_id);
+			if (feed.is_spark) {
+				Log.d(TAG, "Spark found for post ID " + item.id + " " + item.title);
+				group = findGroupById(SPARKS_ID);
+			} else {
+				Log.d(TAG, "Orphan item! No group found for post ID " + item.id + " " + item.title);
+				group = findGroupById(ORPHAN_ID);
+			}
 		}
 		
 		// DDT
