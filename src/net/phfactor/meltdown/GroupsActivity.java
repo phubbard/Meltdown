@@ -218,12 +218,14 @@ public class GroupsActivity extends ListActivity
 			doRefresh();
 			return true;
 		case R.id.menu_setup_post:
-			Log.d(TAG, "Post URL setup time");
 			startActivity(new Intent(this, SetupPostURL.class));
 			return true;
 		case R.id.menu_settings:
-			Log.d(TAG, "Settings selecected");
 			startActivity(new Intent(this, SetupServerActivity.class));
+			return true;
+		case R.id.menu_prefs:
+			startActivity(new Intent(this, PreferencesActivity.class));
+			// TODO Check for change in preference interval and restart IntentService
 			return true;
 		case R.id.menu_about:
 			startActivity(new Intent(this, AboutActivity.class));

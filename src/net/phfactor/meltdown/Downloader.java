@@ -2,7 +2,6 @@ package net.phfactor.meltdown;
 
 import android.app.IntentService;
 import android.content.Intent;
-import android.os.Bundle;
 import android.support.v4.content.LocalBroadcastManager;
 import android.util.Log;
 
@@ -55,17 +54,13 @@ public class Downloader extends IntentService
 	@Override
 	protected void onHandleIntent(Intent intent) 
 	{
-		Boolean first_run;
-		Bundle bundle = intent.getExtras();
-		if (bundle == null)
-			first_run = false;
-		else
-			first_run = bundle.getBoolean(MeltdownApp.FIRST_RUN, false);
-		
 		mapp = (MeltdownApp) getApplication();
 		ConfigFile config = new ConfigFile(getApplicationContext());
 		xcvr = new RestClient(config.getToken(), config.getAPIUrl());
 
+		if (mapp.isNetDown())
+			return;
+		
 		if (!mapp.isAppConfigured())
 		{
 			Log.w(TAG, "Setup incomplete, cannot download");
@@ -92,6 +87,7 @@ public class Downloader extends IntentService
 		Log.i(TAG, "Building indices...");
 		mapp.updateFeedIndices();
 		
+		Boolean first_run = (mapp.getRunCount() == 0);
 		if (first_run)
 		{
 			Log.i(TAG, "Loading from disk and fetching items...");
@@ -111,6 +107,8 @@ public class Downloader extends IntentService
 		Log.i(TAG, "Sorting...");
 		mapp.sortGroupsByName();
 		mapp.sortItemsByDate();
+		
+		mapp.incrementRunCount();
 		
 		tend = System.currentTimeMillis();
 		Double elapsed = (tend - tzero) / 1000.0;

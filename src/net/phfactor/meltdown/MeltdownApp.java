@@ -14,12 +14,16 @@ import android.app.Application;
 import android.app.PendingIntent;
 import android.content.Context;
 import android.content.Intent;
+import android.content.SharedPreferences;
+import android.content.SharedPreferences.OnSharedPreferenceChangeListener;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager.NameNotFoundException;
 import android.os.SystemClock;
+import android.preference.PreferenceManager;
+import android.text.format.DateUtils;
 import android.util.Log;
 
-public class MeltdownApp extends Application
+public class MeltdownApp extends Application implements OnSharedPreferenceChangeListener
 {
 	static final String TAG = "MeltdownApp";
 
@@ -39,7 +43,9 @@ public class MeltdownApp extends Application
 
 	private long last_refresh_time;
 	private Boolean login_verified;
-
+	private Boolean net_down;
+	private int run_count;
+	
 	private PendingIntent pendingIntent;
 
 	private RestClient xcvr;
@@ -48,6 +54,16 @@ public class MeltdownApp extends Application
 	public MeltdownApp()
 	{
 		super();
+	}
+	
+	protected void setNetStatus(Boolean is_down)
+	{
+		this.net_down = is_down;
+	}
+	
+	protected Boolean isNetDown()
+	{
+		return net_down;
 	}
 
 	/* Sweep disk files and remove any not present in the in-memory items array
@@ -278,7 +294,6 @@ public class MeltdownApp extends Application
 	}
 
 	// Is the app setup and verified?
-	// FIXME distinguish offline from unconfigured ya moron!!
 	public Boolean isAppConfigured()
 	{
 		if (!configFile.haveConfigInfo())
@@ -365,6 +380,16 @@ public class MeltdownApp extends Application
 			item.is_saved = true;
 	}
 
+	protected int getRunCount()
+	{
+		return run_count;
+	}
+	
+	protected void incrementRunCount()
+	{
+		run_count++;
+	}
+	
 	@Override
 	public void onCreate()
 	{
@@ -373,14 +398,20 @@ public class MeltdownApp extends Application
 		Log.i(TAG, "App created, initializing");
 		last_refresh_time = 0L;
 		login_verified = false;
-
+		net_down = false;
+		run_count = 0;
+		
 		this.feeds = new ArrayList<RssFeed>();
 		this.groups = new ArrayList<RssGroup>();
 		this.icons = new ArrayList<Favicon>();
 
 		configFile = new ConfigFile(getApplicationContext());
 		xcvr = new RestClient(configFile.getToken(), configFile.getAPIUrl());
-
+		
+		// Setup callback hook for changes in update interval and such.
+		SharedPreferences prefs = PreferenceManager.getDefaultSharedPreferences(getApplicationContext());
+		prefs.registerOnSharedPreferenceChangeListener(this);
+		
 		RssGroup orphans = new RssGroup("Orphaned feeds", ORPHAN_ID);
 		this.groups.add(orphans);
 		RssGroup sparks = new RssGroup("Sparks", SPARKS_ID);
@@ -696,22 +727,32 @@ public class MeltdownApp extends Application
 	 */
 	protected void startUpdates()
 	{
-		// Tell downloader that this is the first run, so it should reload the items from disk
 		Intent sIntent = new Intent(this, Downloader.class);
-		sIntent.putExtra(FIRST_RUN, true);
 		startService(sIntent);
-
+		
 		Log.i(TAG, "Setting up periodic updates...");
-
 		Context ctx = getApplicationContext();
 		Intent svc_intent = new Intent(ctx, Downloader.class);
-		svc_intent.putExtra("first_run", false);
 		pendingIntent = PendingIntent.getService(ctx, 0, svc_intent, PendingIntent.FLAG_UPDATE_CURRENT);
 		AlarmManager am = (AlarmManager) ctx.getSystemService(Context.ALARM_SERVICE);
 		am.setInexactRepeating(AlarmManager.ELAPSED_REALTIME, SystemClock.elapsedRealtime(),
-				AlarmManager.INTERVAL_FIFTEEN_MINUTES, pendingIntent);
+				configFile.getUpdateInterval(), pendingIntent);
+		
+		Log.d(TAG, "Download service scheduled for periodic execution every "
+				+ DateUtils.formatElapsedTime(configFile.getUpdateInterval() / 1000L));
+	}
+	
+	@Override
+	public void onSharedPreferenceChanged(SharedPreferences sharedPreferences, String key)
+	{
+		Log.i(TAG, "Preferences changed, restarting Downloader with new interval");
+    	Context ctx = getApplicationContext();
 
-		Log.d(TAG, "Score update service scheduled for execution");
+    	if (pendingIntent != null)
+    		pendingIntent.cancel();
+    	
+    	ctx.stopService(new Intent(ctx, Downloader.class));
+    	startUpdates();		
 	}
 
 	protected void sweepReadFromGroup(RssGroup group)
@@ -730,35 +771,6 @@ public class MeltdownApp extends Application
 		}
 
 		group.items = trimmedList;
-
-		// DDT
-		for (int idx = 0; idx < group.items.size(); idx++)
-		{
-			RssItem item = group.items.get(idx);
-			if (item.is_read)
-				Log.e(TAG, "ERROR Item not removed properly!!!! " + item.title);
-		}
-		//Log.d(TAG, group.items.size() + " items left in " + group.title + " after read sweep");
-	}
-
-	// TODO remove me before release!
-	protected void checkForDuplicates()
-	{
-		for (int gidx = 0; gidx < groups.size(); gidx++)
-		{
-			RssGroup grp = groups.get(gidx);
-			List<Integer> ids = new ArrayList<Integer>();
-			for (int idx = 0; idx < grp.items.size(); idx++)
-			{
-				RssItem item = grp.items.get(idx);
-				if (ids.contains(item.id))
-				{
-					Log.e(TAG, "Error: Group " + grp.title + " duplicate post ID " + item.id + " title " + item.title);
-				}
-				else
-					ids.add(item.id);
-			}
-		}
 	}
 
 	/*
@@ -787,9 +799,6 @@ public class MeltdownApp extends Application
 		if (serverItemIDs.size() == 0)
 			return;
 
-		// DDT
-		checkForDuplicates();
-
 		if (reload_from_disk)
 			reloadItemsFromDisk(serverItemIDs);
 		else
@@ -811,9 +820,6 @@ public class MeltdownApp extends Application
 				sweepReadFromGroup(grp);
 			}
 		}
-
-		// DDT
-		checkForDuplicates();
 
 		// Now we're looking for posts on the server we *don't* have yet.
 		List<Integer> itemsToGet = new ArrayList<Integer>();
@@ -841,9 +847,6 @@ public class MeltdownApp extends Application
 			String payload = xcvr.fetchListOfItems(ids);
 			saveItemsData(payload);
 		}
-
-		// DDT
-		checkForDuplicates();
 	}
 
 	/*
@@ -873,4 +876,5 @@ public class MeltdownApp extends Application
 			feed.groups.add(group.id);
 		}
 	}
+
 }

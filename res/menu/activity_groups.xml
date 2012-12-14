@@ -5,4 +5,5 @@
     <item android:id="@+id/menu_refresh" android:title="@string/menu_refresh"></item>
     <item android:id="@+id/menu_about" android:title="@string/menu_about"></item>
     <item android:id="@+id/menu_setup_post" android:title="@string/title_activity_setup_post_url"></item>
+    <item android:id="@+id/menu_prefs" android:titleCondensed="@string/menu_cond_prefs" android:title="@string/menu_prefs"></item>
 </menu>

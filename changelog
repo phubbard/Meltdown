@@ -22,3 +22,5 @@ Build 48 v0.7.5 11/14/12 Added new items view - red source and timestamp, grey-c
 Build 49 v0.7.6 11/14/12 Fix for crash report dated 11/10/12.
 Build 50 v0.8.0 11/26/12 Fix for itemsdisplay - bug when data updated in service, bad indexing. Adding 'ellipsize' to items. Bump target api. allow backups.
 Build 51 v0.8.1 12/3/12 Adding postItem with URL rewriting. Fix next-item bugs. Brand new item list layout. 
+Build 52 v0.8.2 12/8/12 Delta from https://github.com/MoriTanosuke on Sparks. Minor view reformat on item title. More strings into XML for later translation.
+Build 53 v0.8.3 12/14/12 Adding preferences for update interval, also network-state monitor. Should skip downloads when offline.

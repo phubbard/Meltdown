@@ -8,10 +8,11 @@
 
     <TextView
         android:id="@+id/itmItemTitle"
+        android:padding="3dp"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:layout_alignParentTop="true"
-        android:text="item title" />
+        android:text="@string/itmTitle" />
         
     <WebView
         android:id="@+id/itemWebView"
@@ -44,6 +45,6 @@
         android:layout_alignBaseline="@+id/itmBtnOpen"
         android:layout_alignBottom="@+id/itmBtnOpen"
         android:layout_toRightOf="@+id/itmBtnOpen"
-        android:text="Feed Title" />
+        android:text="@string/itmFeedTitle" />
 
 </RelativeLayout>

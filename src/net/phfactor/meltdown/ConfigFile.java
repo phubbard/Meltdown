@@ -4,8 +4,10 @@ import java.io.UnsupportedEncodingException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 
+import android.app.AlarmManager;
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.preference.PreferenceManager;
 import android.util.Log;
 
 // Move the MD5 and prefs stuff here from App class; unrelated concerns
@@ -16,13 +18,14 @@ public class ConfigFile
 	private static final String P_URL = "serverUrl";
 	private static final String P_TOKEN = "token";
 	private static final String P_POST_URL = "postUrl";
+	private static final String P_INTERVAL = "interval"; // Must match preference key
 	
 	private SharedPreferences prefs;
 	private SharedPreferences.Editor editor;
 	
 	public ConfigFile(Context ctx)
 	{
-		this.prefs = ctx.getSharedPreferences("MeltdownApp", Context.MODE_PRIVATE);
+		this.prefs = PreferenceManager.getDefaultSharedPreferences(ctx);
 	}
 
 	public void setConfig(String url, String email, String password)
@@ -31,6 +34,22 @@ public class ConfigFile
 		editor.putString(P_URL, url);
 		editor.putString(P_TOKEN, makeAuthToken(email, password));
 		editor.commit();
+	}
+
+	protected void setUpdateInterval(Long new_interval)
+	{
+		editor = prefs.edit();
+		editor.putLong(P_INTERVAL, new_interval);
+		editor.commit();
+	}
+	
+	protected Long getUpdateInterval()
+	{
+		String saved_val = prefs.getString(P_INTERVAL, null);
+		if (saved_val == null)
+			return AlarmManager.INTERVAL_FIFTEEN_MINUTES;
+			
+		return Long.parseLong(saved_val);
 	}
 	
 	protected String makeAuthToken(String email, String pass)

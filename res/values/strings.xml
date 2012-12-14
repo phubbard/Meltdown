@@ -15,10 +15,12 @@
     <string name="itmShare">Share</string>
     <string name="itmSave">Save on server</string>
     <string name="itmSaveShort">Save</string>
+    <string name="itmTitle">Item title placeholder</string>
+    <string name="itmFeedTitle">Item feed title placeholder</string>
     <string name="lvPlaceholder">Waiting for data.</string>
     <string name="title_activity_about">About</string>
     <string name="vanityBlurb">Meltdown is an open source RSS client for &lt;a href="http://feedafever.com"&gt;Fever&lt;/a&gt; and is written by &lt;a href="mailto:pfh@phfactor.net"&gt;Paul Hubbard.&lt;/a&gt; 
-        Please see &lt;a href="github.com/phubbard/Meltdown"&gt;Github for source code&lt;/a&gt;.</string>
+        Please see &lt;a href="github.com/phubbard/Meltdown"&gt;Github for source code&lt;/a&gt;. Also includes code from https://github.com/MoriTanosuke.</string>
     <string name="title_item_detail">Item Detail</string>
     <string name="title_item_list">Items</string>
     <string name="mnuPost">Post item</string>
@@ -39,4 +41,24 @@
     <string name="viTime">About 3 weeks ago.</string>
     <string name="viTitle">Post title. Superlong example to force wraparound and exercise the layout.</string>
     <string name="viSubtitle">Post excerpt goes here, up to 72 characters, which is kind of magic but works OK most of the time.</string>
+    <string name="prefIntTitle">Refresh interval</string>
+    <string name="prefIntSummary">How often Meltdown syncs with Fever</string>
+    <string name="menu_prefs">Preferences</string>
+    <string name="menu_cond_prefs">Prefs</string>
+    <string-array name="intervals">
+        <item>Manual</item>
+        <item>15 minutes</item>
+        <item>30 minutes</item>
+        <item>60 minutes</item>
+        <item>12 hours</item>
+        <item>24 hours</item>
+    </string-array>
+    <string-array name="intervalValues">
+        <item>0</item>
+        <item>900000</item>
+        <item>1800000</item>
+        <item>3600000</item>
+        <item>43200000</item>
+        <item>86400000</item>
+    </string-array>
 </resources>
