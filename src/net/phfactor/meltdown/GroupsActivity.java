@@ -89,7 +89,12 @@ public class GroupsActivity extends ListActivity
 
 	public void doRefresh()
 	{
-		getActionBar().setSubtitle(app.totalUnreadItems() + " to read");
+		// If no network, change subtitle to 'Offline' - experimental
+		if (app.isNetDown())
+			getActionBar().setSubtitle(getString(R.string.stOffline));
+		else
+			getActionBar().setSubtitle(app.totalUnreadItems() + " to read");
+		
 		mAdapter = new GroupListAdapter(GroupsActivity.this, app.getUnreadGroups());
 		setListAdapter(mAdapter);
 		final ListView lv = getListView();

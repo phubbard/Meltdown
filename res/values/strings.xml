@@ -41,6 +41,7 @@
     <string name="viTime">About 3 weeks ago.</string>
     <string name="viTitle">Post title. Superlong example to force wraparound and exercise the layout.</string>
     <string name="viSubtitle">Post excerpt goes here, up to 72 characters, which is kind of magic but works OK most of the time.</string>
+    <string name="stOffline">Offline</string>
     <string name="prefIntTitle">Refresh interval</string>
     <string name="prefIntSummary">How often Meltdown syncs with Fever</string>
     <string name="menu_prefs">Preferences</string>

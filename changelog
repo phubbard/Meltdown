@@ -24,3 +24,4 @@ Build 50 v0.8.0 11/26/12 Fix for itemsdisplay - bug when data updated in service
 Build 51 v0.8.1 12/3/12 Adding postItem with URL rewriting. Fix next-item bugs. Brand new item list layout. 
 Build 52 v0.8.2 12/8/12 Delta from https://github.com/MoriTanosuke on Sparks. Minor view reformat on item title. More strings into XML for later translation.
 Build 53 v0.8.3 12/14/12 Adding preferences for update interval, also network-state monitor. Should skip downloads when offline.
+Build 54 v0.8.4 12/18/12 Fixes for two crashes as reported by users. Remove login check, causes errors when offline. Add net status to About page.

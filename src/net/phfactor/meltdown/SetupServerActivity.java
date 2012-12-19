@@ -46,7 +46,7 @@ public class SetupServerActivity extends Activity implements OnClickListener
 		
 		auth.setConfig(url, email, password);
 		
-		if (mapp.isAppConfigured())
+		if (mapp.isAppConfigured() && mapp.checkLogin())
 		{
 			Toast.makeText(SetupServerActivity.this, "Logged in OK!", Toast.LENGTH_SHORT).show();
 			mapp.startUpdates();

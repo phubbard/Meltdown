@@ -42,7 +42,6 @@ public class MeltdownApp extends Application implements OnSharedPreferenceChange
 	private List<Favicon> icons;
 
 	private long last_refresh_time;
-	private Boolean login_verified;
 	private Boolean net_down;
 	private int run_count;
 	
@@ -58,7 +57,12 @@ public class MeltdownApp extends Application implements OnSharedPreferenceChange
 	
 	protected void setNetStatus(Boolean is_down)
 	{
-		this.net_down = is_down;
+		if (is_down)
+			Log.d(TAG, "Network lost");
+		else
+			Log.d(TAG, "Network is back");
+		
+		net_down = is_down;
 	}
 	
 	protected Boolean isNetDown()
@@ -112,6 +116,9 @@ public class MeltdownApp extends Application implements OnSharedPreferenceChange
 		} catch (JSONException je)
 		{
 			Log.e(TAG, "Error parsing list of unread item IDs");
+		} catch (NullPointerException ne)
+		{
+			Log.e(TAG, "Error parsing unread IDs - offline?");
 		}
 		return rc;
 	}
@@ -296,17 +303,16 @@ public class MeltdownApp extends Application implements OnSharedPreferenceChange
 	// Is the app setup and verified?
 	public Boolean isAppConfigured()
 	{
-		if (!configFile.haveConfigInfo())
-			return false;
-
-		if (login_verified)
-			return true;
-
+		return configFile.haveConfigInfo();
+	}
+	
+	public Boolean checkLogin()
+	{
 		// Need to recreate the RestClient, as it caches the API URL.
 		xcvr = new RestClient(configFile.getToken(), configFile.getAPIUrl());
 
-		login_verified = xcvr.verifyLogin();
-		return login_verified;
+		return xcvr.verifyLogin();
+		
 	}
 
 	// Call the users' post hook
@@ -397,7 +403,6 @@ public class MeltdownApp extends Application implements OnSharedPreferenceChange
 
 		Log.i(TAG, "App created, initializing");
 		last_refresh_time = 0L;
-		login_verified = false;
 		net_down = false;
 		run_count = 0;
 		
@@ -629,26 +634,18 @@ public class MeltdownApp extends Application implements OnSharedPreferenceChange
 		if (group == null)
 		{
 			RssFeed feed = findFeedById(item.feed_id);
-			if (feed.is_spark)
+			if (feed == null)
+			{
+				Log.d(TAG, "Orphan item! No group found for post ID " + item.id + " " + item.title);
+				group = findGroupById(ORPHAN_ID);				
+			}
+			else if (feed.is_spark)
 			{
 				Log.d(TAG, "Spark found for post ID " + item.id + " " + item.title);
 				group = findGroupById(SPARKS_ID);
-			} else
-			{
-				Log.d(TAG, "Orphan item! No group found for post ID " + item.id + " " + item.title);
-				group = findGroupById(ORPHAN_ID);
-			}
+			} 
 		}
 
-		// DDT
-		for (int idx = 0; idx < group.items.size(); idx++)
-		{
-			if (group.items.get(idx).id == item.id)
-			{
-				Log.e(TAG, "Refusing to save duplicate ID " + item.id + " in group " + group.title);
-				return;
-			}
-		}
 		group.items.add(item);
 	}
 
