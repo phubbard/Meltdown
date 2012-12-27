@@ -33,19 +33,19 @@ public class RssGroup
 			this.items = new ArrayList<RssItem>();
 		} catch (JSONException e) 
 		{
-			Log.e(TAG, "Unable to parse JSON feed!");			
+			Log.e(TAG, "Unable to parse JSON feed!");
 			e.printStackTrace();
 		}
-	}	
-	
-	public RssGroup(String ttl, int id)
+	}
+
+	public RssGroup(String title, int id)
 	{
-		this.title = ttl;
+		this.title = title;
 		this.id = id;
 		this.feed_ids = new ArrayList<Integer>();
 		this.items = new ArrayList<RssItem>(); 
 	}
-	
+
 	public void clearItems()
 	{
 		this.items = new ArrayList<RssItem>();
