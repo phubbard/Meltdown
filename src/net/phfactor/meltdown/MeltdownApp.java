@@ -630,6 +630,7 @@ public class MeltdownApp extends Application implements OnSharedPreferenceChange
 	 */
 	private void saveRssItem(RssItem item)
 	{
+		Log.d(TAG, "Updating item " + item);
 		RssGroup group = findGroupForItem(item);
 		if (group == null)
 		{
@@ -637,16 +638,23 @@ public class MeltdownApp extends Application implements OnSharedPreferenceChange
 			if (feed == null)
 			{
 				Log.d(TAG, "Orphan item! No group found for post ID " + item.id + " " + item.title);
-				group = findGroupById(ORPHAN_ID);				
+				group = findGroupById(ORPHAN_ID);
 			}
-			else if (feed.is_spark)
+			else if (feed.is_spark && !configFile.getDisableSparks())
 			{
 				Log.d(TAG, "Spark found for post ID " + item.id + " " + item.title);
 				group = findGroupById(SPARKS_ID);
 			} 
 		}
 
-		group.items.add(item);
+		if(group != null && group.items != null)
+		{
+			group.items.add(item);
+		}
+		else
+		{
+			Log.w(TAG, "Something went wrong while saving item " + item);
+		}
 	}
 
 	/*

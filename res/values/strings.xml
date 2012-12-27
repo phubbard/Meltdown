@@ -62,4 +62,5 @@
         <item>43200000</item>
         <item>86400000</item>
     </string-array>
+    <string name="prefBoolDisableSpark">Disable loading of Sparks</string>
 </resources>
