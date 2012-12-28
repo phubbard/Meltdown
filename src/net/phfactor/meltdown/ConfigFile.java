@@ -19,10 +19,11 @@ public class ConfigFile
 	private static final String P_TOKEN = "token";
 	private static final String P_POST_URL = "postUrl";
 	private static final String P_INTERVAL = "interval"; // Must match preference key
-	
+	private static final String P_DISABLE_SPARKS = "disable_sparks";
+
 	private SharedPreferences prefs;
 	private SharedPreferences.Editor editor;
-	
+
 	public ConfigFile(Context ctx)
 	{
 		this.prefs = PreferenceManager.getDefaultSharedPreferences(ctx);
@@ -72,7 +73,11 @@ public class ConfigFile
 			return false;
 		return true;
 	}
-	
+
+	public boolean getDisableSparks() {
+		return prefs.getBoolean(P_DISABLE_SPARKS, false);
+	}
+
 	public String getToken()
 	{
 		return prefs.getString(P_TOKEN, null);
