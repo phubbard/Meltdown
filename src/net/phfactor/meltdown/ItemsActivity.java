@@ -188,7 +188,8 @@ public class ItemsActivity extends ListActivity
 //            else
 //            	Log.d(TAG, "No icon for " + feed.title);
             
-            // TODO How to query and reset?
+            // TODO How to query and reset? What is the Holo theme color for a list item??
+            // http://android-developers.blogspot.com/2012/01/holo-everywhere.html
             if (viewReused)
             	view.setBackgroundColor(Color.WHITE);
             
@@ -282,6 +283,7 @@ public class ItemsActivity extends ListActivity
 		return ct;
 	}
 	
+	// FIXME this has a bug in it; selects wrong item. Sorting issue?
 	private int figureNextPost(int cur_post_id)
 	{
 		int icount = items.size();

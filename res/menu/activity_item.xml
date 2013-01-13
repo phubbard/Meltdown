@@ -1,9 +1,9 @@
 <menu xmlns:android="http://schemas.android.com/apk/res/android">
     <item android:id="@+id/itemShare" android:title="@string/itmShare"
         android:actionProviderClass="android.widget.ShareActionProvider" 
-        android:showAsAction="collapseActionView"></item>
-    <item android:id="@+id/itemZoomFar" android:title="@string/mnuZoomOut"></item>
-    <item android:id="@+id/itemSave" android:titleCondensed="@string/itmSaveShort" android:title="@string/itmSave"></item>
-    <item android:id="@+id/itemAddOneWeek" android:titleCondensed="@string/mnuCondsNW" android:title="@string/mnuAddOneWeek"></item>
-    <item android:id="@+id/itemPost" android:title="@string/mnuPost"></item>
+        android:showAsAction="ifRoom"></item>
+    <item android:id="@+id/itemZoomFar" android:title="@string/mnuZoomOut" android:showAsAction="ifRoom|withText" android:icon="@drawable/ic_action_zoom_far"></item>
+    <item android:id="@+id/itemSave" android:titleCondensed="@string/itmSaveShort" android:title="@string/itmSave" android:showAsAction="collapseActionView" android:icon="@drawable/ic_action_save"></item>
+    <item android:id="@+id/itemAddOneWeek" android:titleCondensed="@string/mnuCondsNW" android:title="@string/mnuAddOneWeek" android:showAsAction="collapseActionView"></item>
+    <item android:id="@+id/itemPost" android:title="@string/mnuPost" android:icon="@drawable/ic_action_post" android:showAsAction="collapseActionView"></item>
 </menu>

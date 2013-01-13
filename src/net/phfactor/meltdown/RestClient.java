@@ -1,23 +1,19 @@
 package net.phfactor.meltdown;
 
+import java.io.BufferedInputStream;
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.io.UnsupportedEncodingException;
-import java.net.UnknownHostException;
+import java.net.HttpURLConnection;
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.util.List;
+import java.util.Locale;
 
-import org.apache.http.HttpResponse;
-import org.apache.http.client.ClientProtocolException;
-import org.apache.http.client.HttpClient;
-import org.apache.http.client.methods.HttpGet;
-import org.apache.http.client.methods.HttpPost;
-import org.apache.http.entity.StringEntity;
 import org.json.JSONException;
 import org.json.JSONObject;
 
-import android.net.http.AndroidHttpClient;
 import android.os.AsyncTask;
 import android.os.ConditionVariable;
 import android.util.Log;
@@ -28,7 +24,6 @@ import android.util.Log;
  * @brief REST/HTTP code for Meltdown
  * @see http://feedafever.com/api
  * 
- * Done Add gzip support http://stackoverflow.com/questions/1573391/android-http-communication-should-use-accept-encoding-gzip
  * TODO Add progress indicator http://stackoverflow.com/questions/3028306/download-a-file-with-android-and-showing-the-progress-in-a-progressdialog/3028660#3028660
  * Note its getEntity that does the actual fetch, interesting. http://stackoverflow.com/questions/6751241/httpentity-getcontent-progress-indicator
  * 
@@ -84,7 +79,7 @@ public class RestClient
 	// Validate that the auth token is correct and that we have at least API level 3.
 	private Boolean checkAuth()
 	{
-		String payload = syncGetUrl(api_url);
+		String payload = syncGetUrl(api_url, null);
 		JSONObject jsonObj;
 		
 		if (payload == null)
@@ -108,31 +103,28 @@ public class RestClient
 	// Sync methods - only called from the IntentService, so OK to block.
 	public String fetchGroups()
 	{
-		String url = String.format(api_url + "&groups");
-		return syncGetUrl(url);
+		return syncSetVariables("groups");
 	}
 	
 	public String fetchFeeds()
 	{
-		String url = String.format(api_url + "&feeds");
-		return syncGetUrl(url);
+		return syncSetVariables("feeds");
 	}
 	
 	public String fetchFavicons()
 	{
-		String url = String.format(api_url + "&favicons");
-		return syncGetUrl(url);
+		return syncSetVariables("favicons");
 	}
 	
 	public String fetchUnreadList()
 	{
-		String url = String.format(api_url + "&unread_item_ids");
-		return syncGetUrl(url);	
+		return syncSetVariables("unread_item_ids");
 	}
 	
-	private String makeItemListURL(List<Integer> ids)
+	// Construct an http variable list with a list of item ids. Max length is 50 as per Fever API.
+	private String makeItemVarList(List<Integer> ids)
 	{
-		String idstr = api_url + "&items&with_ids=";
+		String idstr = "items&with_ids=";
 		for (int idx = 0; idx < ids.size(); idx++)
 			idstr += String.format("%d,", ids.get(idx));
 		
@@ -146,8 +138,8 @@ public class RestClient
 			return null;
 		
 		Log.d(TAG, "Fetching " + ids.size() + " items from server");
-		String url = makeItemListURL(ids);
-		return (syncGetUrl(url));
+		String vars = makeItemVarList(ids);
+		return (syncSetVariables(vars));
 	}
 	
     /*!
@@ -181,14 +173,14 @@ public class RestClient
 	// Asynchronously mark a post as saved
 	public void markItemSaved(int item_id)
 	{
-		final String vars = String.format("mark=item&as=saved&id=%d", item_id);
+		final String vars = String.format(Locale.ENGLISH, "mark=item&as=saved&id=%d", item_id);
 		
-		class mTask extends AsyncTask<Void, Void, Void> {
-
+		class mTask extends AsyncTask<Void, Void, Void> 
+		{
 			@Override
 			protected Void doInBackground(Void... params) 			
 			{
-				syncPostUrl(vars);
+				syncSetVariables(vars);
 				return null;
 			}
 		}
@@ -199,23 +191,32 @@ public class RestClient
 	// Call the users' hook URL, async. Ignore response and/or errors.
 	protected void callUserURL(final String user_url)
 	{
-		class mTask extends AsyncTask<Void, Void, Void> {
-
+		class mTask extends AsyncTask<Void, Void, Void> 
+		{
 			@Override
 			protected Void doInBackground(Void... params)
 			{
 				try 
 				{
-					HttpClient client = AndroidHttpClient.newInstance("Meltdown");
-					HttpGet get = new HttpGet(user_url);
-					client.execute(get);
-					AndroidHttpClient fcc = (AndroidHttpClient) client;
-					fcc.close();
+					HttpURLConnection connection;
+					URL uurl = new URL(user_url);
+					connection = (HttpURLConnection) uurl.openConnection();
+					connection.connect();
+					connection.disconnect();
+//					
+//					HttpClient client = AndroidHttpClient.newInstance("Meltdown");
+//					HttpGet get = new HttpGet(user_url);
+//					client.execute(get);
+//					AndroidHttpClient fcc = (AndroidHttpClient) client;
+//					fcc.close();
 					return null;
-				} catch (ClientProtocolException e)
+				} catch (MalformedURLException e)
 				{
+					Log.e(TAG, "User URL badly formed, cannot invoke", e);
+					
 				} catch (IOException e)
 				{
+					Log.e(TAG, "Error on user hook call", e);
 				}
 				return null;
 			}			
@@ -225,20 +226,16 @@ public class RestClient
 	}
 	
 	// Asynchronously mark a post as read.
-	/*
-	 *  The post args have to be in the body. 
-	 *  POST:	api_key=blah&mark=item&as=read&id=57163
-	 */
 	public void markItemRead(int post_id)
 	{
-		final String vars = String.format("mark=item&as=read&id=%d", post_id);
+		final String vars = String.format(Locale.ENGLISH, "mark=item&as=read&id=%d", post_id);
 		
-		class mTask extends AsyncTask<Void, Void, Void> {
-
+		class mTask extends AsyncTask<Void, Void, Void> 
+		{
 			@Override
 			protected Void doInBackground(Void... params) 			
 			{
-				syncPostUrl(vars);
+				syncSetVariables(vars);
 				return null;
 			}
 		}
@@ -256,7 +253,7 @@ public class RestClient
 			@Override
 			protected Void doInBackground(Void... params) 			
 			{
-				syncPostUrl(vars);
+				syncSetVariables(vars);
 				return null;
 			}
 		}
@@ -264,132 +261,76 @@ public class RestClient
 		new mTask().execute();		
 	}
 	
-	/*
-	 *  Specialization of syncGetUrl that puts variables into payload, as seems to be required.
-	 *  Variables string must be url-encoded e.g. 'mark=as&id=1234' *without* leading ampersand.
-	 */
-	public String syncPostUrl(String variables)
+	// Some calls just call the base API with a list of parameters - make it easy to do so.
+	public String syncSetVariables(String vars)
 	{
-		HttpClient client;	
-		String content = "";
-		String Error = null;
-		
-		try 
-		{
-			client = AndroidHttpClient.newInstance("Meltdown");
-			HttpPost post = new HttpPost(api_url);
-			
-			// Log.d(TAG, "URL: " + api_url + " vars: " + variables);
-			 
-			// Tell Apache we'll take gzip; should compress really well.
-			AndroidHttpClient.modifyRequestToAcceptGzipResponse(post);
-			
-			// Add the auth token to the request
-			post.setHeader("Content-Type", "application/x-www-form-urlencoded");
-			StringEntity payload;
-			String full_post_vars = String.format("api_key=%s&%s", auth_token, variables);
-			payload = new StringEntity(full_post_vars, "UTF-8");
-			//Log.d(TAG, "Payload: " + full_post_vars);
-			post.setEntity(payload);				
-	
-			//Log.d(TAG, "executing post...");
-			HttpResponse response = client.execute(post);
-			
-			//Log.d(TAG, "parsing response");
-			InputStream istr = AndroidHttpClient.getUngzippedContent(response.getEntity());
-			content = convertStreamToString(istr);
-			
-			AndroidHttpClient fcc = (AndroidHttpClient) client;
-			fcc.close();
-			
-			return content;
-		} catch (ClientProtocolException e) 
-		{
-			Error = "Prot Err: " + e.getMessage();
-		}
-		catch (UnknownHostException e) 
-		{
-			Error = "UnknownHostErr: " + e.getMessage();
-		}
-		catch (IOException e) 
-		{
-			Error = "IOxErr: " + e.getMessage();
-		}
-		catch (Exception e) 
-		{
-			Error = "General exception: "+e.getMessage() + " " + e.toString();
-		}
-		
-		if (Error != null)
-			Log.e(TAG, Error);
-		
-		return null;		
+		return syncGetUrl(api_url, vars);
 	}
-	
-	// This took forever to get working. Change with great caution if at all. Adds the mandatory
-	// access token to the HTTP header.
-	protected HttpPost addAuth(HttpPost post_request) throws UnsupportedEncodingException
+
+	/*
+	 *  New dev 1/13/13, working on SSL support and in RTFM the first thing to do is to switch
+	 *  from AndroidHttpClient to HttpURLConnection:
+	 *  http://android-developers.blogspot.com/2011/09/androids-http-clients.html
+	 *  
+	 *  and
+	 *  http://developer.android.com/reference/java/net/HttpURLConnection.html
+	 *  
+	 *   So let's start there, replace the current methods and swap the API. Once that's done
+	 *   I can tackle http/s support.
+	 */
+	public String syncGetUrl(String url_string, String variables)
 	{
-		post_request.setHeader("Content-Type", "application/x-www-form-urlencoded");
-		StringEntity payload;
-		payload = new StringEntity(String.format("api_key=%s", auth_token), "UTF-8");
-		post_request.setEntity(payload);	
-		return post_request;
-	}	
-	
-	// Blocking fetch w/authentication added
-	public String syncGetUrl(String url)
-	{
-		HttpClient client;	
-		String content = "";
-		String Error = null;
+		HttpURLConnection connection;
 		
-		try 
+		if (variables != null)
+			url_string += "&" + variables;
+		
+		Log.d(TAG, url_string);
+		
+		try
 		{
-			client = AndroidHttpClient.newInstance("Meltdown");
-			HttpPost post = new HttpPost(url);
+			URL mURL = new URL(url_string);
+			connection = (HttpURLConnection) mURL.openConnection();
+						
+			/*
+			 * The auth method in Fever is peculiar; you have to use POST, even for GET calls,
+			 * and the API key cannot be sent as a header. I'd call that a bug, pure and simple.
+			 */			
+			connection.setDoOutput(true);
+			connection.setReadTimeout(15000); // TODO Make this a pref or adaptive? 
+			connection.setRequestProperty("Content-type", "application/x-www-form-urlencoded");
+			connection.setRequestMethod("POST");
 			
-			// Tell Apache we'll take gzip; should compress really well.
-			AndroidHttpClient.modifyRequestToAcceptGzipResponse(post);
-			
-			// Add the auth token to the request
-			post = addAuth(post);
-	
-			//Log.d(TAG, "executing post...");
-			HttpResponse response = client.execute(post);
-			
-			//Log.d(TAG, "parsing response");
-			InputStream istr = AndroidHttpClient.getUngzippedContent(response.getEntity());
-			content = convertStreamToString(istr);
-			
-//			ResponseHandler<String> responseHandler = new BasicResponseHandler();
-//			content = client.execute(post, responseHandler);
-//			Log.d("DATA for  " + url, content);
-			
-			AndroidHttpClient fcc = (AndroidHttpClient) client;
-			fcc.close();
-			
-			return content;
-		} catch (ClientProtocolException e) 
-		{
-			Error = "Prot Err: " + e.getMessage();
+			connection.connect();
+			connection.getOutputStream().write(("api_key=" + auth_token).getBytes());
 		}
-		catch (UnknownHostException e) 
+		catch (MalformedURLException me)
 		{
-			Error = "UnknownHostErr: " + e.getMessage();
+			Log.e(TAG, "Bad server URL '" + url_string + "'");
+			return null;
 		}
-		catch (IOException e) 
+		catch (IOException ie)
 		{
-			Error = "IOxErr: " + e.getMessage();
-		}
-		catch (Exception e) 
-		{
-			Error = "General exception: "+e.getMessage() + " " + e.toString();
+			Log.e(TAG, "IO error on transfer: " + ie.getMessage());
+			return null;
 		}
 		
-		if (Error != null)
-			Log.e(TAG, Error);
+		// OK, should be connected at this point, try and read the response.
+		// TODO Here is where we could check headers for Last-Modified - see
+		// http://developer.android.com/training/efficient-downloads/redundant_redundant.html
+		try
+		{
+			InputStream in = new BufferedInputStream(connection.getInputStream());
+			return convertStreamToString(in);
+		} catch (IOException e)
+		{
+			Log.e(TAG, "IO error on transfer: " + e.getMessage());			
+		}
+		finally
+		{
+			connection.disconnect();
+		}
 		
-		return null;		
+		return null;
 	}
 }

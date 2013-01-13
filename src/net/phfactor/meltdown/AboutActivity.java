@@ -6,6 +6,9 @@ import android.net.Uri;
 import android.os.Bundle;
 import android.text.Html;
 import android.text.format.DateUtils;
+import android.util.Log;
+import android.view.Menu;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.widget.TextView;
@@ -17,6 +20,8 @@ public class AboutActivity extends Activity implements OnClickListener
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_about);
 
+        getActionBar().setDisplayHomeAsUpEnabled(true);
+        
         fillInFields();
     }
     
@@ -61,4 +66,23 @@ public class AboutActivity extends Activity implements OnClickListener
 		intent.setData(Uri.parse("http://github.com/phubbard/Meltdown"));
 		startActivity(intent);				
 	}
+	
+	@Override
+	public boolean onOptionsItemSelected(MenuItem item)
+	{
+		switch (item.getItemId())
+		{
+		case android.R.id.home:
+			finish();
+			return true;
+		}
+		return false;
+	}
+
+	@Override
+	public boolean onCreateOptionsMenu(Menu menu)
+	{
+		getMenuInflater().inflate(R.menu.activity_about, menu);
+		return true;
+	}	
 }

@@ -26,3 +26,7 @@ Build 52 v0.8.2 12/8/12 Delta from https://github.com/MoriTanosuke on Sparks. Mi
 Build 53 v0.8.3 12/14/12 Adding preferences for update interval, also network-state monitor. Should skip downloads when offline.
 Build 54 v0.8.4 12/18/12 Fixes for two crashes as reported by users. Remove login check, causes errors when offline. Add net status to About page.
 Build 55 v0.8.5 12/28/12 Fixes from MoriTanosuke - pref to disable Sparks and a crash fix.
+Build 56 v0.8.6 1/2/13 Crash fix.
+Build 57 v0.8.7 1/4/12 Working on menus and action bar. Holo Light theme, new icons for menu items, tweaks to about page.
+Build 58 v0.8.8 1/5/12 Action bar and icons for main screen, trying for better discoverability. Tweaked action bar in item view.
+Build 60 v0.9.0 1/13/13 Added http response cache, dropped net status receiver, changing http client and starting SSL work.

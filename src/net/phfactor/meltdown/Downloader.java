@@ -9,7 +9,6 @@ import android.util.Log;
  * The Downloader is run like a cron job, via the AlarmService, and 
  * does all of the downloading of groups, feeds and items.
  * 
- * TODO: Make run interval a preference
  */
 public class Downloader extends IntentService 
 {

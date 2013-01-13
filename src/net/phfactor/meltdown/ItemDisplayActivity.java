@@ -87,6 +87,11 @@ public class ItemDisplayActivity extends Activity
         
         // Lookup feed
         RssFeed rgrp = app.findFeedById(rss_item.feed_id);
+        if (rgrp == null)
+        {
+        	finish();
+        	return;
+        }
         
         // Title is feed title, subtitle is author name
         ActionBar bar = getActionBar();

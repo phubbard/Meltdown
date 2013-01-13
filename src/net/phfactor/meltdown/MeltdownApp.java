@@ -1,5 +1,6 @@
 package net.phfactor.meltdown;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -18,6 +19,8 @@ import android.content.SharedPreferences;
 import android.content.SharedPreferences.OnSharedPreferenceChangeListener;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager.NameNotFoundException;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
 import android.os.SystemClock;
 import android.preference.PreferenceManager;
 import android.text.format.DateUtils;
@@ -42,7 +45,6 @@ public class MeltdownApp extends Application implements OnSharedPreferenceChange
 	private List<Favicon> icons;
 
 	private long last_refresh_time;
-	private Boolean net_down;
 	private int run_count;
 	
 	private PendingIntent pendingIntent;
@@ -55,19 +57,14 @@ public class MeltdownApp extends Application implements OnSharedPreferenceChange
 		super();
 	}
 	
-	protected void setNetStatus(Boolean is_down)
-	{
-		if (is_down)
-			Log.d(TAG, "Network lost");
-		else
-			Log.d(TAG, "Network is back");
-		
-		net_down = is_down;
-	}
-	
 	protected Boolean isNetDown()
 	{
-		return net_down;
+		ConnectivityManager connMgr = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
+		NetworkInfo networkInfo = connMgr.getActiveNetworkInfo();
+		if (networkInfo != null && networkInfo.isConnected())
+			return false;
+		
+		return true;		    	
 	}
 
 	/* Sweep disk files and remove any not present in the in-memory items array
@@ -396,6 +393,22 @@ public class MeltdownApp extends Application implements OnSharedPreferenceChange
 		run_count++;
 	}
 	
+	// See http://developer.android.com/training/efficient-downloads/redundant_redundant.html
+	private void enableHttpResponseCache() 
+	{
+		try 
+		{
+			long httpCacheSize = 10 * 1024 * 1024; // 10 MiB
+			File httpCacheDir = new File(getCacheDir(), "http");
+			Class.forName("android.net.http.HttpResponseCache")
+			.getMethod("install", File.class, long.class)
+			.invoke(null, httpCacheDir, httpCacheSize);
+		} catch (Exception httpResponseCacheNotAvailable) 
+		{
+			Log.w(TAG, "HTTP response cache is unavailable.");
+		}
+	}
+	
 	@Override
 	public void onCreate()
 	{
@@ -403,12 +416,13 @@ public class MeltdownApp extends Application implements OnSharedPreferenceChange
 
 		Log.i(TAG, "App created, initializing");
 		last_refresh_time = 0L;
-		net_down = false;
 		run_count = 0;
 		
 		this.feeds = new ArrayList<RssFeed>();
 		this.groups = new ArrayList<RssGroup>();
 		this.icons = new ArrayList<Favicon>();
+		
+		enableHttpResponseCache();
 
 		configFile = new ConfigFile(getApplicationContext());
 		xcvr = new RestClient(configFile.getToken(), configFile.getAPIUrl());
@@ -630,7 +644,6 @@ public class MeltdownApp extends Application implements OnSharedPreferenceChange
 	 */
 	private void saveRssItem(RssItem item)
 	{
-		Log.d(TAG, "Updating item " + item);
 		RssGroup group = findGroupForItem(item);
 		if (group == null)
 		{
