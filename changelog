@@ -30,3 +30,5 @@ Build 56 v0.8.6 1/2/13 Crash fix.
 Build 57 v0.8.7 1/4/12 Working on menus and action bar. Holo Light theme, new icons for menu items, tweaks to about page.
 Build 58 v0.8.8 1/5/12 Action bar and icons for main screen, trying for better discoverability. Tweaked action bar in item view.
 Build 60 v0.9.0 1/13/13 Added http response cache, dropped net status receiver, changing http client and starting SSL work.
+Build 61 v0.9.1 1/14/13 Bugfixes to new comms code - need to push variables into payload on some calls; Fever bug. Mark-as-read now fixed.
+	

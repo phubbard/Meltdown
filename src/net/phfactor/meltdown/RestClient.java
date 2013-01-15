@@ -10,6 +10,7 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -79,7 +80,7 @@ public class RestClient
 	// Validate that the auth token is correct and that we have at least API level 3.
 	private Boolean checkAuth()
 	{
-		String payload = syncGetUrl(api_url, null);
+		String payload = syncGetUrl(api_url, null, false);
 		JSONObject jsonObj;
 		
 		if (payload == null)
@@ -103,22 +104,22 @@ public class RestClient
 	// Sync methods - only called from the IntentService, so OK to block.
 	public String fetchGroups()
 	{
-		return syncSetVariables("groups");
+		return syncSetVariables("groups", false);
 	}
 	
 	public String fetchFeeds()
 	{
-		return syncSetVariables("feeds");
+		return syncSetVariables("feeds", false);
 	}
 	
 	public String fetchFavicons()
 	{
-		return syncSetVariables("favicons");
+		return syncSetVariables("favicons", false);
 	}
 	
 	public String fetchUnreadList()
 	{
-		return syncSetVariables("unread_item_ids");
+		return syncSetVariables("unread_item_ids", false);
 	}
 	
 	// Construct an http variable list with a list of item ids. Max length is 50 as per Fever API.
@@ -139,7 +140,7 @@ public class RestClient
 		
 		Log.d(TAG, "Fetching " + ids.size() + " items from server");
 		String vars = makeItemVarList(ids);
-		return (syncSetVariables(vars));
+		return (syncSetVariables(vars, false));
 	}
 	
     /*!
@@ -180,7 +181,7 @@ public class RestClient
 			@Override
 			protected Void doInBackground(Void... params) 			
 			{
-				syncSetVariables(vars);
+				syncSetVariables(vars, true);
 				return null;
 			}
 		}
@@ -235,7 +236,7 @@ public class RestClient
 			@Override
 			protected Void doInBackground(Void... params) 			
 			{
-				syncSetVariables(vars);
+				syncSetVariables(vars, true);
 				return null;
 			}
 		}
@@ -253,7 +254,7 @@ public class RestClient
 			@Override
 			protected Void doInBackground(Void... params) 			
 			{
-				syncSetVariables(vars);
+				syncSetVariables(vars, true);
 				return null;
 			}
 		}
@@ -262,11 +263,20 @@ public class RestClient
 	}
 	
 	// Some calls just call the base API with a list of parameters - make it easy to do so.
-	public String syncSetVariables(String vars)
+	public String syncSetVariables(String vars, Boolean in_payload)
 	{
-		return syncGetUrl(api_url, vars);
+		return syncGetUrl(api_url, vars, in_payload);
 	}
 
+	// Debug code - dump HTTP return if error found
+	private void ddtCheckRetval(String retval, String status, String full_url)
+	{
+		if (status.equals("HTTP/1.1 200 OK"))
+			return;
+		
+		Log.e(TAG, "HTTP error '" + status + "' on fetch of '" + full_url + "', payload is " + retval);
+		return;
+	}
 	/*
 	 *  New dev 1/13/13, working on SSL support and in RTFM the first thing to do is to switch
 	 *  from AndroidHttpClient to HttpURLConnection:
@@ -278,7 +288,7 @@ public class RestClient
 	 *   So let's start there, replace the current methods and swap the API. Once that's done
 	 *   I can tackle http/s support.
 	 */
-	public String syncGetUrl(String url_string, String variables)
+	public String syncGetUrl(String url_string, String variables, Boolean in_payload)
 	{
 		HttpURLConnection connection;
 		
@@ -303,6 +313,12 @@ public class RestClient
 			
 			connection.connect();
 			connection.getOutputStream().write(("api_key=" + auth_token).getBytes());
+			
+			/*
+			 * Fever bug - some operations require to send variables as part of the payload. So we cope.
+			 */
+			if (in_payload)
+				connection.getOutputStream().write(("&" + variables).getBytes());
 		}
 		catch (MalformedURLException me)
 		{
@@ -321,7 +337,13 @@ public class RestClient
 		try
 		{
 			InputStream in = new BufferedInputStream(connection.getInputStream());
-			return convertStreamToString(in);
+			String res_str = convertStreamToString(in);
+			String status = connection.getHeaderField(null);
+
+			// DDT
+			ddtCheckRetval(res_str, status, url_string);
+			
+			return res_str;
 		} catch (IOException e)
 		{
 			Log.e(TAG, "IO error on transfer: " + e.getMessage());			

@@ -660,13 +660,13 @@ public class MeltdownApp extends Application implements OnSharedPreferenceChange
 			} 
 		}
 
-		if(group != null && group.items != null)
+		if(group != null)
 		{
 			group.items.add(item);
 		}
 		else
 		{
-			Log.w(TAG, "Something went wrong while saving item " + item);
+			Log.w(TAG, "Something went wrong while saving item " + item.id + ", '" + item.title + "'");
 		}
 	}
 
