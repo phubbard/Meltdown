@@ -653,21 +653,20 @@ public class MeltdownApp extends Application implements OnSharedPreferenceChange
 				Log.d(TAG, "Orphan item! No group found for post ID " + item.id + " " + item.title);
 				group = findGroupById(ORPHAN_ID);
 			}
-			else if (feed.is_spark && !configFile.getDisableSparks())
+			else if (feed.is_spark)
 			{
-				Log.d(TAG, "Spark found for post ID " + item.id + " " + item.title);
-				group = findGroupById(SPARKS_ID);
-			} 
+				if (!configFile.getDisableSparks())
+				{
+					Log.d(TAG, "Spark found for post ID " + item.id + " " + item.title);
+					group = findGroupById(SPARKS_ID);
+				}
+				else
+					Log.d(TAG, "Sparks disabled, not saving item " + item.id);
+			}
 		}
 
 		if(group != null)
-		{
 			group.items.add(item);
-		}
-		else
-		{
-			Log.w(TAG, "Something went wrong while saving item " + item.id + ", '" + item.title + "'");
-		}
 	}
 
 	/*
@@ -876,12 +875,13 @@ public class MeltdownApp extends Application implements OnSharedPreferenceChange
 		{
 			RssFeed feed = feeds.get(idx);
 			RssGroup group = findGroupHoldingFeed(feed.id);
-			if(feed.is_spark)
-			{
-				Log.e(TAG, "Feed " + feed.title + " is a spark.");
-				// don't add sparks to any groups
-				continue;
-			}
+			// FIXME is this my crashing bug?
+//			if(feed.is_spark)
+//			{
+//				Log.e(TAG, "Feed " + feed.title + " is a spark.");
+//				// don't add sparks to any groups
+//				continue;
+//			}
 			if (group == null)
 			{
 				Log.e(TAG, "No group found for feed " + feed.title);

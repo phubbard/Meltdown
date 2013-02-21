@@ -23,6 +23,7 @@ public class Downloader extends IntentService
 	 * list views and progress dialogs. Simple, fast, efficient; I quite like it.
 	 * 
 	 * TODO Collapse these down to action + extras in human-readable format
+	 * TODO Move these to strings.xml for localization.
 	 */
 	static final String ACTION_UPDATE_STARTING = "updateStart";
 	static final String ACTION_UPDATING_GROUPS = "Updating group";

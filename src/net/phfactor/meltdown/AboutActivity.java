@@ -52,6 +52,11 @@ public class AboutActivity extends Activity implements OnClickListener
         disp_string += " and " + mapp.getFeedCount() + " feeds";
         disp_string += "\n" + mapp.getFileCount() + " cached posts on disk";
         
+        if (conf.getUpdateInterval() > 0L)
+        	disp_string += "\nUpdate interval: " + DateUtils.formatElapsedTime(conf.getUpdateInterval() / 1000L);
+        else
+        	disp_string += "\nUpdates: manual only";
+        
         tv = (TextView) findViewById(R.id.tvVerbiage);
         tv.setText(disp_string);
     }

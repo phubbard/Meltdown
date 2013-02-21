@@ -11,10 +11,11 @@ Please [email me](mailto:phubbard@gmail.com) if you want to hack on it; I can al
 * **Speed**. In-memory data structures, with on-disk JSON files for entries; nice and fast. No excess graphical crap, just fast text and listview display. Designed for high-volume consumers of RSS like myself. **My #1 goal was to make this super fast.**
 * Low battery usage - uses Alarm service and background process to refresh the lists every fifteen minutes, using the 'inexact repeating' mode to avoid excess wakeups.
 * Compressed downloads - if your Apache is configured, it'll transfer the data using gzip compression to save time and bytes.
+* SSL support - as of 0.9.2, the communications code uses HttpURLConnection and thus inherits SSL support. You have to have a working chain of trust (root CA), but it works fine with my seven dollar SSL cert from GoDaddy.
 * Local cache - all items are encoded as JSON and written to disk, so if you reboot or kill the app it won't need to re-pull everything again.
+* HTTP response cache added as of 0.9.1, uses 10MB of disk to speed things up as per Android recommendations.
 * Asynchronous mark-as-read and mark-as-saved using AsyncTask - when you hit 'Next' it's done in the background.
 * In the Item view, in addition to the ususal sharing menu I've also added a tickler-file function. This lets you set a calendar entry to remind yourself in a week (or whenever). I use this to do things like 'Remind me to check this out in a couple weeks when it's due to ship.' Very handy! 
-* Mark group as read - also runs in background.
 * Uses efficient and secure LocalBroadcastManager to communicate between the background service and the foreground views.
 * **No excessive permissions** Requires only Internet and 'run in background' permissions, does not use or need any data or other apps. Inspect the code and build it yourself if you like!
 * **No phone-home BS**. I hate that. So should you. At no time will it ever contact anything other than the server you designate.
@@ -31,7 +32,8 @@ Please [email me](mailto:phubbard@gmail.com) if you want to hack on it; I can al
 
 
 ## Future plans and ideas
-* SSL is not supported. Doing this with self-signed certs in a correct way will require some work.
+* Switch to EventBus for service/activity sync; seems to work well and would solve a set of bugs.
+* Coalesce mark-as-read and do them all at once when the Downloader runs, would help reduce battery usage since every mark will fire up the radio and stack.
 * Swipe gestures - left for save, right for mark-as-read (ideas from Tomas Varil)
 * The ListViews work fine on my nexus7 tablet, and present an info-dense display, but I'd like to try fragments and a landscape-mode, two-column display there. Especially now that the nexus 10 is out.
 * Add favicons to item list - I wrote the code to download the favicons, but am still trying to figure out where they add utility.

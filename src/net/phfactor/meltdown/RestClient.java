@@ -10,7 +10,6 @@ import java.net.MalformedURLException;
 import java.net.URL;
 import java.util.List;
 import java.util.Locale;
-import java.util.Map;
 
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -278,15 +277,14 @@ public class RestClient
 		return;
 	}
 	/*
-	 *  New dev 1/13/13, working on SSL support and in RTFM the first thing to do is to switch
-	 *  from AndroidHttpClient to HttpURLConnection:
+	 * See
 	 *  http://android-developers.blogspot.com/2011/09/androids-http-clients.html
+	 *  
+	 *  Automatic SSL support!
 	 *  
 	 *  and
 	 *  http://developer.android.com/reference/java/net/HttpURLConnection.html
 	 *  
-	 *   So let's start there, replace the current methods and swap the API. Once that's done
-	 *   I can tackle http/s support.
 	 */
 	public String syncGetUrl(String url_string, String variables, Boolean in_payload)
 	{

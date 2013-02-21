@@ -97,6 +97,9 @@ public class ItemsActivity extends ListActivity
 				if (item == null)
 					return true;
 				
+				app.markItemRead(item.id);
+				reloadItemsAndView();
+				
 //				Toast.makeText(ItemsActivity.this, itemText, Toast.LENGTH_LONG).show();
 				/* Commented out - really should have a confirmation dialog
 				int rm_ct = app.markGroupThreadRead(group_id, item.title);
@@ -111,7 +114,10 @@ public class ItemsActivity extends ListActivity
         // Install our custom RSSListAdapter.		
 		items = app.getItemsForGroup(group_id);
 		if (items == null)
+		{
 			finish();
+			return;
+		}
 		
         mAdapter = new RSSListAdapter(this, items);
         getListView().setAdapter(mAdapter);    	
