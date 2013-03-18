@@ -39,6 +39,7 @@ public class MeltdownApp extends Application implements OnSharedPreferenceChange
 
 	static final int ORPHAN_ID = 8675309;
 	static final int SPARKS_ID = 8675310;
+	static final int KINDLING_ID = 8675311;
 
 	private List<RssGroup> groups;
 	private List<RssFeed> feeds;
@@ -436,6 +437,8 @@ public class MeltdownApp extends Application implements OnSharedPreferenceChange
 		this.groups.add(orphans);
 		RssGroup sparks = new RssGroup("Sparks", SPARKS_ID);
 		this.groups.add(sparks);
+		RssGroup kindling = new RssGroup("Kindling", KINDLING_ID);
+		this.groups.add(kindling);
 
 		startUpdates();
 		Log.i(TAG, "App init completed.");
@@ -663,6 +666,11 @@ public class MeltdownApp extends Application implements OnSharedPreferenceChange
 				}
 				else
 					Log.d(TAG, "Sparks disabled, not saving item " + item.id);
+			}
+			else 
+			{
+				Log.d(TAG, "Kindling item without group found for post ID " + item.id + " " + item.title);
+				group = findGroupById(KINDLING_ID);
 			}
 		}
 
