@@ -422,7 +422,8 @@ public class MeltdownApp extends Application implements OnSharedPreferenceChange
 		this.groups = new ArrayList<RssGroup>();
 		this.icons = new ArrayList<Favicon>();
 		
-		enableHttpResponseCache();
+		// Try disabing this - think it causes a persistant failure mode.
+		// enableHttpResponseCache();
 
 		configFile = new ConfigFile(getApplicationContext());
 		xcvr = new RestClient(configFile.getToken(), configFile.getAPIUrl());

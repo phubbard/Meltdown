@@ -104,10 +104,8 @@ public class Downloader extends IntentService
 		sendLocalBroadcast(ACTION_UPDATING_CACHE);
 		mapp.sweepDiskCache();		
 	
-		Log.i(TAG, "Sorting...");
 		mapp.sortGroupsByName();
 		mapp.sortItemsByDate();
-		
 		mapp.incrementRunCount();
 		
 		tend = System.currentTimeMillis();
