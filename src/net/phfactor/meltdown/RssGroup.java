@@ -19,6 +19,7 @@ public class RssGroup
 	public String title;
 	public int id;
 	public List<Integer> feed_ids;
+	Boolean synthetic;
 	
 	// This is derived from walking the data from the server
 	public List<RssItem> items;
@@ -29,6 +30,8 @@ public class RssGroup
 		{
 			this.title = data.getString("title");
 			this.id = data.getInt("id");
+			// Is this a 'synthetic' group, i.e. only existing on Meltdown?
+			this.synthetic = (this.id >= MeltdownApp.ORPHAN_ID);
 			this.feed_ids = new ArrayList<Integer>();
 			this.items = new ArrayList<RssItem>();
 		} catch (JSONException e) 
@@ -42,6 +45,7 @@ public class RssGroup
 	{
 		this.title = title;
 		this.id = id;
+		this.synthetic = (this.id >= MeltdownApp.ORPHAN_ID);		
 		this.feed_ids = new ArrayList<Integer>();
 		this.items = new ArrayList<RssItem>(); 
 	}

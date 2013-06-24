@@ -288,7 +288,7 @@ public class RestClient
 	 */
 	public String syncGetUrl(String url_string, String variables, Boolean in_payload)
 	{
-		HttpURLConnection connection;
+		HttpURLConnection connection = null;
 		
 		if (variables != null)
 			url_string += "&" + variables;
@@ -317,6 +317,18 @@ public class RestClient
 			 */
 			if (in_payload)
 				connection.getOutputStream().write(("&" + variables).getBytes());
+			
+			
+			// OK, should be connected at this point, try and read the response.
+			// TODO Here is where we could check headers for Last-Modified - see
+			// http://developer.android.com/training/efficient-downloads/redundant_redundant.html
+			InputStream in = new BufferedInputStream(connection.getInputStream());
+			String res_str = convertStreamToString(in);
+			String status = connection.getHeaderField(null);
+
+			// DDT
+			ddtCheckRetval(res_str, status, url_string);
+			return res_str;			
 		}
 		catch (MalformedURLException me)
 		{
@@ -328,29 +340,10 @@ public class RestClient
 			Log.e(TAG, "IO error on transfer: " + ie.getMessage());
 			return null;
 		}
-		
-		// OK, should be connected at this point, try and read the response.
-		// TODO Here is where we could check headers for Last-Modified - see
-		// http://developer.android.com/training/efficient-downloads/redundant_redundant.html
-		try
-		{
-			InputStream in = new BufferedInputStream(connection.getInputStream());
-			String res_str = convertStreamToString(in);
-			String status = connection.getHeaderField(null);
-
-			// DDT
-			ddtCheckRetval(res_str, status, url_string);
-			
-			return res_str;
-		} catch (IOException e)
-		{
-			Log.e(TAG, "IO error on transfer: " + e.getMessage());			
-		}
 		finally
 		{
-			connection.disconnect();
+			if (connection != null)
+				connection.disconnect();
 		}
-		
-		return null;
 	}
 }

@@ -329,11 +329,19 @@ public class MeltdownApp extends Application implements OnSharedPreferenceChange
 			return;
 		}
 
-		Log.d(TAG, "Starting to mark group " + grp.title + " as read");
-		xcvr.markGroupRead(group_id, last_refresh_time);
+		if (!grp.synthetic)
+		{
+			Log.d(TAG, "Starting to mark group " + grp.title + " as read");
+			xcvr.markGroupRead(group_id, last_refresh_time);			
+		}
+		else
+			Log.d(TAG, "Marking synthetic group " + grp.title + " as read");
 
 		for (int idx = 0; idx < grp.items.size(); idx++)
 		{
+			// For synthetic (existing only locally) groups, we have to do more work. Inefficient.
+			if (grp.synthetic)
+				xcvr.markItemRead(grp.items.get(idx).id);
 			grp.items.get(idx).is_read = true;
 		}
 		sweepReadFromGroup(grp);
@@ -394,22 +402,6 @@ public class MeltdownApp extends Application implements OnSharedPreferenceChange
 		run_count++;
 	}
 	
-	// See http://developer.android.com/training/efficient-downloads/redundant_redundant.html
-	private void enableHttpResponseCache() 
-	{
-		try 
-		{
-			long httpCacheSize = 10 * 1024 * 1024; // 10 MiB
-			File httpCacheDir = new File(getCacheDir(), "http");
-			Class.forName("android.net.http.HttpResponseCache")
-			.getMethod("install", File.class, long.class)
-			.invoke(null, httpCacheDir, httpCacheSize);
-		} catch (Exception httpResponseCacheNotAvailable) 
-		{
-			Log.w(TAG, "HTTP response cache is unavailable.");
-		}
-	}
-	
 	@Override
 	public void onCreate()
 	{
@@ -423,9 +415,6 @@ public class MeltdownApp extends Application implements OnSharedPreferenceChange
 		this.groups = new ArrayList<RssGroup>();
 		this.icons = new ArrayList<Favicon>();
 		
-		// Try disabing this - think it causes a persistant failure mode.
-		// enableHttpResponseCache();
-
 		configFile = new ConfigFile(getApplicationContext());
 		xcvr = new RestClient(configFile.getToken(), configFile.getAPIUrl());
 		
@@ -651,6 +640,10 @@ public class MeltdownApp extends Application implements OnSharedPreferenceChange
 		RssGroup group = findGroupForItem(item);
 		if (group == null)
 		{
+			/*
+			 * FIXME Code assumes that a feed is in zero or one groups, and sparks/kindling break this.
+			 * A feed could be in a group as well as spark or kindling. Not sure how to fix it yet.
+			 */
 			RssFeed feed = findFeedById(item.feed_id);
 			if (feed == null)
 			{
@@ -659,13 +652,8 @@ public class MeltdownApp extends Application implements OnSharedPreferenceChange
 			}
 			else if (feed.is_spark)
 			{
-				if (!configFile.getDisableSparks())
-				{
-					Log.d(TAG, "Spark found for post ID " + item.id + " " + item.title);
-					group = findGroupById(SPARKS_ID);
-				}
-				else
-					Log.d(TAG, "Sparks disabled, not saving item " + item.id);
+				Log.d(TAG, "Spark found for post ID " + item.id + " " + item.title);
+				group = findGroupById(SPARKS_ID);
 			}
 			else 
 			{

@@ -2,6 +2,5 @@
 <PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android">
     <ListPreference android:entryValues="@array/intervalValues" android:summary="@string/prefIntSummary"
         android:title="@string/prefIntTitle" android:key="interval" android:entries="@array/intervals" />
-    <CheckBoxPreference android:title="@string/prefBoolDisableSpark" android:key="disable_sparks"/>
     
 </PreferenceScreen>
