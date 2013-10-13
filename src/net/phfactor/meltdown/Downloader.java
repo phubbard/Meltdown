@@ -26,13 +26,14 @@ public class Downloader extends IntentService
 	 * TODO Move these to strings.xml for localization.
 	 */
 	static final String ACTION_UPDATE_STARTING = "updateStart";
+	static final String ACTION_UPDATE_DONE = "updateDone";
+
 	static final String ACTION_UPDATING_GROUPS = "Updating group";
 	static final String ACTION_UPDATING_FEEDS = "Updating feeds";
 	static final String ACTION_UPDATING_ITEMS = "Updating items";
 	static final String ACTION_UPDATING_ICONS = "Updating favicons";
 	static final String ACTION_DISK_READ = "Reloading cache from disk";
 	static final String ACTION_UPDATING_CACHE = "Updating disk cache";
-	static final String ACTION_UPDATE_DONE = "updateDone";
 	
 	public Downloader(String name) 
 	{

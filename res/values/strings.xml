@@ -63,4 +63,10 @@
         <item>86400000</item>
     </string-array>
     <string name="prefBoolDisableSpark">Disable loading of Sparks</string>
+    <string name="actionGroups">Updating groups</string>
+    <string name="actionFeeds">Updating feeds</string>
+    <string name="actionItems">Updating items</string>
+    <string name="actionIcons">Updating feed icons</string>
+    <string name="actionCache">Reloading and reconciling cache</string>
+    <string name="force_quit">Force app quit</string>
 </resources>

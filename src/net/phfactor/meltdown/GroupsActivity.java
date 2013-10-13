@@ -235,6 +235,11 @@ public class GroupsActivity extends ListActivity
 		case R.id.menu_about:
 			startActivity(new Intent(this, AboutActivity.class));
 			return true;
+		case R.id.menu_quit:
+			// FIXME This is a terrible idea. See https://groups.google.com/forum/#!topic/android-developers/Y96KnN_6RqM
+			// Workaround for https://github.com/phubbard/Meltdown/issues/20
+			System.exit(1);
+			return true;
 		}
 		return false;
 	}
