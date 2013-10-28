@@ -36,3 +36,4 @@ Build 63 3/1/13 Try disabling response cache - seeing a failure mode in the logs
 Build 64 v0.9.3 3/18/13 Merged pull request #10, kindling. Adding code to mark synthetic groups as read.
 Build 65 v0.9.4 4/24/13 Trying to fix bug #14 - resource leak. Changing the REST/URL code.
 Build 66 v0.9.5 10/13/13 Trying to fix bug #14 / #20 - adding force-quit menu option as workaround. Really annoying.
+Build 67 v1.0.0a 10/24/13 Adding ContentProvider for Items.

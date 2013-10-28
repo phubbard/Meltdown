@@ -1,6 +1,7 @@
 package net.phfactor.meltdown;
 
 import android.app.IntentService;
+import android.content.ContentResolver;
 import android.content.Intent;
 import android.support.v4.content.LocalBroadcastManager;
 import android.util.Log;
@@ -51,12 +52,15 @@ public class Downloader extends IntentService
 		Intent intent = new Intent(action);
 		LocalBroadcastManager.getInstance(this).sendBroadcast(intent);
 	}
-	
+		
 	@Override
 	protected void onHandleIntent(Intent intent) 
 	{
 		mapp = (MeltdownApp) getApplication();
-		ConfigFile config = new ConfigFile(getApplicationContext());
+		mapp.doCPtest();
+		return;
+		
+/*		ConfigFile config = new ConfigFile(getApplicationContext());
 		xcvr = new RestClient(config.getToken(), config.getAPIUrl());
 
 		if (mapp.isNetDown())
@@ -113,5 +117,6 @@ public class Downloader extends IntentService
 		Double elapsed = (tend - tzero) / 1000.0;
 		Log.i(TAG, "Service complete, " + elapsed + " seconds elapsed, " + mapp.totalUnreadItems() + " items."); 
 		sendLocalBroadcast(ACTION_UPDATE_DONE);
+*/		
 	}
 }

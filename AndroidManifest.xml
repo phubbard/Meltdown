@@ -1,12 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     package="net.phfactor.meltdown"
-    android:versionCode="66"
-    android:versionName="0.9.5" >
+    android:versionCode="67"
+    android:versionName="1.0.0a" >
 
     <uses-sdk
         android:minSdkVersion="14"
-        android:targetSdkVersion="17" />
+        android:targetSdkVersion="18" />
 
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.PERSISTENT_ACTIVITY" />
@@ -19,35 +19,34 @@
         android:label="@string/app_name"
         android:theme="@android:style/Theme.Holo.Light" >
         <activity
-            android:name="net.phfactor.meltdown.GroupsActivity"
+            android:name="net.phfactor.meltdown.ItemListActivity"
             android:label="@string/app_name" >
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
+
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
         <activity
-            android:name="net.phfactor.meltdown.SetupServerActivity" />
-        <activity
-            android:name="net.phfactor.meltdown.ItemsActivity" />
-        <activity
-            android:name="net.phfactor.meltdown.ItemDisplayActivity" >
+            android:name="net.phfactor.meltdown.ItemDetailActivity"
+            android:label="@string/title_item_detail" >
             <meta-data
                 android:name="android.support.PARENT_ACTIVITY"
-                android:value="android.app.ListActivity" />
+                android:value=".ItemListActivity" />
         </activity>
-        <activity android:name="net.phfactor.meltdown.AboutActivity" >
-        </activity>
-        <activity
-            android:name="net.phfactor.meltdown.SetupPostURL" >
-        </activity>
-        <activity android:name=".PreferencesActivity" />
-    
+        
         <!-- Services -->
         <service
             android:name="net.phfactor.meltdown.Downloader"
             android:enabled="true" >
         </service>
+        
+        <!-- Providers -->
+        <provider
+            android:name="net.phfactor.meltdown.providers.ItemProvider"
+            android:authorities="net.phfactor.meltdown.itemprovider"
+            android:exported="false" >
+        </provider>
     </application>
 
 </manifest>

@@ -1,10 +1,11 @@
 package net.phfactor.meltdown;
 
-import java.io.File;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
+
+import net.phfactor.meltdown.providers.ItemProvider;
 
 import org.json.JSONArray;
 import org.json.JSONException;
@@ -13,14 +14,18 @@ import org.json.JSONObject;
 import android.app.AlarmManager;
 import android.app.Application;
 import android.app.PendingIntent;
+import android.content.ContentProviderOperation;
+import android.content.ContentResolver;
 import android.content.Context;
 import android.content.Intent;
+import android.content.OperationApplicationException;
 import android.content.SharedPreferences;
 import android.content.SharedPreferences.OnSharedPreferenceChangeListener;
 import android.content.pm.PackageInfo;
 import android.content.pm.PackageManager.NameNotFoundException;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
+import android.os.RemoteException;
 import android.os.SystemClock;
 import android.preference.PreferenceManager;
 import android.text.format.DateUtils;
@@ -101,6 +106,64 @@ public class MeltdownApp extends Application implements OnSharedPreferenceChange
 		return "Version " + pinfo.versionName + " build " + pinfo.versionCode;
 	}
 
+	public void doCPtest()
+	{
+		ContentResolver cr = getContentResolver();
+		List<Integer> items = fetchUnreadItemsIDs();		
+		ArrayList<ContentProviderOperation> ops = new ArrayList<ContentProviderOperation>();
+
+		// Get data in max-fever-size chunks
+		final int PER_FETCH = 50;
+		final int num_fetches = (int) Math.ceil(items.size() / PER_FETCH) + 1;
+		for (int idx = 0; idx < num_fetches; idx++)
+		{
+			int left_index = idx * PER_FETCH;
+			int right_index = Math.min((idx + 1) * PER_FETCH, items.size());
+			Log.d(TAG, "On run " + idx + " pulling from " + left_index + " to " + (right_index - 1) + " of " + items.size());
+
+			List<Integer> ids = items.subList(left_index, right_index);
+			String payload = xcvr.fetchListOfItems(ids);
+
+			for (int j = 0; j < ids.size(); j++)
+			{
+				JSONArray jitems;
+				RssItem this_item;
+				try 
+				{
+					JSONObject jdata = new JSONObject(payload);
+					jitems = jdata.getJSONArray("items");
+					this_item = new RssItem(jitems.getJSONObject(idx));
+					ops.add(ContentProviderOperation.newInsert(ItemProvider.URI)
+							.withYieldAllowed(true)
+							.withValues(this_item.getCV())
+							.build());
+				}catch (JSONException je)
+				{
+					Log.e(TAG, "JSON error in CP import logic: ", je);
+				}
+				finally
+				{
+				}
+			}
+		}
+		
+		try {
+			cr.applyBatch(ItemProvider.AUTHORITY, ops);
+		}
+		catch (RemoteException e)
+		{
+			Log.e(TAG, "Remote exception in bulk save", e);
+			e.printStackTrace();
+		} catch (OperationApplicationException e)
+		{
+			Log.e(TAG, "OAE exception in bulk save", e);
+			e.printStackTrace();
+		}
+
+		cr.notifyChange(ItemProvider.URI, null, false);
+		
+	}
+	
 	//As with the parseFeedsGroups, this is retured as a comma-delimited string we have to parse.
 	private List<Integer> fetchUnreadItemsIDs()
 	{

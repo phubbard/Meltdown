@@ -7,9 +7,12 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.Locale;
 
+import net.phfactor.meltdown.providers.ItemProvider;
+
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import android.content.ContentValues;
 import android.content.Context;
 import android.util.Log;
 
@@ -28,7 +31,7 @@ public class RssItem
 	public String author;
 
 	private Context ctx;
-	private String html;
+	public String html;
 	
     // Take this many chars from the front of the description.
     public static final int SNIPPET_LENGTH = 87;
@@ -79,6 +82,22 @@ public class RssItem
 		}
 		
 	}
+	
+	public ContentValues getCV()
+	{
+		ContentValues rc = new ContentValues();
+		rc.put(ItemProvider.C_IS_READ, this.is_read);
+		rc.put(ItemProvider.C_TITLE, this.title);
+		rc.put(ItemProvider.C_URL, this.url);
+		rc.put(ItemProvider.C_HTML, this.html);
+		rc.put(ItemProvider.C_FEVER_ID, this.id);
+		rc.put(ItemProvider.C_CREATED_ON, this.created_on_time);
+		rc.put(ItemProvider.C_FEED_ID, this.feed_id);
+		rc.put(ItemProvider.C_IS_SAVED, this.is_saved);
+		rc.put(ItemProvider.C_AUTHOR, this.author);
+		return rc;
+	}
+	
 	// Save the entire thing to a json-encoded string. Hide the JSON, since we may switch.
 	public byte[] serialize()
 	{

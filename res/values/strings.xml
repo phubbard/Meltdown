@@ -38,7 +38,7 @@
     <string name="postToast">Item sent!</string>
     <string name="viFavicon">Favicon from the feed site</string>
     <string name="viSource">This is the placeholder name for a very long source.</string>
-    <string name="viTime">About 3 weeks ago.</string>
+    <string name="viTime">3 weeks ago.</string>
     <string name="viTitle">Post title. Superlong example to force wraparound and exercise the layout.</string>
     <string name="viSubtitle">Post excerpt goes here, up to 72 characters, which is kind of magic but works OK most of the time.</string>
     <string name="stOffline">Offline</string>

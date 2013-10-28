@@ -1,0 +1,54 @@
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:padding="4dp"    
+    android:layout_height="match_parent" >
+
+    <TextView
+        android:id="@+id/tvTitle"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentTop="true"
+        android:layout_toRightOf="@+id/imageView1"
+        android:text="@string/viTitle"
+        android:textAppearance="?android:attr/textAppearanceSmall"
+        android:textStyle="bold" />
+
+<TextView
+    android:id="@+id/item_feed"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:layout_alignParentLeft="true"
+    android:layout_below="@+id/tvBody"
+    android:ellipsize="end"
+    android:maxLines="@integer/one_line"
+    android:text="@string/viSource"
+    android:textColor="@android:color/holo_red_light" />
+
+<TextView
+    android:id="@+id/tvBody"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:layout_alignLeft="@+id/item_feed"
+    android:layout_below="@+id/imageView1"
+    android:text="@string/viSubtitle"
+    android:textAppearance="?android:attr/textAppearanceSmall" />
+
+<TextView
+    android:id="@+id/item_timestamp"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:layout_alignRight="@+id/tvBody"
+    android:layout_below="@+id/tvBody"
+    android:text="@string/viTime"
+    android:textColor="@android:color/holo_red_light" />
+
+<ImageView
+    android:id="@+id/imageView1"
+    android:layout_width="wrap_content"
+    android:layout_height="wrap_content"
+    android:layout_alignLeft="@+id/tvBody"
+    android:layout_alignTop="@+id/tvTitle"
+    android:contentDescription="@string/viFavicon"
+    android:src="@drawable/ic_icon_feed" />
+        
+</RelativeLayout>

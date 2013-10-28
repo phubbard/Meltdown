@@ -68,7 +68,7 @@ public class AboutActivity extends Activity implements OnClickListener
 		// This is a minor sin - send every click to Github project page. 
 		// TODO FIXME you schlub!
 		Intent intent = new Intent(Intent.ACTION_VIEW);
-		intent.setData(Uri.parse("http://github.com/phubbard/Meltdown"));
+		intent.setData(Uri.parse("https://github.com/phubbard/Meltdown"));
 		startActivity(intent);				
 	}
 	
