@@ -1,10 +1,8 @@
 package net.phfactor.meltdown;
 
 import android.app.IntentService;
-import android.content.ContentResolver;
 import android.content.Intent;
 import android.support.v4.content.LocalBroadcastManager;
-import android.util.Log;
 
 /*!
  * The Downloader is run like a cron job, via the AlarmService, and 
