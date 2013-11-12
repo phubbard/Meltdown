@@ -1,8 +1,13 @@
-package net.phfactor.meltdown;
+package net.phfactor.meltdown.activities;
 
 import java.util.List;
 import java.util.Locale;
 
+import net.phfactor.meltdown.Downloader;
+import net.phfactor.meltdown.MeltdownApp;
+import net.phfactor.meltdown.R;
+import net.phfactor.meltdown.RssGroup;
+import net.phfactor.meltdown.SetupPostURL;
 import android.app.ListActivity;
 import android.app.ProgressDialog;
 import android.content.BroadcastReceiver;

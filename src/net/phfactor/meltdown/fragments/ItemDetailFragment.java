@@ -1,5 +1,12 @@
-package net.phfactor.meltdown;
+package net.phfactor.meltdown.fragments;
 
+import net.phfactor.meltdown.R;
+import net.phfactor.meltdown.RssItem;
+import net.phfactor.meltdown.activities.ItemDetailActivity;
+import net.phfactor.meltdown.activities.ItemListActivity;
+import net.phfactor.meltdown.providers.ItemProvider;
+import android.content.ContentResolver;
+import android.database.Cursor;
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
 import android.text.format.DateUtils;
@@ -17,7 +24,7 @@ import android.widget.TextView;
  */
 public class ItemDetailFragment extends Fragment
 {
-	static final String TAG = "MeltdownIDF";
+	static final String TAG = "MeltdownItemDetailFragment";
 	/**
 	 * The fragment argument representing the item ID that this fragment
 	 * represents.
@@ -37,38 +44,46 @@ public class ItemDetailFragment extends Fragment
 	public void onCreate(Bundle savedInstanceState)
 	{
 		super.onCreate(savedInstanceState);
-
-		Log.d(TAG, "created");
+		item = new RssItem();
+		
 		if (getArguments().containsKey(ARG_ITEM_ID))
 		{
-			// Load item from ContentProvider TODO, preferably via a Loader
-			item = new RssItem();
+			// Load item from ContentProvider 
+			// TODO, preferably via a Loader
+			String selection = ItemProvider.C_FEVER_ID + "=?";
+			String args[] = {getArguments().getString(ARG_ITEM_ID)};
+			ContentResolver mcr = getActivity().getContentResolver();
+			Cursor cursor = mcr.query(ItemProvider.URI, null, selection, args, null);
+			if ((cursor != null) && cursor.moveToNext())
+			{
+				item = new RssItem(cursor);
+			}
+			else
+				Log.e(TAG, "Unable to locate item record for ID " + getArguments().getString(ARG_ITEM_ID));
 			
 			// Load the dummy content specified by the fragment
 			// arguments. In a real-world scenario, use a Loader
 			// to load content from a content provider.
 			//mItem = DummyContent.ITEM_MAP.get(getArguments().getString(ARG_ITEM_ID));
 		}
+		else
+			Log.e(TAG, "fragment started without item ID argument!");
 	}
 
 	@Override
 	public View onCreateView(LayoutInflater inflater, ViewGroup container, Bundle savedInstanceState)
 	{
-		View rootView = inflater.inflate(R.layout.activity_item_detail, container, false);
+		View rootView = inflater.inflate(R.layout.activity_item_display, container, false);
 
 		if (item != null)
 		{
 			// This is the lower-center text field - age of post
 	        TextView tv = (TextView) rootView.findViewById(R.id.itmFeedTitle);
 	        tv.setText(DateUtils.getRelativeTimeSpanString(item.created_on_time * 1000L));
-			
 			((TextView) rootView.findViewById(R.id.itmItemTitle)).setText(item.title);
-			
 			((WebView) rootView.findViewById(R.id.itemWebView)).loadDataWithBaseURL(null, item.html, 
 					"text/html", "UTF-8", null);
-			
 		}
-
 		return rootView;
 	}
 }

@@ -54,4 +54,17 @@ public class RssGroup
 	{
 		this.items = new ArrayList<RssItem>();
 	}
+	
+	public String[] getFeedIDs()
+	{
+		ArrayList<String> rc = new ArrayList<String>();
+		
+		for (int idx = 0; idx < feed_ids.size(); idx++)
+			rc.add(String.format("%d", feed_ids.get(idx)));
+		
+		// TODO generic util routine with generic types
+		String[] retval = new String[rc.size()];
+		rc.toArray(retval);
+		return retval;
+	}
 }

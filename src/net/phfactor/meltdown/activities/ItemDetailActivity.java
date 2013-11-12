@@ -1,5 +1,7 @@
-package net.phfactor.meltdown;
+package net.phfactor.meltdown.activities;
 
+import net.phfactor.meltdown.R;
+import net.phfactor.meltdown.fragments.ItemDetailFragment;
 import android.content.Intent;
 import android.os.Bundle;
 import android.support.v4.app.FragmentActivity;

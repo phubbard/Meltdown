@@ -16,11 +16,9 @@ public class ItemsFragment extends Fragment
 	static final String TAG = "MeltdownItemsFragment";
 
 	public static final String GROUP_KEY = "group";
-	public static final String FEED_KEY = "feed";
 	
 	private ItemAdapter adapter;
 	private String group;
-	private String feed;
 	private ListView listview;
 	
 	@Override
@@ -31,7 +29,6 @@ public class ItemsFragment extends Fragment
 		this.listview = (ListView) view.findViewById(R.id.item_list);
 		
 		this.group = "unknown";
-		this.feed = "unknown";
 		
 		if (savedInstanceState != null)
 		{
@@ -40,12 +37,8 @@ public class ItemsFragment extends Fragment
 				Log.d(TAG, "Got group key for display");
 				group = savedInstanceState.getString(GROUP_KEY);
 			}
-			
-			if (savedInstanceState.containsKey(FEED_KEY))
-			{
-				Log.d(TAG, "got feed key for display");
-				feed = savedInstanceState.getString(FEED_KEY);
-			}
+			else
+				Log.w(TAG, "Missing group key!");
 		}
 		
 		return view;
@@ -55,14 +48,19 @@ public class ItemsFragment extends Fragment
 	public void onResume()
 	{
 		super.onResume();
+		String selection_args[] = {};
+		String selection = null;
 		
 		// TODO Add in group and or feed into query!
-		String selection_args = this.group;
+		if (!group.equals("unknown"))
+		{
+			selection_args[0] = this.group;
+		}
 		
 		// FIXME
 		this.adapter = new ItemAdapter(getActivity(), 
-				getActivity().getContentResolver().query(ItemProvider.URI, null, ItemProvider.C_FEED_ID, 
-						null, ItemProvider.SORT_ORDER), 0);
+				getActivity().getContentResolver().query(ItemProvider.URI, null, selection, selection_args, 
+						ItemProvider.SORT_ORDER), 0);
 		listview.setAdapter(adapter);
 	}
 }

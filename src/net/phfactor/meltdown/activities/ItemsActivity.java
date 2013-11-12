@@ -1,7 +1,12 @@
-package net.phfactor.meltdown;
+package net.phfactor.meltdown.activities;
 
 import java.util.List;
 
+import net.phfactor.meltdown.Downloader;
+import net.phfactor.meltdown.MeltdownApp;
+import net.phfactor.meltdown.R;
+import net.phfactor.meltdown.RssFeed;
+import net.phfactor.meltdown.RssItem;
 import android.app.ActionBar;
 import android.app.AlertDialog;
 import android.app.ListActivity;

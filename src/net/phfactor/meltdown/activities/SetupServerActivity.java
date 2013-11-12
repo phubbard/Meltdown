@@ -1,5 +1,8 @@
-package net.phfactor.meltdown;
+package net.phfactor.meltdown.activities;
 
+import net.phfactor.meltdown.ConfigFile;
+import net.phfactor.meltdown.MeltdownApp;
+import net.phfactor.meltdown.R;
 import android.app.Activity;
 import android.os.Bundle;
 import android.view.View;

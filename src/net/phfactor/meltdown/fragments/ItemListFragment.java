@@ -1,9 +1,13 @@
-package net.phfactor.meltdown;
+package net.phfactor.meltdown.fragments;
 
+import net.phfactor.meltdown.MeltdownApp;
+import net.phfactor.meltdown.RssGroup;
+import net.phfactor.meltdown.RssItem;
 import net.phfactor.meltdown.adapters.ItemAdapter;
 import net.phfactor.meltdown.providers.ItemProvider;
 import android.app.Activity;
 import android.content.ContentResolver;
+import android.database.Cursor;
 import android.os.Bundle;
 import android.support.v4.app.ListFragment;
 import android.util.Log;
@@ -22,9 +26,9 @@ import android.widget.ListView;
 public class ItemListFragment extends ListFragment
 {
 	static final String TAG = "MeltdownItemListFragment";
+	public static final String GROUP_KEY = "group";
+	
 	private String group;
-	private String feed;
-	private ListView listview;
 	
 	
 	/**
@@ -86,15 +90,55 @@ public class ItemListFragment extends ListFragment
 	{
 	}
 
+	private String[] getFeedArray(String group_name)
+	{
+		MeltdownApp app = (MeltdownApp) getActivity().getApplication();
+		RssGroup group = app.findGroupByName(group_name);
+		if (group != null)
+			return group.getFeedIDs();
+		
+		Log.w(TAG, "Could not find group " + group_name);
+		return null;
+	}
+	
 	@Override
 	public void onCreate(Bundle savedInstanceState)
 	{
-		super.onCreate(savedInstanceState);
 		Log.d(TAG, "created");
+		super.onCreate(savedInstanceState);
+		
+		if (savedInstanceState != null)
+		{
+			if (savedInstanceState.containsKey(GROUP_KEY))
+			{
+				group = savedInstanceState.getString(GROUP_KEY);
+				Log.d(TAG, "Got group key for display: " + group);				
+			}
+			else
+			{
+				Log.w(TAG, "Missing group name!");
+				group = "unknown";
+			}
+		}
+		else
+		{
+			Log.w(TAG, "Missing group name !");
+			group = "unknown";			
+		}
+		
 		ContentResolver mcr = getActivity().getContentResolver();
-		// TODO Add in group and or feed into query!
-		ItemAdapter adapter = new ItemAdapter(getActivity(),
-				mcr.query(ItemProvider.URI, null, null, null, ItemProvider.SORT_ORDER), 0);
+		// Add feed IDs into query
+		String where_clause = ItemProvider.C_FEED_ID + "=?";		
+		String[] params = getFeedArray(group);
+		
+		Cursor cursor;
+		
+		if (params != null)
+			cursor = mcr.query(ItemProvider.URI, null, where_clause, params, ItemProvider.SORT_ORDER);
+		else
+			cursor = mcr.query(ItemProvider.URI, null, null, null, ItemProvider.SORT_ORDER);
+		
+		ItemAdapter adapter = new ItemAdapter(getActivity(), cursor, 0);
 		setListAdapter(adapter);
 		Log.d(TAG, "adapter done");
 	}
@@ -102,7 +146,6 @@ public class ItemListFragment extends ListFragment
 	@Override
 	public void onViewCreated(View view, Bundle savedInstanceState)
 	{
-		Log.d(TAG, "oVC");
 		super.onViewCreated(view, savedInstanceState);
 
 		// Restore the previously serialized activated item position.
@@ -117,7 +160,6 @@ public class ItemListFragment extends ListFragment
 	@Override
 	public void onAttach(Activity activity)
 	{
-		Log.d(TAG, "attach");
 		super.onAttach(activity);
 		
 		// Activities containing this fragment must implement its callbacks.
@@ -144,10 +186,14 @@ public class ItemListFragment extends ListFragment
 	{
 		super.onListItemClick(listView, view, position, id);
 
+		// The listview is a cursor adapter, so this seems to be the (awkward) way to 
+		// look up the item based on cursor position.
+		Cursor cursor = (Cursor) listView.getItemAtPosition(position);
+		RssItem item = new RssItem(cursor);
+
 		// Notify the active callbacks interface (the activity, if the
 		// fragment is attached to one) that an item has been selected.
-		// TODO
-		mCallbacks.onItemSelected("1");
+		mCallbacks.onItemSelected(String.format("%d", item.id));
 	}
 
 	@Override

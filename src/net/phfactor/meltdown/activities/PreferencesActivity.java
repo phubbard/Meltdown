@@ -1,5 +1,6 @@
-package net.phfactor.meltdown;
+package net.phfactor.meltdown.activities;
 
+import net.phfactor.meltdown.R;
 import android.os.Bundle;
 import android.preference.PreferenceActivity;
 

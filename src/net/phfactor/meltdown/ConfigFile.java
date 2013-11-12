@@ -18,6 +18,7 @@ public class ConfigFile
 	private static final String P_URL = "serverUrl";
 	private static final String P_TOKEN = "token";
 	private static final String P_POST_URL = "postUrl";
+	private static final String P_V2 = "v2";
 	private static final String P_INTERVAL = "interval"; // Must match preference key
 
 	private SharedPreferences prefs;
@@ -36,14 +37,14 @@ public class ConfigFile
 		editor.commit();
 	}
 
-	protected void setUpdateInterval(Long new_interval)
+	public void setUpdateInterval(Long new_interval)
 	{
 		editor = prefs.edit();
 		editor.putLong(P_INTERVAL, new_interval);
 		editor.commit();
 	}
 	
-	protected Long getUpdateInterval()
+	public Long getUpdateInterval()
 	{
 		String saved_val = prefs.getString(P_INTERVAL, null);
 		if (saved_val == null)
@@ -52,13 +53,13 @@ public class ConfigFile
 		return Long.parseLong(saved_val);
 	}
 	
-	protected String makeAuthToken(String email, String pass)
+	public String makeAuthToken(String email, String pass)
 	{
 		String pre = String.format("%s:%s", email, pass);
 		return md5(pre);
 	}
 	
-	protected String getAPIUrl()
+	public String getAPIUrl()
 	{
 		return getURL() + "/?api";
 	}
@@ -88,7 +89,7 @@ public class ConfigFile
 		return prefs.getString(P_POST_URL, null);
 	}
 	
-	protected void setUserPostURL(String user_url)
+	public void setUserPostURL(String user_url)
 	{
 		editor = prefs.edit();
 		editor.putString(P_POST_URL, user_url);

@@ -1,10 +1,16 @@
-package net.phfactor.meltdown;
+package net.phfactor.meltdown.activities;
 
 import java.net.URLEncoder;
 import java.util.Date;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
+import net.phfactor.meltdown.ConfigFile;
+import net.phfactor.meltdown.MeltdownApp;
+import net.phfactor.meltdown.R;
+import net.phfactor.meltdown.RssFeed;
+import net.phfactor.meltdown.RssItem;
+import net.phfactor.meltdown.SetupPostURL;
 import android.app.ActionBar;
 import android.app.Activity;
 import android.content.Intent;

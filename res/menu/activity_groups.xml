@@ -2,9 +2,9 @@
     <item android:id="@+id/menu_settings"
         android:title="@string/menu_settings"/>
     
-    <item android:id="@+id/menu_refresh" android:title="@string/menu_refresh" android:icon="@drawable/ic_action_refresh" android:showAsAction="ifRoom|withText"></item>
-    <item android:id="@+id/menu_about" android:title="@string/menu_about" android:icon="@drawable/ic_action_about" android:showAsAction="ifRoom|withText"></item>
+    <item android:id="@+id/menu_refresh" android:title="@string/menu_refresh" android:icon="@drawable/ic_action_refresh" android:showAsAction="withText|collapseActionView"></item>
+    <item android:id="@+id/menu_about" android:title="@string/menu_about" android:icon="@drawable/ic_action_about" android:showAsAction="withText|collapseActionView"></item>
     <item android:id="@+id/menu_setup_post" android:title="@string/title_activity_setup_post_url"></item>
-    <item android:id="@+id/menu_prefs" android:titleCondensed="@string/menu_cond_prefs" android:title="@string/menu_prefs" android:icon="@drawable/ic_action_prefs" android:showAsAction="ifRoom|withText"></item>
+    <item android:id="@+id/menu_prefs" android:titleCondensed="@string/menu_cond_prefs" android:title="@string/menu_prefs" android:icon="@drawable/ic_action_prefs" android:showAsAction="withText|collapseActionView"></item>
     <item android:id="@+id/menu_quit" android:icon="@drawable/ic_action_force_quit" android:title="@string/force_quit" android:showAsAction="never|withText"></item>
 </menu>

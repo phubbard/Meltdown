@@ -145,7 +145,8 @@ public class ItemProvider extends ContentProvider
 		if (helper == null)
 			helper = new dbHelper(getContext(), DB_VERSION);
 
-		Log.d(TAG, "query started");
+		if (selection != null)
+			Log.d(TAG, "query for " + selection);
 		
 		long id = this.getId(uri);
 		SQLiteDatabase db = helper.getReadableDatabase();

@@ -19,7 +19,7 @@
         android:label="@string/app_name"
         android:theme="@android:style/Theme.Holo.Light" >
         <activity
-            android:name="net.phfactor.meltdown.ItemListActivity"
+            android:name="net.phfactor.meltdown.activities.ItemListActivity"
             android:label="@string/app_name" >
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
@@ -28,7 +28,7 @@
             </intent-filter>
         </activity>
         <activity
-            android:name="net.phfactor.meltdown.ItemDetailActivity"
+            android:name="net.phfactor.meltdown.activities.ItemDetailActivity"
             android:label="@string/title_item_detail" >
             <meta-data
                 android:name="android.support.PARENT_ACTIVITY"

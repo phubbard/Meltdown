@@ -1,12 +1,14 @@
-package net.phfactor.meltdown;
+package net.phfactor.meltdown.activities;
 
+import net.phfactor.meltdown.ConfigFile;
+import net.phfactor.meltdown.MeltdownApp;
+import net.phfactor.meltdown.R;
 import android.app.Activity;
 import android.content.Intent;
 import android.net.Uri;
 import android.os.Bundle;
 import android.text.Html;
 import android.text.format.DateUtils;
-import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;

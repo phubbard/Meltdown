@@ -1,9 +1,17 @@
-package net.phfactor.meltdown;
+package net.phfactor.meltdown.activities;
 
+import net.phfactor.meltdown.MeltdownApp;
+import net.phfactor.meltdown.R;
+import net.phfactor.meltdown.fragments.ItemDetailFragment;
+import net.phfactor.meltdown.fragments.ItemListFragment;
+import net.phfactor.meltdown.fragments.ItemsFragment;
+import android.app.ActionBar;
 import android.content.Intent;
 import android.os.Bundle;
 import android.support.v4.app.FragmentActivity;
 import android.util.Log;
+import android.view.Menu;
+import android.widget.ArrayAdapter;
 
 /**
  * An activity representing a list of Items. This activity has different
@@ -21,7 +29,7 @@ import android.util.Log;
  * interface to listen for item selections.
  */
 public class ItemListActivity extends FragmentActivity implements
-		ItemListFragment.Callbacks
+		ItemListFragment.Callbacks, ActionBar.OnNavigationListener
 {
 	static final String TAG = "MeltdownItemListActivity";
 	/**
@@ -37,7 +45,19 @@ public class ItemListActivity extends FragmentActivity implements
 		setContentView(R.layout.activity_item_list);
 
 		Log.d(TAG, "created and set CV");
+		MeltdownApp app = (MeltdownApp) getApplication();
 		
+//		// Set up the action bar to show a dropdown list.
+		final ActionBar actionBar = getActionBar();
+		actionBar.setDisplayShowTitleEnabled(false);
+		actionBar.setNavigationMode(ActionBar.NAVIGATION_MODE_LIST);
+		// Set up the dropdown list navigation in the action bar.
+		actionBar.setListNavigationCallbacks(
+//		// Specify a SpinnerAdapter to populate the dropdown list.
+				new ArrayAdapter<String>(actionBar.getThemedContext(),
+						android.R.layout.simple_list_item_1,
+						android.R.id.text1, app.getUnreadGroupsArray()), this);
+//		
 		if (findViewById(R.id.item_detail_container) != null)
 		{
 			Log.d(TAG, "two pane mode");
@@ -55,6 +75,14 @@ public class ItemListActivity extends FragmentActivity implements
 
 		// TODO: If exposing deep links into your app, handle intents here.
 		Log.d(TAG, "oc done");
+	}
+
+	@Override
+	public boolean onCreateOptionsMenu(Menu menu)
+	{
+		// TODO Create new menu for fragments/v2/contentprovider
+		getMenuInflater().inflate(R.menu.activity_groups, menu);
+		return true;
 	}
 
 	/**
@@ -85,4 +113,19 @@ public class ItemListActivity extends FragmentActivity implements
 			startActivity(detailIntent);
 		}
 	}
+	
+	@Override
+	public boolean onNavigationItemSelected(int position, long id)
+	{
+		// When the given dropdown item is selected, show its contents in the
+		// container view.
+		ItemsFragment fragment = new ItemsFragment();
+		Bundle bundle = new Bundle();
+		bundle.putString(ItemsFragment.GROUP_KEY, "AAAA");
+		fragment.setArguments(bundle);
+		
+		//getFragmentManager().beginTransaction().replace(R.id.item_detail_container, fragment).commit();
+		return true;
+	}
+
 }

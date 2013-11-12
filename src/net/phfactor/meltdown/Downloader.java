@@ -26,15 +26,15 @@ public class Downloader extends IntentService
 	 * TODO Collapse these down to action + extras in human-readable format
 	 * TODO Move these to strings.xml for localization.
 	 */
-	static final String ACTION_UPDATE_STARTING = "updateStart";
-	static final String ACTION_UPDATE_DONE = "updateDone";
+	public static final String ACTION_UPDATE_STARTING = "updateStart";
+	public static final String ACTION_UPDATE_DONE = "updateDone";
 
-	static final String ACTION_UPDATING_GROUPS = "Updating group";
-	static final String ACTION_UPDATING_FEEDS = "Updating feeds";
-	static final String ACTION_UPDATING_ITEMS = "Updating items";
-	static final String ACTION_UPDATING_ICONS = "Updating favicons";
-	static final String ACTION_DISK_READ = "Reloading cache from disk";
-	static final String ACTION_UPDATING_CACHE = "Updating disk cache";
+	public static final String ACTION_UPDATING_GROUPS = "Updating group";
+	public static final String ACTION_UPDATING_FEEDS = "Updating feeds";
+	public static final String ACTION_UPDATING_ITEMS = "Updating items";
+	public static final String ACTION_UPDATING_ICONS = "Updating favicons";
+	public static final String ACTION_DISK_READ = "Reloading cache from disk";
+	public static final String ACTION_UPDATING_CACHE = "Updating disk cache";
 	
 	public Downloader(String name) 
 	{
@@ -56,8 +56,8 @@ public class Downloader extends IntentService
 	@Override
 	protected void onHandleIntent(Intent intent) 
 	{
-		mapp = (MeltdownApp) getApplication();
-		mapp.doCPtest();
+//		mapp = (MeltdownApp) getApplication();
+//		mapp.doCPtest();
 		return;
 		
 /*		ConfigFile config = new ConfigFile(getApplicationContext());

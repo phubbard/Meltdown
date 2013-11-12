@@ -14,6 +14,7 @@ import org.json.JSONObject;
 
 import android.content.ContentValues;
 import android.content.Context;
+import android.database.Cursor;
 import android.util.Log;
 
 public class RssItem
@@ -57,6 +58,21 @@ public class RssItem
 	public RssItem(JSONObject data)
 	{
 		parseFromJson(data);
+	}
+	
+	public RssItem(Cursor cursor)
+	{
+		// Create from ContentProvider result		
+		is_read = cursor.getInt(cursor.getColumnIndex(ItemProvider.C_IS_READ)) != 0;
+		title = cursor.getString(cursor.getColumnIndex(ItemProvider.C_TITLE));
+		url = cursor.getString(cursor.getColumnIndex(ItemProvider.C_URL));
+		html = cursor.getString(cursor.getColumnIndex(ItemProvider.C_HTML));
+		excerpt = makeExcerpt(html);
+		id = cursor.getInt(cursor.getColumnIndex(ItemProvider.C_FEVER_ID));
+		created_on_time = cursor.getLong(cursor.getColumnIndex(ItemProvider.C_CREATED_ON));
+		feed_id = cursor.getInt(cursor.getColumnIndex(ItemProvider.C_FEED_ID));
+		is_saved = cursor.getInt(cursor.getColumnIndex(ItemProvider.C_IS_SAVED)) != 0;
+		author = cursor.getString(cursor.getColumnIndex(ItemProvider.C_AUTHOR));
 	}
 	
 	private void parseFromJson(JSONObject data)

@@ -63,7 +63,7 @@ public class MeltdownApp extends Application implements OnSharedPreferenceChange
 		super();
 	}
 	
-	protected Boolean isNetDown()
+	public Boolean isNetDown()
 	{
 		ConnectivityManager connMgr = (ConnectivityManager) getSystemService(Context.CONNECTIVITY_SERVICE);
 		NetworkInfo networkInfo = connMgr.getActiveNetworkInfo();
@@ -76,7 +76,7 @@ public class MeltdownApp extends Application implements OnSharedPreferenceChange
 	/* Sweep disk files and remove any not present in the in-memory items array
 	 * 
 	 */
-	protected void sweepDiskCache()
+	public void sweepDiskCache()
 	{
 		String[] filenames = fileList();
 		for (int idx = 0; idx < filenames.length; idx++)
@@ -132,7 +132,7 @@ public class MeltdownApp extends Application implements OnSharedPreferenceChange
 				{
 					JSONObject jdata = new JSONObject(payload);
 					jitems = jdata.getJSONArray("items");
-					this_item = new RssItem(jitems.getJSONObject(idx));
+					this_item = new RssItem(jitems.getJSONObject(j));
 					ops.add(ContentProviderOperation.newInsert(ItemProvider.URI)
 							.withYieldAllowed(true)
 							.withValues(this_item.getCV())
@@ -209,7 +209,7 @@ public class MeltdownApp extends Application implements OnSharedPreferenceChange
 		return -1;
 	}
 
-	protected RssFeed findFeedById(int feed_id)
+	public RssFeed findFeedById(int feed_id)
 	{
 		for (int idx =0; idx < feeds.size(); idx++)
 		{
@@ -222,7 +222,7 @@ public class MeltdownApp extends Application implements OnSharedPreferenceChange
 	/*
 	 *  Reverse index methods - find group, feed or post by numeric ID.
 	 */
-	protected RssGroup findGroupById(int grp_id)
+	public RssGroup findGroupById(int grp_id)
 	{
 		for (int idx = 0; idx < groups.size(); idx++)
 		{
@@ -233,7 +233,7 @@ public class MeltdownApp extends Application implements OnSharedPreferenceChange
 	}
 
 	// Similar - locate a group object by title string
-	protected RssGroup findGroupByName(String name)
+	public RssGroup findGroupByName(String name)
 	{
 		for (int idx = 0; idx < groups.size(); idx++)
 		{
@@ -273,7 +273,7 @@ public class MeltdownApp extends Application implements OnSharedPreferenceChange
 		return null;
 	}
 
-	protected RssItem findPostById(int post_id)
+	public RssItem findPostById(int post_id)
 	{
 		for (int grp_idx = 0; grp_idx < groups.size(); grp_idx++)
 		{
@@ -288,7 +288,7 @@ public class MeltdownApp extends Application implements OnSharedPreferenceChange
 	}
 
 	// How many cache files are present? Just used by about page.
-	protected int getFileCount()
+	public int getFileCount()
 	{
 		int count = 0;
 		String[] filenames = fileList();
@@ -301,7 +301,7 @@ public class MeltdownApp extends Application implements OnSharedPreferenceChange
 	}
 
 	// How many feeds?
-	protected int getFeedCount()
+	public int getFeedCount()
 	{
 		return feeds.size();
 	}
@@ -318,7 +318,7 @@ public class MeltdownApp extends Application implements OnSharedPreferenceChange
 		return grp.items;
 	}
 
-	protected long get_last_refresh_time()
+	public long get_last_refresh_time()
 	{
 		return last_refresh_time;
 	}
@@ -343,6 +343,18 @@ public class MeltdownApp extends Application implements OnSharedPreferenceChange
 		return rc;
 	}
 
+	public String[] getUnreadGroupsArray()
+	{
+		List<RssGroup> glist = getUnreadGroups();
+		ArrayList<String> rc = new ArrayList<String>();
+		for (int idx = 0; idx < glist.size(); idx++)
+			rc.add(glist.get(idx).title);
+		
+		String[] retval= new String[rc.size()];
+		rc.toArray(retval);
+		return retval;
+	}
+	
 	public int groupUnreadItems(RssGroup group)
 	{
 		int count = 0;
@@ -377,13 +389,13 @@ public class MeltdownApp extends Application implements OnSharedPreferenceChange
 	}
 
 	// Call the users' post hook
-	protected void callUserURL(String url)
+	public void callUserURL(String url)
 	{
 		xcvr.callUserURL(url);
 	}
 
 	// Iterate over a group, and mark all of the items in it as read. One API call and then local cleanup.
-	protected void markGroupRead(int group_id)
+	public void markGroupRead(int group_id)
 	{
 		RssGroup grp = findGroupById(group_id);
 		if (grp == null)
@@ -412,7 +424,7 @@ public class MeltdownApp extends Application implements OnSharedPreferenceChange
 
 	// Mark some thread read in a group matching a given title.
 	// Use case is long-running threads in RSS feeds from WatchUSeek and similar.
-	protected int markGroupThreadRead(int group_id, String title)
+	public int markGroupThreadRead(int group_id, String title)
 	{
 		int rm_count = 0;
 		RssGroup grp = findGroupById(group_id);
@@ -455,12 +467,12 @@ public class MeltdownApp extends Application implements OnSharedPreferenceChange
 			item.is_saved = true;
 	}
 
-	protected int getRunCount()
+	public int getRunCount()
 	{
 		return run_count;
 	}
 	
-	protected void incrementRunCount()
+	public void incrementRunCount()
 	{
 		run_count++;
 	}
@@ -558,7 +570,7 @@ public class MeltdownApp extends Application implements OnSharedPreferenceChange
 
 	// Parse the results of the get-the-feeds API call into our simple array.
 	// Note - overwrites the old without checking!
-	protected void saveFeedsData(String payload)
+	public void saveFeedsData(String payload)
 	{
 		JSONArray jfeeds;
 
@@ -601,7 +613,7 @@ public class MeltdownApp extends Application implements OnSharedPreferenceChange
 	}
 
 	// Take the data returned from a groups fetch, parse and save into data model.
-	protected void saveGroupsData(String payload)
+	public void saveGroupsData(String payload)
 	{
 		JSONArray jgroups;
 		RssGroup newGroup;
@@ -775,7 +787,7 @@ public class MeltdownApp extends Application implements OnSharedPreferenceChange
 
 	// We display the groups in alphabetical order. Seems a sensible default.
 	// See http://stackoverflow.com/questions/5815423/sorting-arraylist-in-android-in-alphabetical-order-case-insensitive
-	protected void sortGroupsByName()
+	public void sortGroupsByName()
 	{
 		Collections.sort(groups, new Comparator<RssGroup>() {
 			public int compare(RssGroup r1, RssGroup r2) {
@@ -786,7 +798,7 @@ public class MeltdownApp extends Application implements OnSharedPreferenceChange
 
 	// Newest first - reversed order by comparing 2 to 1
 	// http://stackoverflow.com/questions/5894818/how-to-sort-arraylistlong-in-java-in-decreasing-order
-	protected void sortItemsByDate()
+	public void sortItemsByDate()
 	{
 		for (int idx = 0; idx < groups.size(); idx++)
 		{
@@ -802,7 +814,7 @@ public class MeltdownApp extends Application implements OnSharedPreferenceChange
 	 * Start the Downloader, and add it to  (approximate) via alarm service. We use
 	 * inexact to save battery life; the fetches can be off but that's fine.
 	 */
-	protected void startUpdates()
+	public void startUpdates()
 	{
 		Intent sIntent = new Intent(this, Downloader.class);
 		startService(sIntent);
@@ -832,7 +844,7 @@ public class MeltdownApp extends Application implements OnSharedPreferenceChange
     	startUpdates();		
 	}
 
-	protected void sweepReadFromGroup(RssGroup group)
+	public void sweepReadFromGroup(RssGroup group)
 	{
 		if (group == null)
 			return;
@@ -854,7 +866,7 @@ public class MeltdownApp extends Application implements OnSharedPreferenceChange
 	 * Iterate over the items, remove any that are marked read. GC, called by Downloader
 	 * and when exiting a group view. Mark and sweep GC, very basic.
 	 */
-	protected void sweepReadItems()
+	public void sweepReadItems()
 	{
 		for (int gidx = 0; gidx < groups.size(); gidx++)
 			sweepReadFromGroup(groups.get(gidx));
@@ -868,7 +880,7 @@ public class MeltdownApp extends Application implements OnSharedPreferenceChange
 	 * 
 	 * This routine is the heart of Meltdown's synchronization with the server.
 	 */
-	protected void syncUnreadPosts(Boolean reload_from_disk)
+	public void syncUnreadPosts(Boolean reload_from_disk)
 	{
 		List<Integer> serverItemIDs = fetchUnreadItemsIDs();
 
@@ -929,7 +941,7 @@ public class MeltdownApp extends Application implements OnSharedPreferenceChange
 	/*
 	 * We have group->feed and item->feed mappings, need to make feed->group
 	 */
-	protected void updateFeedIndices()
+	public void updateFeedIndices()
 	{
 		for (int idx = 0; idx < feeds.size(); idx++)
 		{

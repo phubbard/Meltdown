@@ -23,7 +23,7 @@
 
     <fragment
         android:id="@+id/item_list"
-        android:name="net.phfactor.meltdown.ItemListFragment"
+        android:name="net.phfactor.meltdown.fragments.ItemListFragment"
         android:layout_width="0dp"
         android:layout_height="match_parent"
         android:layout_weight="1"
